@@ -56,6 +56,9 @@ const OpticalSurfaceAnalyzer = () => {
     const [showSettings, setShowSettings] = useState(false);
     const [showZMXImport, setShowZMXImport] = useState(false);
     const [zmxSurfaces, setZmxSurfaces] = useState([]);
+    const [showConvert, setShowConvert] = useState(false);
+    const [showConvertResults, setShowConvertResults] = useState(false);
+    const [convertResults, setConvertResults] = useState(null);
     const [colorscale, setColorscale] = useState('Viridis');
     const plotRef = useRef(null);
 
@@ -535,6 +538,23 @@ const OpticalSurfaceAnalyzer = () => {
             onClose: () => setShowZMXImport(false),
             c
         }),
+        // Conversion Dialog
+        showConvert && React.createElement(ConversionDialog, {
+            selectedSurface,
+            surfaces,
+            setSurfaces,
+            setSelectedSurface,
+            setShowConvert,
+            setShowConvertResults,
+            setConvertResults,
+            c
+        }),
+        // Conversion Results Dialog
+        showConvertResults && React.createElement(ConversionResultsDialog, {
+            convertResults,
+            onClose: () => setShowConvertResults(false),
+            c
+        }),
         // Main Content Area
         React.createElement('div', { style: { display: 'flex', flex: 1, overflow: 'hidden' } },
             // Left Panel - Surfaces
@@ -749,6 +769,7 @@ const OpticalSurfaceAnalyzer = () => {
                 updateSurfaceType,
                 updateParameter,
                 classifySurfaceShape,
+                onConvert: () => setShowConvert(true),
                 c
             })
         )
@@ -1166,7 +1187,7 @@ const DataView = ({ activeTab, selectedSurface, c }) => {
     );
 };
 
-const PropertiesPanel = ({ selectedSurface, updateSurfaceName, updateSurfaceType, updateParameter, classifySurfaceShape, c }) => {
+const PropertiesPanel = ({ selectedSurface, updateSurfaceName, updateSurfaceType, updateParameter, classifySurfaceShape, onConvert, c }) => {
     // Calculate metrics for display
     const calculateMetrics = () => {
         const minHeight = parseFloat(selectedSurface.parameters['Min Height']) || 0;
@@ -1389,6 +1410,7 @@ const PropertiesPanel = ({ selectedSurface, updateSurfaceName, updateSurfaceType
             // Quick Actions
             React.createElement(PropertySection, { title: "Quick Actions", c },
                 React.createElement('button', {
+                    onClick: onConvert,
                     style: {
                         width: '100%',
                         padding: '8px',
@@ -1699,6 +1721,616 @@ const ZMXImportDialog = ({ zmxSurfaces, onImport, onClose, c }) => {
                         fontWeight: '600'
                     }
                 }, `Import ${selectedIndices.length} Surface${selectedIndices.length !== 1 ? 's' : ''}`)
+            )
+        )
+    );
+};
+
+const ConversionDialog = ({ selectedSurface, surfaces, setSurfaces, setSelectedSurface, setShowConvert, setShowConvertResults, setConvertResults, c }) => {
+    const [targetType, setTargetType] = useState('1'); // 1=Even Asphere, 2=Odd Asphere, 3=Opal UnZ, 4=Opal UnU, 5=Poly
+    const [algorithm, setAlgorithm] = useState('leastsq');
+    const [radius, setRadius] = useState(selectedSurface.parameters['Radius'] || '100');
+    const [conicVariable, setConicVariable] = useState(true);
+    const [conicValue, setConicValue] = useState('0');
+    const [e2Variable, setE2Variable] = useState(true);
+    const [e2Value, setE2Value] = useState('1');
+    const [hValue, setHValue] = useState('1');
+    const [useCoeffs, setUseCoeffs] = useState(true);
+    const [numCoeffs, setNumCoeffs] = useState(3);
+    const [isRunning, setIsRunning] = useState(false);
+
+    const getMaxCoeffs = () => {
+        if (targetType === '1') return 9; // A4-A20 (9 terms)
+        if (targetType === '2') return 18; // A3-A20 (18 terms)
+        if (targetType === '3') return 11; // A3-A13 (11 terms)
+        if (targetType === '4') return 11; // A2-A12 (11 terms)
+        if (targetType === '5') return 11; // A3-A13 (11 terms)
+        return 9;
+    };
+
+    const runConversion = async () => {
+        if (!window.electronAPI || !window.electronAPI.runConversion) {
+            alert('Conversion not available in this environment');
+            return;
+        }
+
+        setIsRunning(true);
+
+        try {
+            // Generate surface data points
+            const minHeight = parseFloat(selectedSurface.parameters['Min Height']) || 0;
+            const maxHeight = parseFloat(selectedSurface.parameters['Max Height']) || 25;
+            const points = 100;
+            const surfaceData = [];
+
+            for (let i = 0; i <= points; i++) {
+                const r = minHeight + (maxHeight - minHeight) * i / points;
+                const values = calculateSurfaceValues(r, selectedSurface);
+                surfaceData.push({ r, z: values.sag });
+            }
+
+            // Prepare conversion settings
+            const settings = {
+                SurfaceType: targetType,
+                Radius: radius,
+                H: hValue,
+                e2_isVariable: e2Variable ? '1' : '0',
+                e2: e2Value,
+                conic_isVariable: conicVariable ? '1' : '0',
+                conic: conicValue,
+                TermNumber: useCoeffs ? String(numCoeffs) : '0',
+                OptimizationAlgorithm: algorithm
+            };
+
+            // Call conversion via IPC
+            const result = await window.electronAPI.runConversion(surfaceData, settings);
+
+            if (result.success) {
+                // Add converted surface
+                const colors = ['#4a90e2', '#e94560', '#2ecc71', '#f39c12', '#9b59b6', '#e67e22', '#1abc9c', '#34495e'];
+                const newId = Math.max(...surfaces.map(s => s.id)) + 1;
+                const color = colors[newId % colors.length];
+
+                const newSurface = createSurfaceFromFitResult(
+                    result.fitReport,
+                    newId,
+                    color,
+                    selectedSurface.name
+                );
+
+                setSurfaces([...surfaces, newSurface]);
+                setSelectedSurface(newSurface);
+                setConvertResults(result);
+                setShowConvert(false);
+                setShowConvertResults(true);
+            } else {
+                alert('Conversion failed: ' + (result.error || 'Unknown error'));
+            }
+        } catch (error) {
+            alert('Conversion error: ' + error.message);
+        } finally {
+            setIsRunning(false);
+        }
+    };
+
+    const createSurfaceFromFitReport = (fitReport, id, color, originalName) => {
+        const type = fitReport.Type;
+        let surfaceType, parameters;
+
+        if (type === 'EA') {
+            surfaceType = 'Even Asphere';
+            parameters = {
+                'Radius': String(fitReport.R),
+                'Conic Constant': String(fitReport.k),
+                'A4': String(fitReport.A4 || 0),
+                'A6': String(fitReport.A6 || 0),
+                'A8': String(fitReport.A8 || 0),
+                'A10': String(fitReport.A10 || 0),
+                'A12': String(fitReport.A12 || 0),
+                'A14': String(fitReport.A14 || 0),
+                'A16': String(fitReport.A16 || 0),
+                'A18': String(fitReport.A18 || 0),
+                'A20': String(fitReport.A20 || 0),
+                'Min Height': selectedSurface.parameters['Min Height'],
+                'Max Height': selectedSurface.parameters['Max Height']
+            };
+        } else if (type === 'OA') {
+            surfaceType = 'Odd Asphere';
+            parameters = {
+                'Radius': String(fitReport.R),
+                'Conic Constant': String(fitReport.k),
+                'A3': String(fitReport.A3 || 0),
+                'A4': String(fitReport.A4 || 0),
+                'A5': String(fitReport.A5 || 0),
+                'A6': String(fitReport.A6 || 0),
+                'A7': String(fitReport.A7 || 0),
+                'A8': String(fitReport.A8 || 0),
+                'A9': String(fitReport.A9 || 0),
+                'A10': String(fitReport.A10 || 0),
+                'A11': String(fitReport.A11 || 0),
+                'A12': String(fitReport.A12 || 0),
+                'A13': String(fitReport.A13 || 0),
+                'A14': String(fitReport.A14 || 0),
+                'A15': String(fitReport.A15 || 0),
+                'A16': String(fitReport.A16 || 0),
+                'A17': String(fitReport.A17 || 0),
+                'A18': String(fitReport.A18 || 0),
+                'A19': String(fitReport.A19 || 0),
+                'A20': String(fitReport.A20 || 0),
+                'Min Height': selectedSurface.parameters['Min Height'],
+                'Max Height': selectedSurface.parameters['Max Height']
+            };
+        } else if (type === 'OUZ') {
+            surfaceType = 'Opal Un Z';
+            parameters = {
+                'Radius': String(fitReport.R),
+                'e2': String(fitReport.e2),
+                'H': String(fitReport.H),
+                'A3': String(fitReport.A3 || 0),
+                'A4': String(fitReport.A4 || 0),
+                'A5': String(fitReport.A5 || 0),
+                'A6': String(fitReport.A6 || 0),
+                'A7': String(fitReport.A7 || 0),
+                'A8': String(fitReport.A8 || 0),
+                'A9': String(fitReport.A9 || 0),
+                'A10': String(fitReport.A10 || 0),
+                'A11': String(fitReport.A11 || 0),
+                'A12': String(fitReport.A12 || 0),
+                'A13': String(fitReport.A13 || 0),
+                'Min Height': selectedSurface.parameters['Min Height'],
+                'Max Height': selectedSurface.parameters['Max Height']
+            };
+        } else if (type === 'OUU') {
+            surfaceType = 'Opal Un U';
+            parameters = {
+                'Radius': String(fitReport.R),
+                'e2': String(fitReport.e2),
+                'H': String(fitReport.H),
+                'A2': String(fitReport.A2 || 0),
+                'A3': String(fitReport.A3 || 0),
+                'A4': String(fitReport.A4 || 0),
+                'A5': String(fitReport.A5 || 0),
+                'A6': String(fitReport.A6 || 0),
+                'A7': String(fitReport.A7 || 0),
+                'A8': String(fitReport.A8 || 0),
+                'A9': String(fitReport.A9 || 0),
+                'A10': String(fitReport.A10 || 0),
+                'A11': String(fitReport.A11 || 0),
+                'A12': String(fitReport.A12 || 0),
+                'Min Height': selectedSurface.parameters['Min Height'],
+                'Max Height': selectedSurface.parameters['Max Height']
+            };
+        } else if (type === 'OP') {
+            surfaceType = 'Poly';
+            parameters = {
+                'A1': String(fitReport.A1),
+                'A2': String(fitReport.A2),
+                'A3': String(fitReport.A3 || 0),
+                'A4': String(fitReport.A4 || 0),
+                'A5': String(fitReport.A5 || 0),
+                'A6': String(fitReport.A6 || 0),
+                'A7': String(fitReport.A7 || 0),
+                'A8': String(fitReport.A8 || 0),
+                'A9': String(fitReport.A9 || 0),
+                'A10': String(fitReport.A10 || 0),
+                'A11': String(fitReport.A11 || 0),
+                'A12': String(fitReport.A12 || 0),
+                'A13': String(fitReport.A13 || 0),
+                'Min Height': selectedSurface.parameters['Min Height'],
+                'Max Height': selectedSurface.parameters['Max Height']
+            };
+        }
+
+        return {
+            id,
+            name: `${originalName} (Converted)`,
+            type: surfaceType,
+            color,
+            parameters
+        };
+    };
+
+    return React.createElement('div', {
+        style: {
+            position: 'fixed',
+            top: 0,
+            left: 0,
+            right: 0,
+            bottom: 0,
+            backgroundColor: 'rgba(0, 0, 0, 0.7)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            zIndex: 1000
+        }
+    },
+        React.createElement('div', {
+            style: {
+                backgroundColor: c.panel,
+                borderRadius: '8px',
+                padding: '24px',
+                width: '600px',
+                maxHeight: '90vh',
+                overflow: 'auto',
+                boxShadow: '0 10px 40px rgba(0, 0, 0, 0.3)',
+                border: `1px solid ${c.border}`
+            }
+        },
+            React.createElement('h2', {
+                style: {
+                    marginTop: 0,
+                    marginBottom: '20px',
+                    fontSize: '18px',
+                    fontWeight: 'bold',
+                    color: c.text
+                }
+            }, 'Convert Surface'),
+
+            // Algorithm selection
+            React.createElement('div', { style: { marginBottom: '20px' } },
+                React.createElement('label', {
+                    style: {
+                        display: 'block',
+                        fontSize: '13px',
+                        fontWeight: '600',
+                        marginBottom: '8px',
+                        color: c.textDim
+                    }
+                }, 'Optimization Algorithm'),
+                React.createElement('select', {
+                    value: algorithm,
+                    onChange: (e) => setAlgorithm(e.target.value),
+                    style: {
+                        width: '100%',
+                        padding: '8px',
+                        backgroundColor: c.bg,
+                        color: c.text,
+                        border: `1px solid ${c.border}`,
+                        borderRadius: '4px',
+                        fontSize: '13px'
+                    }
+                },
+                    React.createElement('option', { value: 'leastsq' }, 'Least Squares (Levenberg-Marquardt)'),
+                    React.createElement('option', { value: 'least_squares' }, 'Least Squares (Trust Region)'),
+                    React.createElement('option', { value: 'nelder' }, 'Nelder-Mead'),
+                    React.createElement('option', { value: 'powell' }, 'Powell')
+                )
+            ),
+
+            // Target surface type
+            React.createElement('div', { style: { marginBottom: '20px' } },
+                React.createElement('label', {
+                    style: {
+                        display: 'block',
+                        fontSize: '13px',
+                        fontWeight: '600',
+                        marginBottom: '8px',
+                        color: c.textDim
+                    }
+                }, 'Target Surface Type'),
+                React.createElement('select', {
+                    value: targetType,
+                    onChange: (e) => setTargetType(e.target.value),
+                    style: {
+                        width: '100%',
+                        padding: '8px',
+                        backgroundColor: c.bg,
+                        color: c.text,
+                        border: `1px solid ${c.border}`,
+                        borderRadius: '4px',
+                        fontSize: '13px'
+                    }
+                },
+                    React.createElement('option', { value: '1' }, 'Even Asphere'),
+                    React.createElement('option', { value: '2' }, 'Odd Asphere'),
+                    React.createElement('option', { value: '3' }, 'Opal UnZ'),
+                    React.createElement('option', { value: '4' }, 'Opal UnU'),
+                    React.createElement('option', { value: '5' }, 'Poly')
+                )
+            ),
+
+            // Radius parameter
+            React.createElement('div', { style: { marginBottom: '20px' } },
+                React.createElement('label', {
+                    style: {
+                        display: 'block',
+                        fontSize: '13px',
+                        fontWeight: '600',
+                        marginBottom: '8px',
+                        color: c.textDim
+                    }
+                }, 'Radius (mm) - Fixed'),
+                React.createElement('input', {
+                    type: 'text',
+                    value: radius,
+                    onChange: (e) => setRadius(e.target.value),
+                    style: {
+                        width: '100%',
+                        padding: '8px',
+                        backgroundColor: c.bg,
+                        color: c.text,
+                        border: `1px solid ${c.border}`,
+                        borderRadius: '4px',
+                        fontSize: '13px'
+                    }
+                })
+            ),
+
+            // Conic constant or e2 based on surface type
+            ['1', '2'].includes(targetType) && React.createElement('div', { style: { marginBottom: '20px' } },
+                React.createElement('div', {
+                    style: { display: 'flex', alignItems: 'center', marginBottom: '8px' }
+                },
+                    React.createElement('input', {
+                        type: 'checkbox',
+                        checked: conicVariable,
+                        onChange: (e) => setConicVariable(e.target.checked),
+                        style: { marginRight: '8px' }
+                    }),
+                    React.createElement('label', {
+                        style: {
+                            fontSize: '13px',
+                            fontWeight: '600',
+                            color: c.textDim
+                        }
+                    }, 'Conic Constant (Variable)')
+                ),
+                !conicVariable && React.createElement('input', {
+                    type: 'text',
+                    value: conicValue,
+                    onChange: (e) => setConicValue(e.target.value),
+                    placeholder: 'Fixed conic constant value',
+                    style: {
+                        width: '100%',
+                        padding: '8px',
+                        backgroundColor: c.bg,
+                        color: c.text,
+                        border: `1px solid ${c.border}`,
+                        borderRadius: '4px',
+                        fontSize: '13px'
+                    }
+                })
+            ),
+
+            // e2 parameter for Opal and Poly types
+            ['3', '4', '5'].includes(targetType) && React.createElement('div', { style: { marginBottom: '20px' } },
+                React.createElement('div', {
+                    style: { display: 'flex', alignItems: 'center', marginBottom: '8px' }
+                },
+                    React.createElement('input', {
+                        type: 'checkbox',
+                        checked: e2Variable,
+                        onChange: (e) => setE2Variable(e.target.checked),
+                        style: { marginRight: '8px' }
+                    }),
+                    React.createElement('label', {
+                        style: {
+                            fontSize: '13px',
+                            fontWeight: '600',
+                            color: c.textDim
+                        }
+                    }, 'e2 Parameter (Variable)')
+                ),
+                !e2Variable && React.createElement('input', {
+                    type: 'text',
+                    value: e2Value,
+                    onChange: (e) => setE2Value(e.target.value),
+                    placeholder: 'Fixed e2 value',
+                    style: {
+                        width: '100%',
+                        padding: '8px',
+                        backgroundColor: c.bg,
+                        color: c.text,
+                        border: `1px solid ${c.border}`,
+                        borderRadius: '4px',
+                        fontSize: '13px'
+                    }
+                })
+            ),
+
+            // H parameter for Opal types
+            ['3', '4'].includes(targetType) && React.createElement('div', { style: { marginBottom: '20px' } },
+                React.createElement('label', {
+                    style: {
+                        display: 'block',
+                        fontSize: '13px',
+                        fontWeight: '600',
+                        marginBottom: '8px',
+                        color: c.textDim
+                    }
+                }, 'Normalization Factor H'),
+                React.createElement('input', {
+                    type: 'text',
+                    value: hValue,
+                    onChange: (e) => setHValue(e.target.value),
+                    style: {
+                        width: '100%',
+                        padding: '8px',
+                        backgroundColor: c.bg,
+                        color: c.text,
+                        border: `1px solid ${c.border}`,
+                        borderRadius: '4px',
+                        fontSize: '13px'
+                    }
+                })
+            ),
+
+            // Higher order coefficients
+            React.createElement('div', { style: { marginBottom: '20px' } },
+                React.createElement('div', {
+                    style: { display: 'flex', alignItems: 'center', marginBottom: '12px' }
+                },
+                    React.createElement('input', {
+                        type: 'checkbox',
+                        checked: useCoeffs,
+                        onChange: (e) => setUseCoeffs(e.target.checked),
+                        style: { marginRight: '8px' }
+                    }),
+                    React.createElement('label', {
+                        style: {
+                            fontSize: '13px',
+                            fontWeight: '600',
+                            color: c.textDim
+                        }
+                    }, 'Use Higher Order Coefficients')
+                ),
+                useCoeffs && React.createElement('div', null,
+                    React.createElement('label', {
+                        style: {
+                            display: 'block',
+                            fontSize: '12px',
+                            marginBottom: '8px',
+                            color: c.textDim
+                        }
+                    }, `Number of Coefficients: ${numCoeffs}`),
+                    React.createElement('input', {
+                        type: 'range',
+                        min: 1,
+                        max: getMaxCoeffs(),
+                        value: numCoeffs,
+                        onChange: (e) => setNumCoeffs(parseInt(e.target.value)),
+                        style: {
+                            width: '100%'
+                        }
+                    })
+                )
+            ),
+
+            // Action buttons
+            React.createElement('div', {
+                style: {
+                    display: 'flex',
+                    gap: '10px',
+                    justifyContent: 'flex-end',
+                    marginTop: '24px'
+                }
+            },
+                React.createElement('button', {
+                    onClick: () => setShowConvert(false),
+                    disabled: isRunning,
+                    style: {
+                        padding: '10px 20px',
+                        backgroundColor: c.hover,
+                        color: c.text,
+                        border: `1px solid ${c.border}`,
+                        borderRadius: '4px',
+                        cursor: isRunning ? 'not-allowed' : 'pointer',
+                        fontSize: '13px',
+                        fontWeight: '600',
+                        opacity: isRunning ? 0.5 : 1
+                    }
+                }, 'Cancel'),
+                React.createElement('button', {
+                    onClick: runConversion,
+                    disabled: isRunning,
+                    style: {
+                        padding: '10px 20px',
+                        backgroundColor: isRunning ? c.textDim : c.accent,
+                        color: 'white',
+                        border: 'none',
+                        borderRadius: '4px',
+                        cursor: isRunning ? 'not-allowed' : 'pointer',
+                        fontSize: '13px',
+                        fontWeight: '600'
+                    }
+                }, isRunning ? 'Converting...' : 'Convert')
+            )
+        )
+    );
+};
+
+const ConversionResultsDialog = ({ convertResults, onClose, c }) => {
+    return React.createElement('div', {
+        style: {
+            position: 'fixed',
+            top: 0,
+            left: 0,
+            right: 0,
+            bottom: 0,
+            backgroundColor: 'rgba(0, 0, 0, 0.7)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            zIndex: 1000
+        }
+    },
+        React.createElement('div', {
+            style: {
+                backgroundColor: c.panel,
+                borderRadius: '8px',
+                padding: '24px',
+                width: '700px',
+                maxHeight: '90vh',
+                overflow: 'auto',
+                boxShadow: '0 10px 40px rgba(0, 0, 0, 0.3)',
+                border: `1px solid ${c.border}`
+            }
+        },
+            React.createElement('h2', {
+                style: {
+                    marginTop: 0,
+                    marginBottom: '20px',
+                    fontSize: '18px',
+                    fontWeight: 'bold',
+                    color: c.text
+                }
+            }, 'Conversion Results'),
+
+            // Metrics table
+            React.createElement('table', {
+                style: {
+                    width: '100%',
+                    borderCollapse: 'collapse',
+                    fontSize: '12px',
+                    marginBottom: '20px'
+                }
+            },
+                React.createElement('thead', null,
+                    React.createElement('tr', {
+                        style: { borderBottom: `2px solid ${c.border}` }
+                    },
+                        React.createElement('th', {
+                            style: { padding: '10px', textAlign: 'left', color: c.textDim }
+                        }, 'Metric'),
+                        React.createElement('th', {
+                            style: { padding: '10px', textAlign: 'right', color: c.textDim }
+                        }, 'Value')
+                    )
+                ),
+                React.createElement('tbody', null,
+                    convertResults && convertResults.metrics && Object.keys(convertResults.metrics).map((key, idx) =>
+                        React.createElement('tr', {
+                            key: idx,
+                            style: { borderBottom: `1px solid ${c.border}` }
+                        },
+                            React.createElement('td', {
+                                style: { padding: '10px', color: c.text }
+                            }, key.replace(/_/g, ' ')),
+                            React.createElement('td', {
+                                style: { padding: '10px', textAlign: 'right', fontFamily: 'monospace', color: c.text }
+                            }, String(convertResults.metrics[key]))
+                        )
+                    )
+                )
+            ),
+
+            // Close button
+            React.createElement('div', {
+                style: { display: 'flex', justifyContent: 'flex-end' }
+            },
+                React.createElement('button', {
+                    onClick: onClose,
+                    style: {
+                        padding: '10px 20px',
+                        backgroundColor: c.accent,
+                        color: 'white',
+                        border: 'none',
+                        borderRadius: '4px',
+                        cursor: 'pointer',
+                        fontSize: '13px',
+                        fontWeight: '600'
+                    }
+                }, 'Close')
             )
         )
     );

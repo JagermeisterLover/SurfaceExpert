@@ -52,7 +52,7 @@ function setupIpcHandlers() {
       return { canceled: true };
     }
 
-    try {
+    try:
       const filePath = result.filePaths[0];
       const content = fs.readFileSync(filePath, 'utf-8');
       return { canceled: false, content, filePath };
@@ -60,6 +60,121 @@ function setupIpcHandlers() {
       return { canceled: true, error: error.message };
     }
   });
+
+  // Handler for running surface conversion
+  ipcMain.handle('run-conversion', async (event, surfaceData, settings) => {
+    const { spawn } = require('child_process');
+    const tempDir = path.join(__dirname, '..');
+
+    try {
+      // Write surface data to temp file
+      const dataContent = surfaceData.map(p => `${p.r}\t${p.z}`).join('\n');
+      fs.writeFileSync(path.join(tempDir, 'tempsurfacedata.txt'), dataContent);
+
+      // Write settings to file
+      const settingsContent = Object.keys(settings).map(key => `${key}=${settings[key]}`).join('\n');
+      fs.writeFileSync(path.join(tempDir, 'ConvertSettings.txt'), settingsContent);
+
+      // Spawn Python process
+      const pythonPath = process.platform === 'win32' ? 'python' : 'python3';
+      const scriptPath = path.join(__dirname, 'surfaceFitter.py');
+
+      return new Promise((resolve, reject) => {
+        const python = spawn(pythonPath, [scriptPath], {
+          cwd: tempDir
+        });
+
+        let stdout = '';
+        let stderr = '';
+
+        python.stdout.on('data', (data) => {
+          stdout += data.toString();
+        });
+
+        python.stderr.on('data', (data) => {
+          stderr += data.toString();
+        });
+
+        python.on('close', (code) => {
+          if (code !== 0) {
+            reject(new Error(`Python script failed: ${stderr}`));
+            return;
+          }
+
+          try {
+            // Read fit report
+            const fitReportPath = path.join(tempDir, 'FitReport.txt');
+            const fitReportContent = fs.readFileSync(fitReportPath, 'utf-8');
+            const fitReport = parseFitReport(fitReportContent);
+
+            // Read metrics
+            const metricsPath = path.join(tempDir, 'FitMetrics.txt');
+            const metricsContent = fs.readFileSync(metricsPath, 'utf-8');
+            const metrics = parseMetrics(metricsContent);
+
+            resolve({
+              success: true,
+              fitReport,
+              metrics,
+              stdout
+            });
+          } catch (error) {
+            reject(new Error(`Failed to read results: ${error.message}`));
+          }
+        });
+      });
+    } catch (error) {
+      return {
+        success: false,
+        error: error.message
+      };
+    }
+  });
+}
+
+function parseFitReport(content) {
+  const report = {};
+  const lines = content.split('\n');
+
+  for (const line of lines) {
+    if (line.includes('=')) {
+      const [key, value] = line.split('=');
+      const trimmedKey = key.trim();
+      const trimmedValue = value.trim();
+
+      if (trimmedKey === 'Type') {
+        report[trimmedKey] = trimmedValue;
+      } else {
+        report[trimmedKey] = parseFloat(trimmedValue);
+      }
+    }
+  }
+
+  return report;
+}
+
+function parseMetrics(content) {
+  const metrics = {};
+  const lines = content.split('\n');
+
+  for (const line of lines) {
+    if (line.includes('=')) {
+      const [key, value] = line.split('=');
+      const trimmedKey = key.trim();
+      const trimmedValue = value.trim();
+
+      if (trimmedValue === 'True') {
+        metrics[trimmedKey] = true;
+      } else if (trimmedValue === 'False') {
+        metrics[trimmedKey] = false;
+      } else {
+        const numValue = parseFloat(trimmedValue);
+        metrics[trimmedKey] = isNaN(numValue) ? trimmedValue : numValue;
+      }
+    }
+  }
+
+  return metrics;
 }
 
 function createMenu() {
