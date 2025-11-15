@@ -39,12 +39,22 @@ const MinusIcon = () => (
     )
 );
 
+// Available colorscales for plots
+const colorscales = [
+    'Viridis', 'Plasma', 'Inferno', 'Magma', 'Cividis',
+    'Blues', 'Greens', 'Greys', 'Oranges', 'Reds',
+    'Rainbow', 'Jet', 'Hot', 'Cool', 'Spring',
+    'Summer', 'Autumn', 'Winter', 'RdBu', 'RdYlBu'
+];
+
 // Main App Component
 const OpticalSurfaceAnalyzer = () => {
     const [surfaces, setSurfaces] = useState(sampleSurfaces);
     const [selectedSurface, setSelectedSurface] = useState(sampleSurfaces[0]);
     const [activeTab, setActiveTab] = useState('summary');
     const [activeSubTab, setActiveSubTab] = useState('3d');
+    const [showSettings, setShowSettings] = useState(false);
+    const [colorscale, setColorscale] = useState('Viridis');
     const plotRef = useRef(null);
 
     // Update selected surface when it changes in the list
@@ -115,18 +125,62 @@ const OpticalSurfaceAnalyzer = () => {
             case 'remove-surface':
                 removeSurface();
                 break;
+            case 'open-settings':
+                setShowSettings(true);
+                break;
             // Add more handlers as needed
         }
     };
 
     const create3DPlot = () => {
-        const plotData = generatePlotData();
+        const minHeight = parseFloat(selectedSurface.parameters['Min Height']) || 0;
+        const maxHeight = parseFloat(selectedSurface.parameters['Max Height']) || 25;
+        const size = 60;
         const unit = activeTab === 'slope' ? 'rad' : 'mm';
 
+        // Create coordinate arrays
+        const x = [], y = [];
+        for (let i = 0; i < size; i++) {
+            x.push(-maxHeight + (i * (2 * maxHeight)) / (size - 1));
+            y.push(-maxHeight + (i * (2 * maxHeight)) / (size - 1));
+        }
+
+        // Generate full grid data for 3D plot
+        const z = [];
+        const validValues = [];
+
+        for (let i = 0; i < size; i++) {
+            const row = [];
+            for (let j = 0; j < size; j++) {
+                const xi = x[i];
+                const yj = y[j];
+                const r = Math.sqrt(xi * xi + yj * yj);
+
+                if (r >= minHeight && r <= maxHeight) {
+                    const values = calculateSurfaceValues(r, selectedSurface);
+                    let val = 0;
+                    if (activeTab === 'sag') val = values.sag;
+                    else if (activeTab === 'slope') val = values.slope;
+                    else if (activeTab === 'asphericity') val = values.asphericity;
+                    else if (activeTab === 'aberration') val = values.aberration;
+                    row.push(val);
+                    validValues.push(val);
+                } else {
+                    row.push(null);
+                }
+            }
+            z.push(row);
+        }
+
+        const zMin = Math.min(...validValues);
+        const zMax = Math.max(...validValues);
+
         const data = [{
-            z: plotData.z,
+            x: x,
+            y: y,
+            z: z,
             type: 'surface',
-            colorscale: 'Viridis',
+            colorscale: colorscale,
             showscale: true,
             contours: {
                 z: {
@@ -143,10 +197,11 @@ const OpticalSurfaceAnalyzer = () => {
                 camera: {
                     eye: { x: 1.5, y: 1.5, z: 1.5 }
                 },
-                xaxis: { title: 'X (mm)' },
-                yaxis: { title: 'Y (mm)' },
-                zaxis: { title: `${activeTab.charAt(0).toUpperCase() + activeTab.slice(1)} (${unit})` },
-                bgcolor: '#2b2b2b'
+                xaxis: { title: 'X (mm)', range: [-maxHeight, maxHeight] },
+                yaxis: { title: 'Y (mm)', range: [-maxHeight, maxHeight] },
+                zaxis: { title: `${activeTab.charAt(0).toUpperCase() + activeTab.slice(1)} (${unit})`, range: [zMin, zMax] },
+                bgcolor: '#2b2b2b',
+                aspectmode: 'cube'
             },
             paper_bgcolor: '#353535',
             plot_bgcolor: '#353535',
@@ -164,35 +219,83 @@ const OpticalSurfaceAnalyzer = () => {
     };
 
     const create2DContour = () => {
-        const plotData = generatePlotData();
-        const size = plotData.size;
-        const x = [], y = [];
+        const minHeight = parseFloat(selectedSurface.parameters['Min Height']) || 0;
+        const maxHeight = parseFloat(selectedSurface.parameters['Max Height']) || 25;
+        const size = 100;
 
-        // Create centered coordinate arrays from -maxHeight to +maxHeight
+        // Generate grid data
+        const gridData = [];
         for (let i = 0; i < size; i++) {
-            x.push(-plotData.maxHeight + (i * (2 * plotData.maxHeight)) / (size - 1));
-            y.push(-plotData.maxHeight + (i * (2 * plotData.maxHeight)) / (size - 1));
+            const xi = -maxHeight + (i * (2 * maxHeight)) / (size - 1);
+            const row = [];
+            for (let j = 0; j < size; j++) {
+                const yj = -maxHeight + (j * (2 * maxHeight)) / (size - 1);
+                const r = Math.sqrt(xi * xi + yj * yj);
+                
+                if (r >= minHeight && r <= maxHeight) {
+                    const values = calculateSurfaceValues(r, selectedSurface);
+                    let val = 0;
+                    if (activeTab === 'sag') val = values.sag;
+                    else if (activeTab === 'slope') val = values.slope;
+                    else if (activeTab === 'asphericity') val = values.asphericity;
+                    else if (activeTab === 'aberration') val = values.aberration;
+                    row.push(val);
+                } else {
+                    row.push(null);
+                }
+            }
+            gridData.push(row);
         }
 
-        const data = [{
-            x: x,
-            y: y,
-            z: plotData.z,
-            type: 'contour',
-            colorscale: 'Viridis',
-            showscale: true,
-            contours: {
-                coloring: 'heatmap'
+        // Convert grid to scatter points with color mapping
+        const x = [], y = [], color = [], hovertext = [];
+        for (let i = 0; i < size; i++) {
+            for (let j = 0; j < size; j++) {
+                if (gridData[i][j] !== null) {
+                    const xi = -maxHeight + (i * (2 * maxHeight)) / (size - 1);
+                    const yj = -maxHeight + (j * (2 * maxHeight)) / (size - 1);
+                    x.push(xi);
+                    y.push(yj);
+                    color.push(gridData[i][j]);
+                    hovertext.push(`X: ${xi.toFixed(2)}<br>Y: ${yj.toFixed(2)}<br>${activeTab}: ${gridData[i][j].toFixed(6)}`);
+                }
             }
+        }
+
+        const zMin = Math.min(...color);
+        const zMax = Math.max(...color);
+        const unit = activeTab === 'slope' ? 'rad' : 'mm';
+
+        const data = [{
+            x, y,
+            mode: 'markers',
+            type: 'scatter',
+            marker: {
+                size: 6,
+                color,
+                colorscale: colorscale,
+                showscale: true,
+                cmin: zMin,
+                cmax: zMax,
+                colorbar: {
+                    title: `${activeTab}<br>(${unit})`,
+                    thickness: 15,
+                    len: 0.7
+                }
+            },
+            text: hovertext,
+            hoverinfo: 'text',
+            showlegend: false
         }];
 
         const layout = {
-            xaxis: { title: 'X (mm)' },
-            yaxis: { title: 'Y (mm)' },
-            paper_bgcolor: '#353535',
-            plot_bgcolor: '#2b2b2b',
-            font: { color: '#e0e0e0' },
-            margin: { l: 60, r: 20, t: 20, b: 60 }
+            title: `${activeTab.charAt(0).toUpperCase() + activeTab.slice(1)} False Color Map`,
+            xaxis: { title: 'X (mm)', scaleanchor: 'y', scaleratio: 1 },
+            yaxis: { title: 'Y (mm)', scaleanchor: 'x', scaleratio: 1 },
+            paper_bgcolor: c.panel,
+            plot_bgcolor: c.bg,
+            font: { color: c.text },
+            margin: { l: 60, r: 120, t: 60, b: 60 }
         };
 
         const config = {
@@ -211,17 +314,23 @@ const OpticalSurfaceAnalyzer = () => {
         const x = [], y = [];
         const unit = activeTab === 'slope' ? 'rad' : 'mm';
 
+        // Plot from -maxHeight to +maxHeight (diameter)
         for (let i = 0; i < points; i++) {
-            const r = minHeight + (i * (maxHeight - minHeight)) / (points - 1);
+            const r = -maxHeight + (i * (2 * maxHeight)) / (points - 1);
             x.push(r);
-            const values = calculateSurfaceValues(r, selectedSurface);
-
-            let val = 0;
-            if (activeTab === 'sag') val = values.sag;
-            else if (activeTab === 'slope') val = values.slope;
-            else if (activeTab === 'asphericity') val = values.asphericity;
-            else if (activeTab === 'aberration') val = values.aberration;
-            y.push(val);
+            
+            const absR = Math.abs(r);
+            if (absR >= minHeight && absR <= maxHeight) {
+                const values = calculateSurfaceValues(absR, selectedSurface);
+                let val = 0;
+                if (activeTab === 'sag') val = values.sag;
+                else if (activeTab === 'slope') val = values.slope;
+                else if (activeTab === 'asphericity') val = values.asphericity;
+                else if (activeTab === 'aberration') val = values.aberration;
+                y.push(val);
+            } else {
+                y.push(null);
+            }
         }
 
         const data = [{
@@ -233,7 +342,7 @@ const OpticalSurfaceAnalyzer = () => {
         }];
 
         const layout = {
-            xaxis: { title: 'Radial Distance (mm)' },
+            xaxis: { title: 'Radial Distance (mm)', zeroline: true },
             yaxis: { title: `${activeTab.charAt(0).toUpperCase() + activeTab.slice(1)} (${unit})` },
             paper_bgcolor: '#353535',
             plot_bgcolor: '#2b2b2b',
@@ -365,6 +474,13 @@ const OpticalSurfaceAnalyzer = () => {
             overflow: 'hidden'
         }
     },
+        // Settings Modal
+        showSettings && React.createElement(SettingsModal, {
+            colorscale,
+            setColorscale,
+            onClose: () => setShowSettings(false),
+            c
+        }),
         // Main Content Area
         React.createElement('div', { style: { display: 'flex', flex: 1, overflow: 'hidden' } },
             // Left Panel - Surfaces
@@ -1304,6 +1420,99 @@ const PropertyRow = ({ label, value, editable, c }) => (
                 }
             }) :
             React.createElement('span', { style: { fontWeight: '500', fontSize: '12px' } }, value)
+    )
+);
+
+const SettingsModal = ({ colorscale, setColorscale, onClose, c }) => (
+    React.createElement('div', {
+        style: {
+            position: 'fixed',
+            top: 0,
+            left: 0,
+            right: 0,
+            bottom: 0,
+            backgroundColor: 'rgba(0, 0, 0, 0.7)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            zIndex: 1000
+        }
+    },
+        React.createElement('div', {
+            style: {
+                backgroundColor: c.panel,
+                borderRadius: '8px',
+                padding: '24px',
+                width: '400px',
+                boxShadow: '0 10px 40px rgba(0, 0, 0, 0.3)',
+                border: `1px solid ${c.border}`
+            }
+        },
+            React.createElement('h2', {
+                style: {
+                    marginTop: 0,
+                    marginBottom: '20px',
+                    fontSize: '18px',
+                    fontWeight: 'bold',
+                    color: c.text
+                }
+            }, 'Settings'),
+
+            React.createElement('div', { style: { marginBottom: '20px' } },
+                React.createElement('label', {
+                    style: {
+                        display: 'block',
+                        fontSize: '13px',
+                        fontWeight: '600',
+                        marginBottom: '8px',
+                        color: c.textDim,
+                        textTransform: 'uppercase',
+                        letterSpacing: '0.5px'
+                    }
+                }, 'Plot Colorscale'),
+                React.createElement('select', {
+                    value: colorscale,
+                    onChange: (e) => setColorscale(e.target.value),
+                    style: {
+                        width: '100%',
+                        padding: '10px',
+                        backgroundColor: c.bg,
+                        color: c.text,
+                        border: `1px solid ${c.border}`,
+                        borderRadius: '4px',
+                        fontSize: '13px',
+                        cursor: 'pointer'
+                    }
+                },
+                    colorscales.map(scale =>
+                        React.createElement('option', { key: scale, value: scale }, scale)
+                    )
+                )
+            ),
+
+            React.createElement('div', {
+                style: {
+                    display: 'flex',
+                    gap: '10px',
+                    justifyContent: 'flex-end',
+                    marginTop: '24px'
+                }
+            },
+                React.createElement('button', {
+                    onClick: onClose,
+                    style: {
+                        padding: '10px 20px',
+                        backgroundColor: c.accent,
+                        color: 'white',
+                        border: 'none',
+                        borderRadius: '4px',
+                        cursor: 'pointer',
+                        fontSize: '13px',
+                        fontWeight: '600'
+                    }
+                }, 'Close')
+            )
+        )
     )
 );
 
