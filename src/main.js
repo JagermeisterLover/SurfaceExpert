@@ -152,16 +152,10 @@ function createMenu() {
       label: 'Tools',
       submenu: [
         {
-          label: 'Convert Surface Type...',
-          click: () => {
-            mainWindow.webContents.send('menu-action', 'convert-surface');
-          }
-        },
-        {
           label: 'Settings...',
           accelerator: 'CmdOrCtrl+,',
           click: () => {
-            mainWindow.webContents.send('menu-action', 'settings');
+            mainWindow.webContents.send('menu-action', 'open-settings');
           }
         }
       ]
