@@ -1,5 +1,6 @@
-const { app, BrowserWindow, Menu } = require('electron');
+const { app, BrowserWindow, Menu, dialog, ipcMain } = require('electron');
 const path = require('path');
+const fs = require('fs');
 
 let mainWindow;
 
@@ -33,6 +34,32 @@ function createWindow() {
   });
 
   createMenu();
+  setupIpcHandlers();
+}
+
+function setupIpcHandlers() {
+  // Handler for opening ZMX file dialog
+  ipcMain.handle('open-zmx-dialog', async () => {
+    const result = await dialog.showOpenDialog(mainWindow, {
+      properties: ['openFile'],
+      filters: [
+        { name: 'Zemax Files', extensions: ['zmx', 'ZMX'] },
+        { name: 'All Files', extensions: ['*'] }
+      ]
+    });
+
+    if (result.canceled) {
+      return { canceled: true };
+    }
+
+    try {
+      const filePath = result.filePaths[0];
+      const content = fs.readFileSync(filePath, 'utf-8');
+      return { canceled: false, content, filePath };
+    } catch (error) {
+      return { canceled: true, error: error.message };
+    }
+  });
 }
 
 function createMenu() {
@@ -54,6 +81,14 @@ function createMenu() {
             mainWindow.webContents.send('menu-action', 'open');
           }
         },
+        {
+          label: 'Import from ZMX...',
+          accelerator: 'CmdOrCtrl+I',
+          click: () => {
+            mainWindow.webContents.send('menu-action', 'import-zmx');
+          }
+        },
+        { type: 'separator' },
         {
           label: 'Save',
           accelerator: 'CmdOrCtrl+S',
