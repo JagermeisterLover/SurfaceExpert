@@ -552,6 +552,9 @@ const OpticalSurfaceAnalyzer = () => {
         // Conversion Results Dialog
         showConvertResults && React.createElement(ConversionResultsDialog, {
             convertResults,
+            surfaces,
+            setSurfaces,
+            setSelectedSurface,
             onClose: () => setShowConvertResults(false),
             c
         }),
@@ -1786,21 +1789,11 @@ const ConversionDialog = ({ selectedSurface, surfaces, setSurfaces, setSelectedS
             const result = await window.electronAPI.runConversion(surfaceData, settings);
 
             if (result.success) {
-                // Add converted surface
-                const colors = ['#4a90e2', '#e94560', '#2ecc71', '#f39c12', '#9b59b6', '#e67e22', '#1abc9c', '#34495e'];
-                const newId = Math.max(...surfaces.map(s => s.id)) + 1;
-                const color = colors[newId % colors.length];
-
-                const newSurface = createSurfaceFromFitResult(
-                    result.fitReport,
-                    newId,
-                    color,
-                    selectedSurface.name
-                );
-
-                setSurfaces([...surfaces, newSurface]);
-                setSelectedSurface(newSurface);
-                setConvertResults(result);
+                // Store result data including original surface info for later surface creation
+                setConvertResults({
+                    ...result,
+                    originalSurface: selectedSurface
+                });
                 setShowConvert(false);
                 setShowConvertResults(true);
             } else {
@@ -1811,123 +1804,6 @@ const ConversionDialog = ({ selectedSurface, surfaces, setSurfaces, setSelectedS
         } finally {
             setIsRunning(false);
         }
-    };
-
-    const createSurfaceFromFitReport = (fitReport, id, color, originalName) => {
-        const type = fitReport.Type;
-        let surfaceType, parameters;
-
-        if (type === 'EA') {
-            surfaceType = 'Even Asphere';
-            parameters = {
-                'Radius': String(fitReport.R),
-                'Conic Constant': String(fitReport.k),
-                'A4': String(fitReport.A4 || 0),
-                'A6': String(fitReport.A6 || 0),
-                'A8': String(fitReport.A8 || 0),
-                'A10': String(fitReport.A10 || 0),
-                'A12': String(fitReport.A12 || 0),
-                'A14': String(fitReport.A14 || 0),
-                'A16': String(fitReport.A16 || 0),
-                'A18': String(fitReport.A18 || 0),
-                'A20': String(fitReport.A20 || 0),
-                'Min Height': selectedSurface.parameters['Min Height'],
-                'Max Height': selectedSurface.parameters['Max Height']
-            };
-        } else if (type === 'OA') {
-            surfaceType = 'Odd Asphere';
-            parameters = {
-                'Radius': String(fitReport.R),
-                'Conic Constant': String(fitReport.k),
-                'A3': String(fitReport.A3 || 0),
-                'A4': String(fitReport.A4 || 0),
-                'A5': String(fitReport.A5 || 0),
-                'A6': String(fitReport.A6 || 0),
-                'A7': String(fitReport.A7 || 0),
-                'A8': String(fitReport.A8 || 0),
-                'A9': String(fitReport.A9 || 0),
-                'A10': String(fitReport.A10 || 0),
-                'A11': String(fitReport.A11 || 0),
-                'A12': String(fitReport.A12 || 0),
-                'A13': String(fitReport.A13 || 0),
-                'A14': String(fitReport.A14 || 0),
-                'A15': String(fitReport.A15 || 0),
-                'A16': String(fitReport.A16 || 0),
-                'A17': String(fitReport.A17 || 0),
-                'A18': String(fitReport.A18 || 0),
-                'A19': String(fitReport.A19 || 0),
-                'A20': String(fitReport.A20 || 0),
-                'Min Height': selectedSurface.parameters['Min Height'],
-                'Max Height': selectedSurface.parameters['Max Height']
-            };
-        } else if (type === 'OUZ') {
-            surfaceType = 'Opal Un Z';
-            parameters = {
-                'Radius': String(fitReport.R),
-                'e2': String(fitReport.e2),
-                'H': String(fitReport.H),
-                'A3': String(fitReport.A3 || 0),
-                'A4': String(fitReport.A4 || 0),
-                'A5': String(fitReport.A5 || 0),
-                'A6': String(fitReport.A6 || 0),
-                'A7': String(fitReport.A7 || 0),
-                'A8': String(fitReport.A8 || 0),
-                'A9': String(fitReport.A9 || 0),
-                'A10': String(fitReport.A10 || 0),
-                'A11': String(fitReport.A11 || 0),
-                'A12': String(fitReport.A12 || 0),
-                'A13': String(fitReport.A13 || 0),
-                'Min Height': selectedSurface.parameters['Min Height'],
-                'Max Height': selectedSurface.parameters['Max Height']
-            };
-        } else if (type === 'OUU') {
-            surfaceType = 'Opal Un U';
-            parameters = {
-                'Radius': String(fitReport.R),
-                'e2': String(fitReport.e2),
-                'H': String(fitReport.H),
-                'A2': String(fitReport.A2 || 0),
-                'A3': String(fitReport.A3 || 0),
-                'A4': String(fitReport.A4 || 0),
-                'A5': String(fitReport.A5 || 0),
-                'A6': String(fitReport.A6 || 0),
-                'A7': String(fitReport.A7 || 0),
-                'A8': String(fitReport.A8 || 0),
-                'A9': String(fitReport.A9 || 0),
-                'A10': String(fitReport.A10 || 0),
-                'A11': String(fitReport.A11 || 0),
-                'A12': String(fitReport.A12 || 0),
-                'Min Height': selectedSurface.parameters['Min Height'],
-                'Max Height': selectedSurface.parameters['Max Height']
-            };
-        } else if (type === 'OP') {
-            surfaceType = 'Poly';
-            parameters = {
-                'A1': String(fitReport.A1),
-                'A2': String(fitReport.A2),
-                'A3': String(fitReport.A3 || 0),
-                'A4': String(fitReport.A4 || 0),
-                'A5': String(fitReport.A5 || 0),
-                'A6': String(fitReport.A6 || 0),
-                'A7': String(fitReport.A7 || 0),
-                'A8': String(fitReport.A8 || 0),
-                'A9': String(fitReport.A9 || 0),
-                'A10': String(fitReport.A10 || 0),
-                'A11': String(fitReport.A11 || 0),
-                'A12': String(fitReport.A12 || 0),
-                'A13': String(fitReport.A13 || 0),
-                'Min Height': selectedSurface.parameters['Min Height'],
-                'Max Height': selectedSurface.parameters['Max Height']
-            };
-        }
-
-        return {
-            id,
-            name: `${originalName} (Converted)`,
-            type: surfaceType,
-            color,
-            parameters
-        };
     };
 
     return React.createElement('div', {
@@ -2239,7 +2115,137 @@ const ConversionDialog = ({ selectedSurface, surfaces, setSurfaces, setSelectedS
     );
 };
 
-const ConversionResultsDialog = ({ convertResults, onClose, c }) => {
+const ConversionResultsDialog = ({ convertResults, surfaces, setSurfaces, setSelectedSurface, onClose, c }) => {
+    const createSurfaceFromFitReport = (fitReport, originalSurface) => {
+        const type = fitReport.Type;
+        const colors = ['#4a90e2', '#e94560', '#2ecc71', '#f39c12', '#9b59b6', '#e67e22', '#1abc9c', '#34495e'];
+        const newId = surfaces.length > 0 ? Math.max(...surfaces.map(s => s.id)) + 1 : 1;
+        const color = colors[newId % colors.length];
+        let surfaceType, parameters;
+
+        if (type === 'EA') {
+            surfaceType = 'Even Asphere';
+            parameters = {
+                'Radius': String(fitReport.R),
+                'Conic Constant': String(fitReport.k),
+                'A4': String(fitReport.A4 || 0),
+                'A6': String(fitReport.A6 || 0),
+                'A8': String(fitReport.A8 || 0),
+                'A10': String(fitReport.A10 || 0),
+                'A12': String(fitReport.A12 || 0),
+                'A14': String(fitReport.A14 || 0),
+                'A16': String(fitReport.A16 || 0),
+                'A18': String(fitReport.A18 || 0),
+                'A20': String(fitReport.A20 || 0),
+                'Min Height': originalSurface.parameters['Min Height'],
+                'Max Height': originalSurface.parameters['Max Height']
+            };
+        } else if (type === 'OA') {
+            surfaceType = 'Odd Asphere';
+            parameters = {
+                'Radius': String(fitReport.R),
+                'Conic Constant': String(fitReport.k),
+                'A3': String(fitReport.A3 || 0),
+                'A4': String(fitReport.A4 || 0),
+                'A5': String(fitReport.A5 || 0),
+                'A6': String(fitReport.A6 || 0),
+                'A7': String(fitReport.A7 || 0),
+                'A8': String(fitReport.A8 || 0),
+                'A9': String(fitReport.A9 || 0),
+                'A10': String(fitReport.A10 || 0),
+                'A11': String(fitReport.A11 || 0),
+                'A12': String(fitReport.A12 || 0),
+                'A13': String(fitReport.A13 || 0),
+                'A14': String(fitReport.A14 || 0),
+                'A15': String(fitReport.A15 || 0),
+                'A16': String(fitReport.A16 || 0),
+                'A17': String(fitReport.A17 || 0),
+                'A18': String(fitReport.A18 || 0),
+                'A19': String(fitReport.A19 || 0),
+                'A20': String(fitReport.A20 || 0),
+                'Min Height': originalSurface.parameters['Min Height'],
+                'Max Height': originalSurface.parameters['Max Height']
+            };
+        } else if (type === 'OUZ') {
+            surfaceType = 'Opal Un Z';
+            parameters = {
+                'Radius': String(fitReport.R),
+                'e2': String(fitReport.e2),
+                'H': String(fitReport.H),
+                'A3': String(fitReport.A3 || 0),
+                'A4': String(fitReport.A4 || 0),
+                'A5': String(fitReport.A5 || 0),
+                'A6': String(fitReport.A6 || 0),
+                'A7': String(fitReport.A7 || 0),
+                'A8': String(fitReport.A8 || 0),
+                'A9': String(fitReport.A9 || 0),
+                'A10': String(fitReport.A10 || 0),
+                'A11': String(fitReport.A11 || 0),
+                'A12': String(fitReport.A12 || 0),
+                'A13': String(fitReport.A13 || 0),
+                'Min Height': originalSurface.parameters['Min Height'],
+                'Max Height': originalSurface.parameters['Max Height']
+            };
+        } else if (type === 'OUU') {
+            surfaceType = 'Opal Un U';
+            parameters = {
+                'Radius': String(fitReport.R),
+                'e2': String(fitReport.e2),
+                'H': String(fitReport.H),
+                'A2': String(fitReport.A2 || 0),
+                'A3': String(fitReport.A3 || 0),
+                'A4': String(fitReport.A4 || 0),
+                'A5': String(fitReport.A5 || 0),
+                'A6': String(fitReport.A6 || 0),
+                'A7': String(fitReport.A7 || 0),
+                'A8': String(fitReport.A8 || 0),
+                'A9': String(fitReport.A9 || 0),
+                'A10': String(fitReport.A10 || 0),
+                'A11': String(fitReport.A11 || 0),
+                'A12': String(fitReport.A12 || 0),
+                'Min Height': originalSurface.parameters['Min Height'],
+                'Max Height': originalSurface.parameters['Max Height']
+            };
+        } else if (type === 'OP') {
+            surfaceType = 'Poly';
+            parameters = {
+                'A1': String(fitReport.A1),
+                'A2': String(fitReport.A2),
+                'A3': String(fitReport.A3 || 0),
+                'A4': String(fitReport.A4 || 0),
+                'A5': String(fitReport.A5 || 0),
+                'A6': String(fitReport.A6 || 0),
+                'A7': String(fitReport.A7 || 0),
+                'A8': String(fitReport.A8 || 0),
+                'A9': String(fitReport.A9 || 0),
+                'A10': String(fitReport.A10 || 0),
+                'A11': String(fitReport.A11 || 0),
+                'A12': String(fitReport.A12 || 0),
+                'A13': String(fitReport.A13 || 0),
+                'Min Height': originalSurface.parameters['Min Height'],
+                'Max Height': originalSurface.parameters['Max Height']
+            };
+        }
+
+        return {
+            id: newId,
+            name: `${originalSurface.name} (Converted)`,
+            type: surfaceType,
+            color,
+            parameters
+        };
+    };
+
+    const handleAddSurface = () => {
+        const newSurface = createSurfaceFromFitReport(
+            convertResults.fitReport,
+            convertResults.originalSurface
+        );
+        setSurfaces([...surfaces, newSurface]);
+        setSelectedSurface(newSurface);
+        onClose();
+    };
+
     return React.createElement('div', {
         style: {
             position: 'fixed',
@@ -2314,12 +2320,25 @@ const ConversionResultsDialog = ({ convertResults, onClose, c }) => {
                 )
             ),
 
-            // Close button
+            // Action buttons
             React.createElement('div', {
-                style: { display: 'flex', justifyContent: 'flex-end' }
+                style: { display: 'flex', justifyContent: 'flex-end', gap: '10px' }
             },
                 React.createElement('button', {
                     onClick: onClose,
+                    style: {
+                        padding: '10px 20px',
+                        backgroundColor: c.hover,
+                        color: c.text,
+                        border: `1px solid ${c.border}`,
+                        borderRadius: '4px',
+                        cursor: 'pointer',
+                        fontSize: '13px',
+                        fontWeight: '600'
+                    }
+                }, 'Close'),
+                React.createElement('button', {
+                    onClick: handleAddSurface,
                     style: {
                         padding: '10px 20px',
                         backgroundColor: c.accent,
@@ -2330,7 +2349,7 @@ const ConversionResultsDialog = ({ convertResults, onClose, c }) => {
                         fontSize: '13px',
                         fontWeight: '600'
                     }
-                }, 'Close')
+                }, 'Add to Surfaces')
             )
         )
     );
