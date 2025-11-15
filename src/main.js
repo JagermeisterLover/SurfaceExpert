@@ -52,7 +52,7 @@ function setupIpcHandlers() {
       return { canceled: true };
     }
 
-    try:
+    try {
       const filePath = result.filePaths[0];
       const content = fs.readFileSync(filePath, 'utf-8');
       return { canceled: false, content, filePath };
