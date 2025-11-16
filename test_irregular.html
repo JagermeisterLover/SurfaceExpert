@@ -1,0 +1,196 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Irregular Surface Test</title>
+    <style>
+        body { font-family: monospace; padding: 20px; background: #2b2b2b; color: #e0e0e0; }
+        .test { margin: 20px 0; padding: 10px; background: #353535; border: 1px solid #454545; }
+        .pass { color: #4ade80; }
+        .fail { color: #f87171; }
+        table { border-collapse: collapse; margin: 10px 0; }
+        td, th { padding: 8px; border: 1px solid #454545; text-align: right; }
+        th { background: #454545; }
+    </style>
+</head>
+<body>
+    <h1>Irregular Surface Calculation Test</h1>
+    <div id="results"></div>
+
+    <script src="calculationsWrapper.js"></script>
+    <script>
+        const results = document.getElementById('results');
+
+        // Test 1: No tilt/decenter, just base conic
+        function test1() {
+            const div = document.createElement('div');
+            div.className = 'test';
+            div.innerHTML = '<h3>Test 1: Base Conic Only (R=100, k=-1, no aberrations)</h3>';
+
+            const R = 100, k = -1;
+            const dx = 0, dy = 0, tiltX = 0, tiltY = 0;
+            const Zs = 0, Za = 0, Zc = 0, angle = 0, rMax = 25;
+
+            const table = document.createElement('table');
+            table.innerHTML = '<tr><th>r</th><th>Calculated z</th><th>Expected z (parabola)</th><th>Diff</th></tr>';
+
+            let allPass = true;
+            for (let r = 0; r <= 25; r += 5) {
+                const z = SurfaceCalculations.calculateIrregularSag(r, 0, R, k, dx, dy, tiltX, tiltY, Zs, Za, Zc, angle, rMax);
+                // For parabola (k=-1): z = r²/(2R)
+                const expected = r * r / (2 * R);
+                const diff = Math.abs(z - expected);
+                const pass = diff < 1e-10;
+                allPass = allPass && pass;
+
+                const row = table.insertRow();
+                row.innerHTML = `<td>${r}</td><td>${z.toFixed(10)}</td><td>${expected.toFixed(10)}</td><td class="${pass ? 'pass' : 'fail'}">${diff.toExponential(2)}</td>`;
+            }
+
+            div.appendChild(table);
+            div.innerHTML += `<p class="${allPass ? 'pass' : 'fail'}">Test 1: ${allPass ? 'PASS' : 'FAIL'}</p>`;
+            results.appendChild(div);
+        }
+
+        // Test 2: Spherical aberration only
+        function test2() {
+            const div = document.createElement('div');
+            div.className = 'test';
+            div.innerHTML = '<h3>Test 2: Spherical Aberration (Zs=0.1)</h3>';
+
+            const R = 100, k = 0;
+            const dx = 0, dy = 0, tiltX = 0, tiltY = 0;
+            const Zs = 0.1, Za = 0, Zc = 0, angle = 0, rMax = 25;
+
+            const table = document.createElement('table');
+            table.innerHTML = '<tr><th>r</th><th>ρ</th><th>Zs*ρ⁴</th><th>Calculated aberration</th><th>Diff</th></tr>';
+
+            let allPass = true;
+            for (let r = 0; r <= 25; r += 5) {
+                const z = SurfaceCalculations.calculateIrregularSag(r, 0, R, k, dx, dy, tiltX, tiltY, Zs, Za, Zc, angle, rMax);
+                const baseSag = r === 0 ? 0 : r * r / (2 * R); // sphere approximation for small r
+                const rho = r / rMax;
+                const expectedAberration = Zs * Math.pow(rho, 4);
+                const calculatedAberration = z - baseSag;
+                const diff = Math.abs(calculatedAberration - expectedAberration);
+                const pass = diff < 1e-10;
+                allPass = allPass && pass;
+
+                const row = table.insertRow();
+                row.innerHTML = `<td>${r}</td><td>${rho.toFixed(4)}</td><td>${expectedAberration.toFixed(10)}</td><td>${calculatedAberration.toFixed(10)}</td><td class="${pass ? 'pass' : 'fail'}">${diff.toExponential(2)}</td>`;
+            }
+
+            div.appendChild(table);
+            div.innerHTML += `<p class="${allPass ? 'pass' : 'fail'}">Test 2: ${allPass ? 'PASS' : 'FAIL'}</p>`;
+            results.appendChild(div);
+        }
+
+        // Test 3: Astigmatism with rotation
+        function test3() {
+            const div = document.createElement('div');
+            div.className = 'test';
+            div.innerHTML = '<h3>Test 3: Astigmatism (Za=0.1, angle=0°)</h3>';
+
+            const R = 100, k = 0;
+            const dx = 0, dy = 0, tiltX = 0, tiltY = 0;
+            const Zs = 0, Za = 0.1, Zc = 0, angle = 0, rMax = 25;
+
+            const table = document.createElement('table');
+            table.innerHTML = '<tr><th>x</th><th>y</th><th>ρ_y\'</th><th>Za*ρ_y\'²</th><th>Calc aberration</th><th>Diff</th></tr>';
+
+            let allPass = true;
+            const testPoints = [[0, 10], [10, 0], [0, -10], [-10, 0]];
+            for (const [x, y] of testPoints) {
+                const z = SurfaceCalculations.calculateIrregularSag(x, y, R, k, dx, dy, tiltX, tiltY, Zs, Za, Zc, angle, rMax);
+                const r = Math.sqrt(x*x + y*y);
+                const baseSag = r * r / (2 * R);
+                const rho_y_prime = y / rMax; // angle=0, so rho_y_prime = rho_y
+                const expectedAberration = Za * rho_y_prime * rho_y_prime;
+                const calculatedAberration = z - baseSag;
+                const diff = Math.abs(calculatedAberration - expectedAberration);
+                const pass = diff < 1e-10;
+                allPass = allPass && pass;
+
+                const row = table.insertRow();
+                row.innerHTML = `<td>${x}</td><td>${y}</td><td>${rho_y_prime.toFixed(4)}</td><td>${expectedAberration.toFixed(10)}</td><td>${calculatedAberration.toFixed(10)}</td><td class="${pass ? 'pass' : 'fail'}">${diff.toExponential(2)}</td>`;
+            }
+
+            div.appendChild(table);
+            div.innerHTML += `<p class="${allPass ? 'pass' : 'fail'}">Test 3: ${allPass ? 'PASS' : 'FAIL'}</p>`;
+            results.appendChild(div);
+        }
+
+        // Test 4: Coma
+        function test4() {
+            const div = document.createElement('div');
+            div.className = 'test';
+            div.innerHTML = '<h3>Test 4: Coma (Zc=0.05, angle=0°)</h3>';
+
+            const R = 100, k = 0;
+            const dx = 0, dy = 0, tiltX = 0, tiltY = 0;
+            const Zs = 0, Za = 0, Zc = 0.05, angle = 0, rMax = 25;
+
+            const table = document.createElement('table');
+            table.innerHTML = '<tr><th>x</th><th>y</th><th>ρ</th><th>ρ_y\'</th><th>Zc*ρ²*ρ_y\'</th><th>Calc aberration</th><th>Diff</th></tr>';
+
+            let allPass = true;
+            const testPoints = [[0, 10], [10, 10], [10, 0]];
+            for (const [x, y] of testPoints) {
+                const z = SurfaceCalculations.calculateIrregularSag(x, y, R, k, dx, dy, tiltX, tiltY, Zs, Za, Zc, angle, rMax);
+                const r = Math.sqrt(x*x + y*y);
+                const baseSag = r * r / (2 * R);
+                const rho = r / rMax;
+                const rho_y_prime = y / rMax; // angle=0
+                const expectedAberration = Zc * rho * rho * rho_y_prime;
+                const calculatedAberration = z - baseSag;
+                const diff = Math.abs(calculatedAberration - expectedAberration);
+                const pass = diff < 1e-10;
+                allPass = allPass && pass;
+
+                const row = table.insertRow();
+                row.innerHTML = `<td>${x}</td><td>${y}</td><td>${rho.toFixed(4)}</td><td>${rho_y_prime.toFixed(4)}</td><td>${expectedAberration.toFixed(10)}</td><td>${calculatedAberration.toFixed(10)}</td><td class="${pass ? 'pass' : 'fail'}">${diff.toExponential(2)}</td>`;
+            }
+
+            div.appendChild(table);
+            div.innerHTML += `<p class="${allPass ? 'pass' : 'fail'}">Test 4: ${allPass ? 'PASS' : 'FAIL'}</p>`;
+            results.appendChild(div);
+        }
+
+        // Test 5: Rotated coordinate system (angle parameter)
+        function test5() {
+            const div = document.createElement('div');
+            div.className = 'test';
+            div.innerHTML = '<h3>Test 5: Astigmatism with angle=90° (should rotate effect)</h3>';
+
+            const R = 100, k = 0;
+            const dx = 0, dy = 0, tiltX = 0, tiltY = 0;
+            const Zs = 0, Za = 0.1, Zc = 0, angle = 90, rMax = 25;
+
+            const table = document.createElement('table');
+            table.innerHTML = '<tr><th>x</th><th>y</th><th>ρ_y (original)</th><th>ρ_y\' (rotated)</th><th>Note</th></tr>';
+
+            const testPoints = [[0, 10], [10, 0]];
+            for (const [x, y] of testPoints) {
+                const z = SurfaceCalculations.calculateIrregularSag(x, y, R, k, dx, dy, tiltX, tiltY, Zs, Za, Zc, angle, rMax);
+                const theta = angle * Math.PI / 180;
+                const rho_x = x / rMax;
+                const rho_y = y / rMax;
+                const rho_y_prime = rho_y * Math.cos(theta) - rho_x * Math.sin(theta);
+
+                const row = table.insertRow();
+                row.innerHTML = `<td>${x}</td><td>${y}</td><td>${rho_y.toFixed(4)}</td><td>${rho_y_prime.toFixed(4)}</td><td>At 90°, effect should swap axes</td>`;
+            }
+
+            div.appendChild(table);
+            div.innerHTML += '<p>Visual inspection: ρ_y\' at (0,10) should ≈ 0, at (10,0) should ≈ -0.4</p>';
+            results.appendChild(div);
+        }
+
+        // Run all tests
+        test1();
+        test2();
+        test3();
+        test4();
+        test5();
+    </script>
+</body>
+</html>
