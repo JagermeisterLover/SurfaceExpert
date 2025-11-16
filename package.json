@@ -1,7 +1,7 @@
 {
-  "name": "optical-surface-analyzer",
-  "version": "1.0.0",
-  "description": "Optical Surface Analyzer Desktop Application",
+  "name": "surface-expert",
+  "version": "2.1.0",
+  "description": "SurfaceExpert - Optical Surface Analysis Desktop Application",
   "main": "src/main.js",
   "scripts": {
     "start": "electron .",
@@ -11,7 +11,9 @@
   "keywords": [
     "optical",
     "surface",
-    "analyzer"
+    "analyzer",
+    "surfaceexpert",
+    "zemax"
   ],
   "author": "",
   "license": "MIT",
@@ -24,8 +26,8 @@
     "react-dom": "^18.2.0"
   },
   "build": {
-    "appId": "com.optical.surface.analyzer",
-    "productName": "Optical Surface Analyzer",
+    "appId": "com.surfaceexpert.app",
+    "productName": "SurfaceExpert",
     "directories": {
       "output": "dist"
     },
