@@ -137,7 +137,10 @@ const OpticalSurfaceAnalyzer = () => {
                 if (r < minHeight || r > maxHeight) {
                     row.push(null);
                 } else {
-                    const values = calculateSurfaceValues(r, selectedSurface);
+                    // For Irregular surfaces, pass x,y coordinates; for others use r
+                    const values = selectedSurface.type === 'Irregular'
+                        ? calculateSurfaceValues(r, selectedSurface, xi, yj)
+                        : calculateSurfaceValues(r, selectedSurface);
                     let val = 0;
                     if (activeTab === 'sag') val = values.sag;
                     else if (activeTab === 'slope') val = values.slope;
@@ -254,7 +257,10 @@ const OpticalSurfaceAnalyzer = () => {
                 const r = Math.sqrt(xi * xi + yj * yj);
 
                 if (r >= minHeight && r <= maxHeight) {
-                    const values = calculateSurfaceValues(r, selectedSurface);
+                    // For Irregular surfaces, pass x,y coordinates; for others use r
+                    const values = selectedSurface.type === 'Irregular'
+                        ? calculateSurfaceValues(r, selectedSurface, xi, yj)
+                        : calculateSurfaceValues(r, selectedSurface);
                     let val = 0;
                     if (activeTab === 'sag') val = values.sag;
                     else if (activeTab === 'slope') val = values.slope;
@@ -331,9 +337,12 @@ const OpticalSurfaceAnalyzer = () => {
             for (let j = 0; j < size; j++) {
                 const yj = -maxHeight + (j * (2 * maxHeight)) / (size - 1);
                 const r = Math.sqrt(xi * xi + yj * yj);
-                
+
                 if (r >= minHeight && r <= maxHeight) {
-                    const values = calculateSurfaceValues(r, selectedSurface);
+                    // For Irregular surfaces, pass x,y coordinates; for others use r
+                    const values = selectedSurface.type === 'Irregular'
+                        ? calculateSurfaceValues(r, selectedSurface, xi, yj)
+                        : calculateSurfaceValues(r, selectedSurface);
                     let val = 0;
                     if (activeTab === 'sag') val = values.sag;
                     else if (activeTab === 'slope') val = values.slope;
@@ -430,7 +439,10 @@ const OpticalSurfaceAnalyzer = () => {
 
             const absR = Math.abs(r);
             if (absR >= minHeight && absR <= maxHeight) {
-                const values = calculateSurfaceValues(absR, selectedSurface);
+                // For Irregular surfaces, use cross-section along x-axis (y=0)
+                const values = selectedSurface.type === 'Irregular'
+                    ? calculateSurfaceValues(absR, selectedSurface, r, 0)
+                    : calculateSurfaceValues(absR, selectedSurface);
                 let val = 0;
                 if (activeTab === 'sag') val = values.sag;
                 else if (activeTab === 'slope') val = values.slope;
@@ -1173,7 +1185,10 @@ const OpticalSurfaceAnalyzer = () => {
                         padding: '8px 8px 0 8px'
                     }
                 },
-                    ['summary', 'sag', 'slope', 'asphericity', 'aberration'].map(tab =>
+                    (selectedSurface && selectedSurface.type === 'Irregular'
+                        ? ['summary', 'sag']  // Irregular surfaces only support sag
+                        : ['summary', 'sag', 'slope', 'asphericity', 'aberration']
+                    ).map(tab =>
                         React.createElement('div', {
                             key: tab,
                             onClick: () => {
@@ -1393,7 +1408,7 @@ const calculateSagOnly = (r, surface) => {
 };
 
 // Helper function to calculate all values for a given r
-const calculateSurfaceValues = (r, surface) => {
+const calculateSurfaceValues = (r, surface, x = null, y = null) => {
     const params = surface.parameters;
     const parseParam = (name) => parseFloat(params[name]) || 0;
 
@@ -1419,14 +1434,22 @@ const calculateSurfaceValues = (r, surface) => {
             sag = SurfaceCalculations.calculateOddAsphereSag(r, R, k, A3, A4, A5, A6, A7, A8, A9, A10, A11, A12, A13, A14, A15, A16, A17, A18, A19, A20);
             slope = SurfaceCalculations.calculateOddAsphereSlope(r, R, k, A3, A4, A5, A6, A7, A8, A9, A10, A11, A12, A13, A14, A15, A16, A17, A18, A19, A20);
         } else if (surface.type === 'Irregular') {
+            // Irregular surface requires x,y coordinates (non-rotationally symmetric)
+            // Only sag is calculated for Irregular surfaces
             const R = parseParam('Radius'), k = parseParam('Conic Constant');
             const dx = parseParam('Decenter X'), dy = parseParam('Decenter Y');
             const tiltX = parseParam('Tilt X'), tiltY = parseParam('Tilt Y');
             const Zs = parseParam('Spherical'), Za = parseParam('Astigmatism'), Zc = parseParam('Coma');
             const angle = parseParam('Angle');
             const maxHeight = parseParam('Max Height');
-            sag = SurfaceCalculations.calculateIrregularSag(r, R, k, dx, dy, tiltX, tiltY, Zs, Za, Zc, angle, maxHeight);
-            slope = SurfaceCalculations.calculateIrregularSlope(r, R, k, dx, dy, tiltX, tiltY, Zs, Za, Zc, angle, maxHeight);
+
+            // Use provided x,y or default to (r, 0) for radial calculations
+            const xCoord = x !== null ? x : r;
+            const yCoord = y !== null ? y : 0;
+
+            sag = SurfaceCalculations.calculateIrregularSag(xCoord, yCoord, R, k, dx, dy, tiltX, tiltY, Zs, Za, Zc, angle, maxHeight);
+            // No slope, asphericity, aberration for Irregular surfaces
+            return { sag, slope: 0, asphericity: 0, aberration: 0, angle: 0 };
         } else if (surface.type === 'Opal Un U') {
             const R = parseParam('Radius'), e2 = parseParam('e2'), H = parseParam('H');
             const A2 = parseParam('A2'), A3 = parseParam('A3'), A4 = parseParam('A4'), A5 = parseParam('A5'), A6 = parseParam('A6');
@@ -1482,7 +1505,10 @@ const SummaryView = ({ selectedSurface, c }) => {
         const data = [];
 
         for (let r = minHeight; r < maxHeight; r += step) {
-            const values = calculateSurfaceValues(r, selectedSurface);
+            // For Irregular surfaces, use x-axis cross-section (y=0)
+            const values = selectedSurface.type === 'Irregular'
+                ? calculateSurfaceValues(r, selectedSurface, r, 0)
+                : calculateSurfaceValues(r, selectedSurface);
             data.push({
                 r: r.toFixed(7),
                 sag: formatValue(values.sag),
@@ -1495,7 +1521,9 @@ const SummaryView = ({ selectedSurface, c }) => {
         }
 
         // Always include maxHeight
-        const values = calculateSurfaceValues(maxHeight, selectedSurface);
+        const values = selectedSurface.type === 'Irregular'
+            ? calculateSurfaceValues(maxHeight, selectedSurface, maxHeight, 0)
+            : calculateSurfaceValues(maxHeight, selectedSurface);
         data.push({
             r: maxHeight.toFixed(7),
             sag: formatValue(values.sag),
@@ -1573,12 +1601,12 @@ const SummaryView = ({ selectedSurface, c }) => {
                     ),
                     React.createElement('td', { style: { padding: '10px', paddingLeft: '20px' } }, 'mm')
                 ),
-                React.createElement('tr', { style: { borderBottom: `1px solid ${c.border}` } },
+                selectedSurface.type !== 'Irregular' && React.createElement('tr', { style: { borderBottom: `1px solid ${c.border}` } },
                     React.createElement('td', { style: { padding: '10px' } }, 'Paraxial F/#'),
                     React.createElement('td', { style: { padding: '10px', textAlign: 'right' } }, formatValue(paraxialFNum)),
                     React.createElement('td', { style: { padding: '10px', paddingLeft: '20px' } }, '—')
                 ),
-                React.createElement('tr', { style: { borderBottom: `1px solid ${c.border}` } },
+                selectedSurface.type !== 'Irregular' && React.createElement('tr', { style: { borderBottom: `1px solid ${c.border}` } },
                     React.createElement('td', { style: { padding: '10px' } }, 'Working F/#'),
                     React.createElement('td', { style: { padding: '10px', textAlign: 'right' } }, formatValue(workingFNum)),
                     React.createElement('td', { style: { padding: '10px', paddingLeft: '20px' } }, '—')
@@ -1588,37 +1616,37 @@ const SummaryView = ({ selectedSurface, c }) => {
                     React.createElement('td', { style: { padding: '10px', textAlign: 'right' } }, formatValue(maxSag)),
                     React.createElement('td', { style: { padding: '10px', paddingLeft: '20px' } }, 'mm')
                 ),
-                React.createElement('tr', { style: { borderBottom: `1px solid ${c.border}` } },
+                selectedSurface.type !== 'Irregular' && React.createElement('tr', { style: { borderBottom: `1px solid ${c.border}` } },
                     React.createElement('td', { style: { padding: '10px' } }, 'Max Slope'),
                     React.createElement('td', { style: { padding: '10px', textAlign: 'right' } }, formatValue(maxSlope)),
                     React.createElement('td', { style: { padding: '10px', paddingLeft: '20px' } }, 'rad')
                 ),
-                React.createElement('tr', { style: { borderBottom: `1px solid ${c.border}` } },
+                selectedSurface.type !== 'Irregular' && React.createElement('tr', { style: { borderBottom: `1px solid ${c.border}` } },
                     React.createElement('td', { style: { padding: '10px' } }, 'Max Angle'),
                     React.createElement('td', { style: { padding: '10px', textAlign: 'right' } }, formatValue(maxAngle)),
                     React.createElement('td', { style: { padding: '10px', paddingLeft: '20px' } }, '°')
                 ),
-                React.createElement('tr', { style: { borderBottom: `1px solid ${c.border}` } },
+                selectedSurface.type !== 'Irregular' && React.createElement('tr', { style: { borderBottom: `1px solid ${c.border}` } },
                     React.createElement('td', { style: { padding: '10px' } }, 'Max Angle DMS'),
                     React.createElement('td', { style: { padding: '10px', textAlign: 'right' } }, degreesToDMS(maxAngle)),
                     React.createElement('td', { style: { padding: '10px', paddingLeft: '20px' } }, '—')
                 ),
-                React.createElement('tr', { style: { borderBottom: `1px solid ${c.border}` } },
+                selectedSurface.type !== 'Irregular' && React.createElement('tr', { style: { borderBottom: `1px solid ${c.border}` } },
                     React.createElement('td', { style: { padding: '10px' } }, 'Max Asphericity'),
                     React.createElement('td', { style: { padding: '10px', textAlign: 'right' } }, formatValue(maxAsphericity)),
                     React.createElement('td', { style: { padding: '10px', paddingLeft: '20px' } }, 'mm')
                 ),
-                React.createElement('tr', { style: { borderBottom: `1px solid ${c.border}` } },
+                selectedSurface.type !== 'Irregular' && React.createElement('tr', { style: { borderBottom: `1px solid ${c.border}` } },
                     React.createElement('td', { style: { padding: '10px' } }, 'Max Asph. Gradient'),
                     React.createElement('td', { style: { padding: '10px', textAlign: 'right' } }, formatValue(maxAsphGradient)),
                     React.createElement('td', { style: { padding: '10px', paddingLeft: '20px' } }, '/mm')
                 ),
-                React.createElement('tr', { style: { borderBottom: `1px solid ${c.border}` } },
+                selectedSurface.type !== 'Irregular' && React.createElement('tr', { style: { borderBottom: `1px solid ${c.border}` } },
                     React.createElement('td', { style: { padding: '10px' } }, 'Best Fit Sphere'),
                     React.createElement('td', { style: { padding: '10px', textAlign: 'right' } }, formatValue(bestFitSphere)),
                     React.createElement('td', { style: { padding: '10px', paddingLeft: '20px' } }, 'mm')
                 ),
-                React.createElement('tr', { style: { borderBottom: `1px solid ${c.border}` } },
+                selectedSurface.type !== 'Irregular' && React.createElement('tr', { style: { borderBottom: `1px solid ${c.border}` } },
                     React.createElement('td', { style: { padding: '10px' } }, 'Max Aberration'),
                     React.createElement('td', { style: { padding: '10px', textAlign: 'right' } }, formatValue(maxAberration)),
                     React.createElement('td', { style: { padding: '10px', paddingLeft: '20px' } }, 'mm')
@@ -1639,11 +1667,11 @@ const SummaryView = ({ selectedSurface, c }) => {
                 React.createElement('tr', { style: { borderBottom: `2px solid ${c.border}` } },
                     React.createElement('th', { style: { padding: '8px', textAlign: 'right', color: c.textDim } }, 'Height (mm)'),
                     React.createElement('th', { style: { padding: '8px', textAlign: 'right', color: c.textDim } }, 'Sag (mm)'),
-                    React.createElement('th', { style: { padding: '8px', textAlign: 'right', color: c.textDim } }, 'Slope (rad)'),
-                    React.createElement('th', { style: { padding: '8px', textAlign: 'right', color: c.textDim } }, 'Angle (°)'),
-                    React.createElement('th', { style: { padding: '8px', textAlign: 'right', color: c.textDim } }, 'Angle DMS'),
-                    React.createElement('th', { style: { padding: '8px', textAlign: 'right', color: c.textDim } }, 'Asphericity (mm)'),
-                    React.createElement('th', { style: { padding: '8px', textAlign: 'right', color: c.textDim } }, 'Aberration (mm)')
+                    selectedSurface.type !== 'Irregular' && React.createElement('th', { style: { padding: '8px', textAlign: 'right', color: c.textDim } }, 'Slope (rad)'),
+                    selectedSurface.type !== 'Irregular' && React.createElement('th', { style: { padding: '8px', textAlign: 'right', color: c.textDim } }, 'Angle (°)'),
+                    selectedSurface.type !== 'Irregular' && React.createElement('th', { style: { padding: '8px', textAlign: 'right', color: c.textDim } }, 'Angle DMS'),
+                    selectedSurface.type !== 'Irregular' && React.createElement('th', { style: { padding: '8px', textAlign: 'right', color: c.textDim } }, 'Asphericity (mm)'),
+                    selectedSurface.type !== 'Irregular' && React.createElement('th', { style: { padding: '8px', textAlign: 'right', color: c.textDim } }, 'Aberration (mm)')
                 )
             ),
             React.createElement('tbody', null,
@@ -1651,11 +1679,11 @@ const SummaryView = ({ selectedSurface, c }) => {
                     React.createElement('tr', { key: idx, style: { borderBottom: `1px solid ${c.border}` } },
                         React.createElement('td', { style: { padding: '8px', textAlign: 'right' } }, row.r),
                         React.createElement('td', { style: { padding: '8px', textAlign: 'right' } }, row.sag),
-                        React.createElement('td', { style: { padding: '8px', textAlign: 'right' } }, row.slope),
-                        React.createElement('td', { style: { padding: '8px', textAlign: 'right' } }, row.angle),
-                        React.createElement('td', { style: { padding: '8px', textAlign: 'right' } }, row.angleDMS),
-                        React.createElement('td', { style: { padding: '8px', textAlign: 'right' } }, row.asphericity),
-                        React.createElement('td', { style: { padding: '8px', textAlign: 'right' } }, row.aberration)
+                        selectedSurface.type !== 'Irregular' && React.createElement('td', { style: { padding: '8px', textAlign: 'right' } }, row.slope),
+                        selectedSurface.type !== 'Irregular' && React.createElement('td', { style: { padding: '8px', textAlign: 'right' } }, row.angle),
+                        selectedSurface.type !== 'Irregular' && React.createElement('td', { style: { padding: '8px', textAlign: 'right' } }, row.angleDMS),
+                        selectedSurface.type !== 'Irregular' && React.createElement('td', { style: { padding: '8px', textAlign: 'right' } }, row.asphericity),
+                        selectedSurface.type !== 'Irregular' && React.createElement('td', { style: { padding: '8px', textAlign: 'right' } }, row.aberration)
                     )
                 )
             )
@@ -1673,7 +1701,10 @@ const DataView = ({ activeTab, selectedSurface, c }) => {
         const data = [];
 
         for (let r = minHeight; r < maxHeight; r += step) {
-            const values = calculateSurfaceValues(r, selectedSurface);
+            // For Irregular surfaces, use x-axis cross-section (y=0)
+            const values = selectedSurface.type === 'Irregular'
+                ? calculateSurfaceValues(r, selectedSurface, r, 0)
+                : calculateSurfaceValues(r, selectedSurface);
 
             let value = 0;
             if (activeTab === 'sag') value = values.sag;
@@ -1688,7 +1719,9 @@ const DataView = ({ activeTab, selectedSurface, c }) => {
         }
 
         // Always include maxHeight
-        const values = calculateSurfaceValues(maxHeight, selectedSurface);
+        const values = selectedSurface.type === 'Irregular'
+            ? calculateSurfaceValues(maxHeight, selectedSurface, maxHeight, 0)
+            : calculateSurfaceValues(maxHeight, selectedSurface);
         let value = 0;
         if (activeTab === 'sag') value = values.sag;
         else if (activeTab === 'slope') value = values.slope;
