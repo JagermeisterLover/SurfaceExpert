@@ -9,7 +9,9 @@
       "Bash(npm ls:*)",
       "Bash(node -e:*)",
       "Bash(git stash:*)",
-      "Bash(cat:*)"
+      "Bash(cat:*)",
+      "Bash(git add:*)",
+      "Bash(git commit:*)"
     ],
     "deny": [],
     "ask": []
