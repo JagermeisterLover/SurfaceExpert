@@ -46,71 +46,62 @@ class SurfaceCalculations {
         }
     }
 
-    static calculateIrregularSag(r, R, k, dx, dy, tiltX, tiltY, Zs, Za, Zc, angle, rMax) {
+    static calculateIrregularSag(x, y, R, k, dx, dy, tiltX, tiltY, Zs, Za, Zc, angle, rMax) {
         try {
-            // Convert angle to radians
+            // Convert angles to radians
             const theta = angle * Math.PI / 180;
             const tiltXRad = tiltX * Math.PI / 180;
             const tiltYRad = tiltY * Math.PI / 180;
 
-            // For a radially symmetric calculation (r only, no x/y separation),
-            // we need to make assumptions about x and y
-            // Assume x = r*cos(0) = r and y = 0 for the radial profile
-            let x = r;
-            let y = 0;
+            // Transform coordinates from global to local (decentered and tilted) system
+            // According to Zemax: decenter, then tilt about x, then tilt about y
 
-            // Apply tilt (rotation matrix)
-            // Rotation about X-axis
-            const y1 = y * Math.cos(tiltXRad);
-            const z1 = -y * Math.sin(tiltXRad);
+            // Step 1: Apply decenter
+            const x1 = x - dx;
+            const y1 = y - dy;
+            const z1 = 0;
 
-            // Rotation about Y-axis
-            const x2 = x * Math.cos(tiltYRad) + z1 * Math.sin(tiltYRad);
-            const z2 = -x * Math.sin(tiltYRad) + z1 * Math.cos(tiltYRad);
-            const y2 = y1;
+            // Step 2: Tilt about X-axis
+            const x2 = x1;
+            const y2 = y1 * Math.cos(tiltXRad) - z1 * Math.sin(tiltXRad);
+            const z2 = y1 * Math.sin(tiltXRad) + z1 * Math.cos(tiltXRad);
 
-            // Apply decenter
-            const xp = x2 - dx;
-            const yp = y2 - dy;
-            const rp = Math.sqrt(xp*xp + yp*yp);
+            // Step 3: Tilt about Y-axis
+            const x_local = x2 * Math.cos(tiltYRad) + z2 * Math.sin(tiltYRad);
+            const y_local = y2;
+            // z_local = -x2 * Math.sin(tiltYRad) + z2 * Math.cos(tiltYRad); // not needed for sag calculation
 
-            // Base conic surface
+            // Calculate radial distance in local coordinate system
+            const r_local = Math.sqrt(x_local * x_local + y_local * y_local);
+
+            // Base conic surface sag
             let baseSag = 0;
             if (R !== 0) {
-                const c = 1/R;
-                const discriminant = 1 - (1 + k) * c**2 * rp**2;
+                const c = 1 / R;
+                const discriminant = 1 - (1 + k) * c * c * r_local * r_local;
                 if (discriminant >= 0) {
-                    baseSag = (c * rp**2) / (1 + Math.sqrt(discriminant));
-                } else {
-                    // Invalid geometry - discriminant is negative
-                    baseSag = 0;
+                    baseSag = (c * r_local * r_local) / (1 + Math.sqrt(discriminant));
                 }
             }
 
+            // Zernike-like aberration terms
             // Normalized coordinates (avoid division by zero)
             if (rMax === 0) return baseSag;
 
-            const rho_x = xp / rMax;
-            const rho_y = yp / rMax;
-            const rho = Math.sqrt(rho_x**2 + rho_y**2);
+            const rho_x = x_local / rMax;
+            const rho_y = y_local / rMax;
+            const rho = Math.sqrt(rho_x * rho_x + rho_y * rho_y);
             const rho_y_prime = rho_y * Math.cos(theta) - rho_x * Math.sin(theta);
 
-            // Zernike-like aberration terms
-            const zernike = Zs * rho**4 + Za * rho_y_prime**2 + Zc * rho**2 * rho_y_prime;
+            // Aberration coefficients applied at max aperture
+            const aberration = Zs * Math.pow(rho, 4) + Za * Math.pow(rho_y_prime, 2) + Zc * Math.pow(rho, 2) * rho_y_prime;
 
-            return baseSag + zernike;
+            return baseSag + aberration;
         } catch {
             return 0;
         }
     }
 
-    static calculateIrregularSlope(r, R, k, dx, dy, tiltX, tiltY, Zs, Za, Zc, angle, rMax) {
-        // Numerical derivative
-        const h = 0.001;
-        const z1 = this.calculateIrregularSag(r + h, R, k, dx, dy, tiltX, tiltY, Zs, Za, Zc, angle, rMax);
-        const z2 = this.calculateIrregularSag(r - h, R, k, dx, dy, tiltX, tiltY, Zs, Za, Zc, angle, rMax);
-        return (z1 - z2) / (2 * h);
-    }
 
     static calculateOpalUnUSag(r, R, e2, H, A2, A3, A4, A5, A6, A7, A8, A9, A10, A11, A12) {
         let z = 0;
