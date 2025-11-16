@@ -724,42 +724,6 @@ const OpticalSurfaceAnalyzer = () => {
         setFolders(updated);
     };
 
-    const classifySurfaceShape = () => {
-        const radius = parseFloat(selectedSurface.parameters['Radius']) || 0;
-
-        if (selectedSurface.type === 'Sphere') {
-            if (radius > 0) return 'Concave Sphere';
-            if (radius < 0) return 'Convex Sphere';
-            return 'Flat';
-        }
-
-        if (selectedSurface.type === 'Poly' || selectedSurface.type === 'Opal Un U' || selectedSurface.type === 'Opal Un Z') {
-            return selectedSurface.type;
-        }
-
-        const conicConstant = parseFloat(selectedSurface.parameters['Conic Constant']);
-        let curvature = radius > 0 ? 'Concave' : radius < 0 ? 'Convex' : 'Flat';
-        let shape = '';
-
-        if (!isNaN(conicConstant)) {
-            if (conicConstant === 0) {
-                shape = 'Sphere';
-            } else if (conicConstant === -1) {
-                shape = 'Parabola';
-            } else if (conicConstant > -1 && conicConstant < 0) {
-                shape = 'Ellipsoid';
-            } else if (conicConstant < -1) {
-                shape = 'Hyperbola';
-            } else if (conicConstant > 0) {
-                shape = 'Oblate Ellipsoid';
-            }
-        } else {
-            shape = selectedSurface.type;
-        }
-
-        return `${curvature} ${shape}`;
-    };
-
     const colors = {
         bg: '#2b2b2b',
         panel: '#353535',
@@ -1302,7 +1266,6 @@ const OpticalSurfaceAnalyzer = () => {
                 updateSurfaceName,
                 updateSurfaceType,
                 updateParameter,
-                classifySurfaceShape,
                 onConvert: () => setShowConvert(true),
                 c
             })
@@ -1879,7 +1842,7 @@ const DataView = ({ activeTab, selectedSurface, c }) => {
     );
 };
 
-const PropertiesPanel = ({ selectedSurface, updateSurfaceName, updateSurfaceType, updateParameter, classifySurfaceShape, onConvert, c }) => {
+const PropertiesPanel = ({ selectedSurface, updateSurfaceName, updateSurfaceType, updateParameter, onConvert, c }) => {
     if (!selectedSurface) {
         return React.createElement('div', {
             style: {
@@ -2034,14 +1997,7 @@ const PropertiesPanel = ({ selectedSurface, updateSurfaceName, updateSurfaceType
                             React.createElement('option', { key: type, value: type }, type)
                         )
                     )
-                ),
-
-                React.createElement(PropertyRow, {
-                    label: "Shape Classification",
-                    value: classifySurfaceShape(),
-                    editable: false,
-                    c
-                })
+                )
             ),
 
             // Parameters
