@@ -76,6 +76,14 @@ class ZMXParser {
                 const paramValue = parseFloat(parts[2]);
                 currentSurface.parameters[`PARM${paramNumber}`] = isNaN(paramValue) ? 0 : paramValue;
             }
+
+            // Parse XDAT (extra data fields)
+            if (line.startsWith('XDAT ')) {
+                const parts = line.split(/\s+/);
+                const xdatNumber = parseInt(parts[1]);
+                const xdatValue = parseFloat(parts[2]);
+                currentSurface.parameters[`XDAT${xdatNumber}`] = isNaN(xdatValue) ? 0 : xdatValue;
+            }
         }
 
         // Add the last surface
@@ -195,6 +203,55 @@ class ZMXParser {
                 'Astigmatism': String(zmxSurface.parameters['PARM6'] || 0),
                 'Coma': String(zmxSurface.parameters['PARM7'] || 0),
                 'Angle': String(zmxSurface.parameters['PARM8'] || 0),
+                'X Coordinate': '0',
+                'Y Coordinate': '0',
+                'Min Height': '0',
+                'Max Height': String(maxHeight)
+            };
+        } else if (zmxSurface.type === 'FZERNSAG') {
+            // FZERNSAG surface (Zernike Standard Sag)
+            // PARM 0 = Maximum term number
+            // PARM 1-37 = Zernike coefficients Z1-Z37
+            // XDAT 1 = Normalization radius
+            surfaceType = 'Zernike';
+
+            // Get normalization radius from XDAT1, default to max height if not specified
+            const normRadius = zmxSurface.parameters['XDAT1'] || maxHeight;
+
+            parameters = {
+                'Radius': String(radius),
+                'Conic Constant': String(conicConstant),
+                'Norm Radius': String(normRadius),
+                'Z1': String(zmxSurface.parameters['PARM1'] || 0),
+                'Z2': String(zmxSurface.parameters['PARM2'] || 0),
+                'Z3': String(zmxSurface.parameters['PARM3'] || 0),
+                'Z4': String(zmxSurface.parameters['PARM4'] || 0),
+                'Z5': String(zmxSurface.parameters['PARM5'] || 0),
+                'Z6': String(zmxSurface.parameters['PARM6'] || 0),
+                'Z7': String(zmxSurface.parameters['PARM7'] || 0),
+                'Z8': String(zmxSurface.parameters['PARM8'] || 0),
+                'Z9': String(zmxSurface.parameters['PARM9'] || 0),
+                'Z10': String(zmxSurface.parameters['PARM10'] || 0),
+                'Z11': String(zmxSurface.parameters['PARM11'] || 0),
+                'Z12': String(zmxSurface.parameters['PARM12'] || 0),
+                'Z13': String(zmxSurface.parameters['PARM13'] || 0),
+                'Z14': String(zmxSurface.parameters['PARM14'] || 0),
+                'Z15': String(zmxSurface.parameters['PARM15'] || 0),
+                'Z16': String(zmxSurface.parameters['PARM16'] || 0),
+                'Z17': String(zmxSurface.parameters['PARM17'] || 0),
+                'Z18': String(zmxSurface.parameters['PARM18'] || 0),
+                'Z19': String(zmxSurface.parameters['PARM19'] || 0),
+                'Z20': String(zmxSurface.parameters['PARM20'] || 0),
+                'Z21': String(zmxSurface.parameters['PARM21'] || 0),
+                'Z22': String(zmxSurface.parameters['PARM22'] || 0),
+                'Z23': String(zmxSurface.parameters['PARM23'] || 0),
+                'Z24': String(zmxSurface.parameters['PARM24'] || 0),
+                'Z25': String(zmxSurface.parameters['PARM25'] || 0),
+                'Z26': String(zmxSurface.parameters['PARM26'] || 0),
+                'Z27': String(zmxSurface.parameters['PARM27'] || 0),
+                'Z28': String(zmxSurface.parameters['PARM28'] || 0),
+                'X Coordinate': '0',
+                'Y Coordinate': '0',
                 'Min Height': '0',
                 'Max Height': String(maxHeight)
             };
