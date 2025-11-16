@@ -1353,19 +1353,32 @@ const OpticalSurfaceAnalyzer = () => {
 // MOUNT APPLICATION
 // ============================================
 
-// Wait for global dependencies to load before mounting
+// Wait for DOM and all scripts to be ready before mounting
 const mountApp = () => {
-    if (typeof window.SurfaceCalculations === 'undefined' ||
-        typeof window.ZMXParser === 'undefined' ||
-        typeof window.Plotly === 'undefined') {
-        console.log('⏳ Waiting for dependencies to load...');
-        setTimeout(mountApp, 50);
-        return;
+    console.log('📦 Mounting Optical Surface Analyzer (Modular)...');
+
+    // Check if dependencies are available
+    if (typeof SurfaceCalculations === 'undefined') {
+        console.error('❌ SurfaceCalculations not loaded!');
+    }
+    if (typeof ZMXParser === 'undefined') {
+        console.error('❌ ZMXParser not loaded!');
+    }
+    if (typeof Plotly === 'undefined') {
+        console.error('❌ Plotly not loaded!');
     }
 
-    console.log('📦 Mounting Optical Surface Analyzer (Modular)...');
+    // Make sure globals are accessible
+    window.SurfaceCalculations = window.SurfaceCalculations || SurfaceCalculations;
+    window.ZMXParser = window.ZMXParser || ZMXParser;
+
     ReactDOM.render(h(OpticalSurfaceAnalyzer), document.getElementById('root'));
     console.log('✅ Application mounted successfully!');
 };
 
-mountApp();
+// Wait for window load event (ensures all scripts have executed)
+if (document.readyState === 'complete') {
+    mountApp();
+} else {
+    window.addEventListener('load', mountApp);
+}
