@@ -3,6 +3,9 @@ dist/
 *.log
 .DS_Store
 
+# User data
+surfaces/
+
 # Temporary conversion files
 tempsurfacedata.txt
 ConvertSettings.txt

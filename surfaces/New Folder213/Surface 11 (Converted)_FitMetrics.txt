@@ -1,8 +1,0 @@
-RMSE = 9.609800294871e-12
-R_squared = 1
-AIC = -5116.38401017487
-BIC = -5105.923528107505
-Chi_square = 9.327174432438e-21
-Reduced_chi_square = 9.615643744781e-23
-Iterations = 100
-Success = true
