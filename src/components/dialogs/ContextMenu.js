@@ -96,3 +96,5 @@ export const ContextMenu = ({
         ]
     );
 };
+
+export { ContextMenu };

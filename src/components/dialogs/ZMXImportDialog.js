@@ -229,3 +229,5 @@ export const ZMXImportDialog = ({ zmxSurfaces, onImport, onClose, c }) => {
         )
     );
 };
+
+export { ZMXImportDialog };

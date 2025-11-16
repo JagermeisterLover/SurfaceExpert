@@ -267,3 +267,5 @@ export const SummaryView = ({ selectedSurface, c }) => {
         )
     );
 };
+
+export { SummaryView };
