@@ -29,13 +29,38 @@ SurfaceExpert/
 └── src/
     ├── main.js                    # Electron main process (~549 lines)
     ├── preload.js                 # Context isolation bridge (~14 lines)
-    ├── renderer.js                # React UI application (~3435 lines)
+    ├── renderer.js                # React UI application - LEGACY (~3435 lines)
+    ├── renderer-modular.js        # Modular React application - CURRENT (~1358 lines)
     ├── calculationsWrapper.js     # Surface calculation engine (~555 lines)
     ├── zmxParser.js               # Zemax ZMX file parser (~341 lines)
     ├── calculations.py            # Python reference implementation (~347 lines)
     ├── surfaceFitter.py           # Surface equation fitter using lmfit (~294 lines)
-    ├── index.html                 # Entry point HTML template (~19 lines)
-    └── styles.css                 # Global CSS styles (~49 lines)
+    ├── index.html                 # Entry point HTML template (loads renderer-modular.js)
+    ├── styles.css                 # Global CSS styles (~49 lines)
+    ├── components/                # React component modules (14 files)
+    │   ├── Icons.js               # SVG icon components
+    │   ├── dialogs/               # Dialog components (6 files)
+    │   │   ├── ContextMenu.js
+    │   │   ├── ConversionDialog.js
+    │   │   ├── ConversionResultsDialog.js
+    │   │   ├── InputDialog.js
+    │   │   ├── SettingsModal.js
+    │   │   └── ZMXImportDialog.js
+    │   ├── plots/                 # Plot generation components (3 files)
+    │   │   ├── Plot2DContour.js
+    │   │   ├── Plot3D.js
+    │   │   └── PlotCrossSection.js
+    │   ├── ui/                    # Reusable UI components (2 files)
+    │   │   ├── PropertyRow.js
+    │   │   └── PropertySection.js
+    │   └── views/                 # View components (2 files)
+    │       ├── DataView.js
+    │       └── SummaryView.js
+    ├── constants/                 # Application constants (1 file)
+    │   └── surfaceTypes.js
+    └── utils/                     # Utility functions (2 files)
+        ├── calculations.js        # Surface calculations with BFS caching
+        └── formatters.js          # Value formatting utilities
 ```
 
 ## Architecture Deep Dive
@@ -53,27 +78,70 @@ SurfaceExpert/
    - Exposes minimal API: `window.electronAPI.onMenuAction(callback)`
    - Enables IPC communication without exposing Node.js APIs
 
-3. **Renderer Process** (`src/renderer.js`):
+3. **Renderer Process** (`src/renderer-modular.js`):
    - React application (no JSX, uses `React.createElement`)
+   - Modular ES6 architecture with 17 extracted modules
    - State management via React hooks (`useState`, `useEffect`)
    - All UI components and business logic
    - Calculation orchestration
+   - Legacy monolithic version (`src/renderer.js`) kept for reference
 
 ### Data Flow
 
 ```
 User Action → Native Menu (main.js)
     ↓ IPC message
-React Handler (renderer.js)
+React Handler (renderer-modular.js)
     ↓
 State Update (setSurfaces)
     ↓
 useEffect Triggers
     ↓
-Recalculation (SurfaceCalculations)
+Recalculation (utils/calculations.js)
     ↓
-Plot Update (Plotly.newPlot)
+Plot Update (components/plots/*.js → Plotly.newPlot)
 ```
+
+### Modular Architecture (Nov 2025 Refactoring)
+
+The application was refactored from a 3,435-line monolithic `renderer.js` into a modular ES6 architecture:
+
+**Key Benefits:**
+- **Maintainability**: Each component has a single responsibility
+- **Reusability**: Components can be easily reused across the application
+- **Testability**: Isolated modules are easier to unit test
+- **Readability**: Smaller, focused files are easier to understand
+- **Performance**: ES6 modules enable better tree-shaking and code splitting
+
+**Module Organization:**
+1. **Constants** (`src/constants/`): Surface type definitions, sample data, colorscales
+2. **Utilities** (`src/utils/`): Pure functions for calculations and formatting
+3. **UI Components** (`src/components/ui/`): Reusable UI building blocks
+4. **View Components** (`src/components/views/`): Data presentation components
+5. **Dialog Components** (`src/components/dialogs/`): Modal dialogs and context menus
+6. **Plot Components** (`src/components/plots/`): Plotly visualization generators
+7. **Icons** (`src/components/Icons.js`): SVG icon library
+
+**Import Pattern:**
+```javascript
+// ES6 module imports
+import { surfaceTypes, sampleSurfaces } from './constants/surfaceTypes.js';
+import { formatValue, degreesToDMS } from './utils/formatters.js';
+import { calculateSurfaceValues } from './utils/calculations.js';
+import { create3DPlot } from './components/plots/Plot3D.js';
+
+// Global dependencies (loaded via script tags)
+// - React, ReactDOM (UMD builds)
+// - Plotly (CDN)
+// - SurfaceCalculations (calculationsWrapper.js)
+// - ZMXParser (zmxParser.js)
+```
+
+**Loading Strategy:**
+- ES6 modules use `type="module"` in script tag
+- Global dependencies loaded first via regular script tags
+- `window.load` event ensures all dependencies available before mounting React app
+- Prevents race conditions between module execution and global script loading
 
 ## Surface Types & Mathematical Models
 
@@ -264,9 +332,12 @@ Electron Builder targets in `package.json`:
 
 #### Adding a New Surface Type
 
-1. **Define parameters** in `surfaceTypes` object (renderer.js):
+1. **Define parameters** in `src/constants/surfaceTypes.js`:
    ```javascript
-   'New Surface': ['Radius', 'Param1', 'Param2', 'Min Height', 'Max Height']
+   export const surfaceTypes = {
+     ...
+     'New Surface': ['Radius', 'Param1', 'Param2', 'Min Height', 'Max Height']
+   };
    ```
 
 2. **Implement calculations** in `calculationsWrapper.js`:
@@ -275,13 +346,17 @@ Electron Builder targets in `package.json`:
    static calculateNewSurfaceSlope(r, param1, param2) { ... }
    ```
 
-3. **Add to calculation dispatcher** in `calculateSurfaceValues()` (renderer.js):
+3. **Add to calculation dispatcher** in `src/utils/calculations.js`:
    ```javascript
-   } else if (surface.type === 'New Surface') {
-     const p1 = parseParam('Param1'), p2 = parseParam('Param2');
-     sag = SurfaceCalculations.calculateNewSurfaceSag(r, p1, p2);
-     slope = SurfaceCalculations.calculateNewSurfaceSlope(r, p1, p2);
-   }
+   export const calculateSurfaceValues = (r, surface, x, y) => {
+     ...
+     } else if (surface.type === 'New Surface') {
+       const p1 = parseParam('Param1'), p2 = parseParam('Param2');
+       sag = SurfaceCalculations.calculateNewSurfaceSag(r, p1, p2);
+       slope = SurfaceCalculations.calculateNewSurfaceSlope(r, p1, p2);
+     }
+     ...
+   };
    ```
 
 4. **Test** with sample parameters and verify against reference implementation
@@ -299,7 +374,7 @@ Electron Builder targets in `package.json`:
    }
    ```
 
-2. **Handle in renderer** (renderer.js `handleMenuAction()`):
+2. **Handle in renderer** (`renderer-modular.js` `handleMenuAction()`):
    ```javascript
    case 'new-action':
      performNewAction();
@@ -362,7 +437,18 @@ surfaces.push(newSurface);               // ✗ Bad
 
 - **main.js:** Electron-specific, window management, file I/O handlers (~549 lines)
 - **preload.js:** Minimal security bridge, no calculations (~14 lines)
-- **renderer.js:** All React components and UI logic (~3435 lines - **NEEDS REFACTORING**)
+- **renderer-modular.js:** Main React application with ES6 imports (~1358 lines) - **CURRENT**
+- **renderer.js:** Legacy monolithic version (~3435 lines) - kept for reference
+- **components/**: Modular React components organized by type (17 files)
+  - `dialogs/`: Modal dialogs and context menus (6 files)
+  - `plots/`: Plotly visualization generators (3 files)
+  - `ui/`: Reusable UI building blocks (2 files)
+  - `views/`: Data presentation components (2 files)
+  - `Icons.js`: SVG icon library
+- **constants/**: Application configuration and data (1 file)
+- **utils/**: Pure utility functions (2 files)
+  - `calculations.js`: Surface calculations with BFS caching
+  - `formatters.js`: Value formatting utilities
 - **calculationsWrapper.js:** Pure mathematical functions for all surface types (~555 lines)
 - **zmxParser.js:** Zemax ZMX file parser and converter (~341 lines)
 - **calculations.py:** Python reference implementation for validation (~347 lines)
@@ -579,33 +665,37 @@ Current cache: Best-fit sphere parameters (Map with JSON key)
    - Print/report generation
    - Keyboard navigation improvements
 
-4. **Code Refactoring:**
-   - Split renderer.js into separate component files
+4. **Code Quality:**
+   - ✅ ~~Split renderer.js into separate component files~~ **COMPLETED (Nov 2025)**
    - Add TypeScript for type safety
    - Implement automated testing
+   - Add PropTypes or TypeScript interfaces for component props
 
 ### Technical Debt
 
-1. **CRITICAL - Code organization:** renderer.js is now 3435 lines - **MUST SPLIT**:
-   - `components/` - React components
-   - `utils/` - Helper functions
-   - `hooks/` - Custom React hooks
-   - `constants/` - Surface types, colors, etc.
-   - Current size makes maintenance difficult and prone to errors
+1. **✅ RESOLVED - Code organization (Nov 2025):**
+   - ~~renderer.js 3435 lines - MUST SPLIT~~ → **COMPLETED!**
+   - Successfully refactored into 17 modular ES6 files
+   - New structure: `components/` (14 files), `utils/` (2 files), `constants/` (1 file)
+   - Main file reduced from 3435 → 1358 lines (60% reduction)
+   - Legacy `renderer.js` kept for reference
+   - See "Modular Architecture" section above for details
 
 2. **Build modernization:**
    - Consider Vite or esbuild for faster dev/build
-   - TypeScript for type safety
-   - JSX for more readable components
+   - TypeScript for type safety (would require refactoring React.createElement → JSX)
+   - JSX for more readable components (would require build tooling)
 
 3. **Testing:**
    - Add unit tests for calculations (test_irregular.html exists but limited)
-   - Add integration tests for UI
+   - Add integration tests for UI components
    - Visual regression tests for plots
    - Automated test suite for all surface types
+   - Test ES6 module imports and dependencies
 
 4. **Documentation:**
    - API documentation for SurfaceCalculations
+   - API documentation for modular components
    - User guide with examples
    - Video tutorials
    - ZMX import documentation
@@ -650,9 +740,17 @@ Current cache: Best-fit sphere parameters (Map with JSON key)
 
 ### Key Files by Task
 
-- **UI Changes:** `src/renderer.js` (components) + `src/styles.css` (global styles)
-- **Calculations:** `src/calculationsWrapper.js` (JavaScript) + `src/calculations.py` (Python reference)
-- **ZMX Import:** `src/zmxParser.js`
+- **UI Changes:**
+  - **Components:** `src/components/` (dialogs, plots, ui, views) - Modular React components
+  - **Main App:** `src/renderer-modular.js` - Application orchestration
+  - **Styles:** `src/styles.css` - Global styles only
+  - **Constants:** `src/constants/surfaceTypes.js` - Surface type definitions
+- **Calculations:**
+  - **JavaScript:** `src/calculationsWrapper.js` (SurfaceCalculations class)
+  - **Utilities:** `src/utils/calculations.js` (surface value calculator with BFS caching)
+  - **Python Reference:** `src/calculations.py` (validation/testing)
+- **Formatting:** `src/utils/formatters.js` (formatValue, degreesToDMS)
+- **ZMX Import:** `src/zmxParser.js` + `src/components/dialogs/ZMXImportDialog.js`
 - **Surface Fitting:** `src/surfaceFitter.py` (requires `requirements.txt` dependencies)
 - **Menu/IPC:** `src/main.js` + `src/preload.js`
 - **File I/O:** `src/main.js` (handles folder loading/saving to `surfaces/` directory)
@@ -803,5 +901,11 @@ Supported algorithms from lmfit:
 ---
 
 **Last Updated:** 2025-11-16
-**Version:** 2.0.0
+**Version:** 2.1.0 (Modular Architecture Release)
+**Major Changes:**
+- Refactored from monolithic 3,435-line renderer.js to modular ES6 architecture
+- 17 extracted modules organized in components/, utils/, constants/
+- 60% reduction in main file size (3435 → 1358 lines)
+- Improved maintainability, testability, and code organization
+
 **Maintained by:** AI Assistants working with this codebase
