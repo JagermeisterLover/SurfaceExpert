@@ -22,16 +22,20 @@ SurfaceExpert/
 ├── CLAUDE.md                       # This file - AI assistant guide
 ├── package.json                    # NPM dependencies and scripts
 ├── package-lock.json              # Locked dependency versions
-├── optical_surface_analyzer.html  # Standalone HTML version (legacy)
+├── requirements.txt               # Python dependencies for surface fitter
+├── test_irregular.html            # Test suite for Irregular surface calculations
 ├── various code for claude/
 │   └── SurfaceCalculations.cs     # C# reference implementation
 └── src/
-    ├── main.js                    # Electron main process (window management)
-    ├── preload.js                 # Context isolation bridge (IPC)
-    ├── renderer.js                # React UI application (~1520 lines)
-    ├── calculationsWrapper.js     # Surface calculation engine (~340 lines)
-    ├── index.html                 # Entry point HTML template
-    └── styles.css                 # Global CSS styles (~50 lines)
+    ├── main.js                    # Electron main process (~549 lines)
+    ├── preload.js                 # Context isolation bridge (~14 lines)
+    ├── renderer.js                # React UI application (~3435 lines)
+    ├── calculationsWrapper.js     # Surface calculation engine (~555 lines)
+    ├── zmxParser.js               # Zemax ZMX file parser (~341 lines)
+    ├── calculations.py            # Python reference implementation (~347 lines)
+    ├── surfaceFitter.py           # Surface equation fitter using lmfit (~294 lines)
+    ├── index.html                 # Entry point HTML template (~19 lines)
+    └── styles.css                 # Global CSS styles (~49 lines)
 ```
 
 ## Architecture Deep Dive
@@ -73,11 +77,12 @@ Plot Update (Plotly.newPlot)
 
 ## Surface Types & Mathematical Models
 
-The application supports 6 surface types, each with unique mathematical formulations:
+The application supports 8 surface types, each with unique mathematical formulations:
 
 1. **Sphere**
    - Parameters: Radius, Min Height, Max Height
    - Simple spherical surface (R > 0 = concave, R < 0 = convex)
+   - Uses exact formula: z = R - sqrt(R² - r²)
 
 2. **Even Asphere**
    - Parameters: Radius, Conic Constant (k), A4-A20 (even powers)
@@ -88,17 +93,30 @@ The application supports 6 surface types, each with unique mathematical formulat
    - Parameters: Radius, Conic Constant, A3-A20 (all powers)
    - Aspheric surface with both odd and even polynomial terms
 
-4. **Opal Un U**
-   - Parameters: Radius, e2, H, A2-A12
+4. **Zernike**
+   - Parameters: Radius, Conic Constant, Extrapolate, Norm Radius, Number of Terms, A2-A16, Decenter X/Y, Z1-Z37, Scan Angle, X/Y Coordinate, Min/Max Height
+   - Zernike Standard Sag surface (FZERNSAG in Zemax)
+   - Combines base aspheric surface with Zernike polynomial aberrations
+   - Uses standard (non-normalized) Zernike polynomials
+   - Supports up to 37 Zernike terms
+
+5. **Irregular**
+   - Parameters: Radius, Conic Constant, Decenter X/Y, Tilt X/Y, Spherical, Astigmatism, Coma, Angle, Scan Angle, X/Y Coordinate, Min/Max Height
+   - IRREGULA surface type from Zemax
+   - Combines base conic surface with coordinate transformations and Zernike-like aberrations
+   - Tilt convention matches Zemax (negative signs applied internally)
+
+6. **Opal Un U**
+   - Parameters: Radius, e2, H, A2-A12, Min Height, Max Height
    - Iterative solution for specialized optical surfaces
    - Uses convergence tolerance 1e-15, max 1M iterations
 
-5. **Opal Un Z**
-   - Parameters: Radius, e2, H, A3-A13
+7. **Opal Un Z**
+   - Parameters: Radius, e2, H, A3-A13, Min Height, Max Height
    - Newton-Raphson iterative solver
    - Uses convergence tolerance 1e-12, max 1K iterations
 
-6. **Poly**
+8. **Poly**
    - Parameters: A1-A13, Min Height, Max Height
    - Pure polynomial surface (no base radius)
    - Newton-Raphson iterative solver
@@ -342,11 +360,14 @@ surfaces.push(newSurface);               // ✗ Bad
 
 ### File Organization
 
-- **main.js:** Electron-specific only, no business logic
-- **preload.js:** Minimal security bridge, no calculations
-- **renderer.js:** All React components and UI logic (consider splitting if >2000 lines)
-- **calculationsWrapper.js:** Pure mathematical functions, no UI dependencies
-- **styles.css:** Global styles only (scrollbars, focus states), prefer inline styles
+- **main.js:** Electron-specific, window management, file I/O handlers (~549 lines)
+- **preload.js:** Minimal security bridge, no calculations (~14 lines)
+- **renderer.js:** All React components and UI logic (~3435 lines - **NEEDS REFACTORING**)
+- **calculationsWrapper.js:** Pure mathematical functions for all surface types (~555 lines)
+- **zmxParser.js:** Zemax ZMX file parser and converter (~341 lines)
+- **calculations.py:** Python reference implementation for validation (~347 lines)
+- **surfaceFitter.py:** Surface equation fitter using lmfit library (~294 lines)
+- **styles.css:** Global styles only (scrollbars, focus states), prefer inline styles (~49 lines)
 
 ## Dependencies & Security
 
@@ -358,8 +379,14 @@ surfaces.push(newSurface);               // ✗ Bad
 - Plotly.js loaded via CDN (not NPM)
 
 **Development:**
-- `electron@28.0.0` - Desktop framework
+- `electron@28.3.3` - Desktop framework
 - `electron-builder@24.9.1` - Build/packaging tool
+
+### Python Dependencies (for surface fitting)
+
+**Required for surface fitting feature:**
+- `numpy>=1.21.0` - Numerical computing
+- `lmfit>=1.0.3` - Non-linear least-squares minimization and curve fitting
 
 **Security Notes:**
 - Context isolation enabled (`contextIsolation: true`)
@@ -502,37 +529,69 @@ Current cache: Best-fit sphere parameters (Map with JSON key)
 - Plotly layout objects
 - Parameter validation results
 
-## Future Development Roadmap
+## Recent Development History
 
-### Planned Features (from menu stubs)
+### Implemented Features (2025-11)
 
-1. **File I/O:**
-   - Save/Load surface configurations
-   - Export results to CSV/JSON
-   - Import from optical design software
+1. **ZMX File Import:**
+   - Full Zemax ZMX file parser (`zmxParser.js`)
+   - Supports STANDARD, EVENASPH, ODDASPHE, IRREGULA, FZERNSAG surface types
+   - Automatic conversion to application surface format
+   - Import dialog with surface selection
 
-2. **Surface Operations:**
+2. **Folder Organization:**
+   - Hierarchical folder structure for organizing surfaces
+   - Persistent storage in `surfaces/` directory
+   - Context menus for folder/surface operations
+   - Expand/collapse folder tree
+
+3. **Surface Fitting:**
+   - Python-based surface equation fitter using lmfit
+   - Supports Even Asphere, Odd Asphere, Opal Universal U/Z
+   - Fit metrics: RMSE, R², AIC, BIC, Chi-square
+   - Deviation analysis and plotting
+
+4. **New Surface Types:**
+   - Zernike surfaces (FZERNSAG) with up to 37 terms
+   - Irregular surfaces (IRREGULA) with aberration terms
+   - Both imported from ZMX or created manually
+
+5. **Bug Fixes:**
+   - Fixed Irregular surface tilt sign convention to match Zemax
+   - Fixed Zernike polynomial equations to use standard formulas
+   - Removed shape classification feature (deprecated)
+
+### Future Development Roadmap
+
+1. **Surface Operations:**
    - Duplicate surface (Ctrl+D) - menu exists, not implemented
-   - Convert between surface types
    - Surface comparison view
+   - Undo/Redo support
 
-3. **Advanced Calculations:**
+2. **Advanced Calculations:**
    - Additional optical metrics
    - Multi-surface systems
    - Tolerance analysis
+   - Ray tracing integration
 
-4. **UI Enhancements:**
-   - Customizable color schemes
+3. **UI Enhancements:**
    - Plot export (PNG, SVG)
    - Print/report generation
+   - Keyboard navigation improvements
+
+4. **Code Refactoring:**
+   - Split renderer.js into separate component files
+   - Add TypeScript for type safety
+   - Implement automated testing
 
 ### Technical Debt
 
-1. **Code organization:** renderer.js is 1520 lines - consider splitting:
+1. **CRITICAL - Code organization:** renderer.js is now 3435 lines - **MUST SPLIT**:
    - `components/` - React components
    - `utils/` - Helper functions
    - `hooks/` - Custom React hooks
    - `constants/` - Surface types, colors, etc.
+   - Current size makes maintenance difficult and prone to errors
 
 2. **Build modernization:**
    - Consider Vite or esbuild for faster dev/build
@@ -540,14 +599,16 @@ Current cache: Best-fit sphere parameters (Map with JSON key)
    - JSX for more readable components
 
 3. **Testing:**
-   - Add unit tests for calculations
+   - Add unit tests for calculations (test_irregular.html exists but limited)
    - Add integration tests for UI
    - Visual regression tests for plots
+   - Automated test suite for all surface types
 
 4. **Documentation:**
    - API documentation for SurfaceCalculations
    - User guide with examples
    - Video tutorials
+   - ZMX import documentation
 
 ## AI Assistant Guidelines
 
@@ -590,9 +651,13 @@ Current cache: Best-fit sphere parameters (Map with JSON key)
 ### Key Files by Task
 
 - **UI Changes:** `src/renderer.js` (components) + `src/styles.css` (global styles)
-- **Calculations:** `src/calculationsWrapper.js`
+- **Calculations:** `src/calculationsWrapper.js` (JavaScript) + `src/calculations.py` (Python reference)
+- **ZMX Import:** `src/zmxParser.js`
+- **Surface Fitting:** `src/surfaceFitter.py` (requires `requirements.txt` dependencies)
 - **Menu/IPC:** `src/main.js` + `src/preload.js`
+- **File I/O:** `src/main.js` (handles folder loading/saving to `surfaces/` directory)
 - **Build Config:** `package.json` (electron-builder section)
+- **Testing:** `test_irregular.html` (manual test suite for Irregular surfaces)
 - **Documentation:** `README.md` (users), `CLAUDE.md` (AI), `.github/copilot-instructions.md` (Copilot)
 
 ### Keyboard Shortcuts
@@ -652,8 +717,91 @@ const formatted = formatValue(numericValue);  // Handles NaN, scientific notatio
 const dms = degreesToDMS(angleInDegrees);    // Converts to °'"
 ```
 
+## ZMX File Import
+
+### Supported Zemax Surface Types
+
+The ZMX parser (`zmxParser.js`) supports the following Zemax surface types:
+
+1. **STANDARD** → Converts to Even Asphere (base sphere with k=0)
+2. **EVENASPH** → Converts to Even Asphere
+3. **ODDASPHE** → Converts to Odd Asphere
+4. **IRREGULA** → Converts to Irregular surface
+5. **FZERNSAG** → Converts to Zernike surface
+
+### ZMX Parameter Mapping
+
+**EVENASPH:**
+- PARM 1: Conic constant (use CONI field instead)
+- PARM 2: A2 (not supported, ignored)
+- PARM 3: A4, PARM 4: A6, etc.
+
+**ODDASPHE:**
+- PARM 1: A1 (ignored)
+- PARM 2: A2 (ignored)
+- PARM 3: A3, PARM 4: A4, etc.
+
+**IRREGULA:**
+- PARM 1-2: Decenter X/Y
+- PARM 3-4: Tilt X/Y
+- PARM 5-7: Spherical, Astigmatism, Coma
+- PARM 8: Angle
+
+**FZERNSAG:**
+- PARM 0: Extrapolate flag
+- PARM 1-8: A2, A4, A6, A8, A10, A12, A14, A16
+- PARM 9-10: Decenter X/Y
+- XDAT 1: Number of Zernike terms
+- XDAT 2: Normalization radius
+- XDAT 3-39: Z1-Z37 (Zernike coefficients)
+
+### Usage Workflow
+
+1. User: File → Import ZMX File
+2. Select ZMX file via file dialog
+3. Parser extracts all SURF entries
+4. Dialog shows list of surfaces with type/radius/diameter
+5. User selects surfaces to import
+6. Surfaces added to current folder with auto-generated colors
+
+## Surface Fitting
+
+### Python-Based Fitting Engine
+
+The application includes a Python-based surface fitter (`surfaceFitter.py`) that uses the `lmfit` library for non-linear least-squares optimization.
+
+### Supported Fitting Modes
+
+1. **Even Asphere** - Fits radius, conic constant, and even polynomial coefficients
+2. **Odd Asphere** - Fits radius, conic constant, and all polynomial coefficients
+3. **Opal Universal U** - Fits e2 parameter and polynomial coefficients
+4. **Opal Universal Z** - Fits e2 parameter and polynomial coefficients
+5. **Opal Polynomial** - Fits polynomial coefficients
+
+### Fitting Process
+
+1. User provides (r, z) data points in `tempsurfacedata.txt`
+2. Settings file `ConvertSettings.txt` specifies:
+   - Surface type
+   - Fixed parameters (radius, H, conic)
+   - Variable parameters (e2, conic)
+   - Number of polynomial terms
+   - Optimization algorithm
+3. Python script runs optimization
+4. Results saved to:
+   - `FitReport.txt` - Fitted parameters
+   - `FitMetrics.txt` - RMSE, R², AIC, BIC, etc.
+   - `FitDeviations.txt` - Point-by-point deviations
+
+### Optimization Algorithms
+
+Supported algorithms from lmfit:
+- `leastsq` - Levenberg-Marquardt (default)
+- `least_squares` - Trust Region Reflective
+- Other lmfit methods (nelder, powell, etc.)
+
 ---
 
-**Last Updated:** 2025-11-15
-**Version:** 1.0.0
+**Last Updated:** 2025-11-16
+**Version:** 2.0.0
 **Maintained by:** AI Assistants working with this codebase
