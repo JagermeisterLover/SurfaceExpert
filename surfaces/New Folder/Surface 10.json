@@ -1,0 +1,12 @@
+{
+  "id": 10,
+  "name": "Surface 10",
+  "type": "Sphere",
+  "color": "#4a90e2",
+  "parameters": {
+    "Radius": "100.0",
+    "Min Height": "0",
+    "Max Height": "213",
+    "Step": "3"
+  }
+}

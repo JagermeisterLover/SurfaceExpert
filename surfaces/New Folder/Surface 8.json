@@ -1,0 +1,12 @@
+{
+  "id": 8,
+  "name": "Surface 8",
+  "type": "Sphere",
+  "color": "#f39c12",
+  "parameters": {
+    "Radius": "100.0",
+    "Min Height": "0",
+    "Max Height": "20.0",
+    "Step": "1"
+  }
+}

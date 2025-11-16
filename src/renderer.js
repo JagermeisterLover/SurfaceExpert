@@ -49,8 +49,9 @@ const colorscales = [
 
 // Main App Component
 const OpticalSurfaceAnalyzer = () => {
-    const [surfaces, setSurfaces] = useState(sampleSurfaces);
-    const [selectedSurface, setSelectedSurface] = useState(sampleSurfaces[0]);
+    const [folders, setFolders] = useState([]);
+    const [selectedSurface, setSelectedSurface] = useState(null);
+    const [selectedFolder, setSelectedFolder] = useState(null);
     const [activeTab, setActiveTab] = useState('summary');
     const [activeSubTab, setActiveSubTab] = useState('3d');
     const [showSettings, setShowSettings] = useState(false);
@@ -60,17 +61,54 @@ const OpticalSurfaceAnalyzer = () => {
     const [showConvertResults, setShowConvertResults] = useState(false);
     const [convertResults, setConvertResults] = useState(null);
     const [colorscale, setColorscale] = useState('Viridis');
+    const [contextMenu, setContextMenu] = useState(null);
+    const [inputDialog, setInputDialog] = useState(null);
     const plotRef = useRef(null);
 
-    // Update selected surface when it changes in the list
+    // Load folders on mount
     useEffect(() => {
-        const updated = surfaces.find(s => s.id === selectedSurface.id);
-        if (updated) {
-            setSelectedSurface(updated);
+        loadFoldersFromDisk();
+    }, []);
+
+    const loadFoldersFromDisk = async () => {
+        if (window.electronAPI && window.electronAPI.loadFolders) {
+            const result = await window.electronAPI.loadFolders();
+            if (result.success) {
+                setFolders(result.folders);
+                // Select first surface if available
+                if (result.folders.length > 0 && result.folders[0].surfaces.length > 0) {
+                    setSelectedSurface(result.folders[0].surfaces[0]);
+                    setSelectedFolder(result.folders[0]);
+                }
+            }
+        } else {
+            // Fallback for development without Electron
+            const defaultFolder = {
+                id: 'default',
+                name: 'My Surfaces',
+                expanded: true,
+                surfaces: sampleSurfaces
+            };
+            setFolders([defaultFolder]);
+            setSelectedSurface(sampleSurfaces[0]);
+            setSelectedFolder(defaultFolder);
         }
-    }, [surfaces]);
+    };
+
+    // Update selected surface when it changes in the folders
+    useEffect(() => {
+        if (!selectedSurface) return;
+        for (const folder of folders) {
+            const updated = folder.surfaces.find(s => s.id === selectedSurface.id);
+            if (updated) {
+                setSelectedSurface(updated);
+                break;
+            }
+        }
+    }, [folders]);
 
     useEffect(() => {
+        if (!selectedSurface) return;
         if (plotRef.current && activeTab !== 'summary' && activeSubTab === '3d') {
             create3DPlot();
         } else if (plotRef.current && activeTab !== 'summary' && activeSubTab === '2d') {
@@ -165,8 +203,11 @@ const OpticalSurfaceAnalyzer = () => {
     };
 
     const handleImportSelectedSurfaces = (selectedIndices) => {
+        if (!selectedFolder) return;
+
         const colors = ['#4a90e2', '#e94560', '#2ecc71', '#f39c12', '#9b59b6', '#e67e22', '#1abc9c', '#34495e'];
-        let nextId = surfaces.length > 0 ? Math.max(...surfaces.map(s => s.id)) + 1 : 1;
+        const allSurfaces = folders.flatMap(f => f.surfaces);
+        let nextId = allSurfaces.length > 0 ? Math.max(...allSurfaces.map(s => s.id)) + 1 : 1;
 
         const newSurfaces = selectedIndices.map((index, i) => {
             const zmxSurface = zmxSurfaces[index];
@@ -174,7 +215,12 @@ const OpticalSurfaceAnalyzer = () => {
             return ZMXParser.convertToAppSurface(zmxSurface, nextId + i, color);
         });
 
-        setSurfaces([...surfaces, ...newSurfaces]);
+        const updated = folders.map(f =>
+            f.id === selectedFolder.id
+                ? { ...f, surfaces: [...f.surfaces, ...newSurfaces] }
+                : f
+        );
+        setFolders(updated);
         setShowZMXImport(false);
 
         if (newSurfaces.length > 0) {
@@ -251,7 +297,10 @@ const OpticalSurfaceAnalyzer = () => {
                 yaxis: { title: 'Y (mm)', range: [-maxHeight, maxHeight] },
                 zaxis: { title: `${activeTab.charAt(0).toUpperCase() + activeTab.slice(1)} (${unit})`, range: [zMin, zMax] },
                 bgcolor: '#2b2b2b',
-                aspectmode: 'cube'
+                // For sag tab, use manual aspect ratio to maintain 1:1 scale for X:Y
+                // For other tabs, use cube mode for uniform scaling
+                aspectmode: activeTab === 'sag' ? 'manual' : 'cube',
+                aspectratio: activeTab === 'sag' ? { x: 1, y: 1, z: (zMax - zMin) / (2 * maxHeight) } : undefined
             },
             paper_bgcolor: '#353535',
             plot_bgcolor: '#353535',
@@ -360,15 +409,24 @@ const OpticalSurfaceAnalyzer = () => {
     const createCrossSection = () => {
         const minHeight = parseFloat(selectedSurface.parameters['Min Height']) || 0;
         const maxHeight = parseFloat(selectedSurface.parameters['Max Height']) || 25;
-        const points = 100;
+        const step = parseFloat(selectedSurface.parameters['Step']) || 1;
         const x = [], y = [];
         const unit = activeTab === 'slope' ? 'rad' : 'mm';
 
-        // Plot from -maxHeight to +maxHeight (diameter)
-        for (let i = 0; i < points; i++) {
-            const r = -maxHeight + (i * (2 * maxHeight)) / (points - 1);
+        // Plot from -maxHeight to +maxHeight (diameter) using step
+        // Build array of r values, ensuring we always include minHeight and maxHeight
+        const rValues = [];
+        for (let r = -maxHeight; r < maxHeight; r += step) {
+            rValues.push(r);
+        }
+        // Always include maxHeight endpoint
+        if (rValues[rValues.length - 1] !== maxHeight) {
+            rValues.push(maxHeight);
+        }
+
+        for (const r of rValues) {
             x.push(r);
-            
+
             const absR = Math.abs(r);
             if (absR >= minHeight && absR <= maxHeight) {
                 const values = calculateSurfaceValues(absR, selectedSurface);
@@ -393,7 +451,12 @@ const OpticalSurfaceAnalyzer = () => {
 
         const layout = {
             xaxis: { title: 'Radial Distance (mm)', zeroline: true },
-            yaxis: { title: `${activeTab.charAt(0).toUpperCase() + activeTab.slice(1)} (${unit})` },
+            yaxis: {
+                title: `${activeTab.charAt(0).toUpperCase() + activeTab.slice(1)} (${unit})`,
+                // For sag tab, maintain 1:1 aspect ratio with radial distance
+                scaleanchor: activeTab === 'sag' ? 'x' : undefined,
+                scaleratio: activeTab === 'sag' ? 1 : undefined
+            },
             paper_bgcolor: '#353535',
             plot_bgcolor: '#2b2b2b',
             font: { color: '#e0e0e0' },
@@ -409,37 +472,87 @@ const OpticalSurfaceAnalyzer = () => {
         Plotly.newPlot(plotRef.current, data, layout, config);
     };
 
-    const updateSurfaceName = (newName) => {
-        const updated = surfaces.map(s =>
-            s.id === selectedSurface.id ? { ...s, name: newName } : s
-        );
-        setSurfaces(updated);
+    const updateSurfaceName = async (newName) => {
+        if (!selectedSurface || !selectedFolder) return;
+
+        const oldName = selectedSurface.name;
+        const updatedSurface = { ...selectedSurface, name: newName };
+
+        // Delete old file if name changed
+        if (oldName !== newName && window.electronAPI) {
+            await window.electronAPI.deleteSurface(selectedFolder.name, oldName);
+        }
+
+        // Save with new name
+        if (window.electronAPI) {
+            await window.electronAPI.saveSurface(selectedFolder.name, updatedSurface);
+        }
+
+        const updated = folders.map(f => ({
+            ...f,
+            surfaces: f.surfaces.map(s =>
+                s.id === selectedSurface.id ? updatedSurface : s
+            )
+        }));
+        setFolders(updated);
+        setSelectedSurface(updatedSurface);
     };
 
-    const updateSurfaceType = (newType) => {
+    const updateSurfaceType = async (newType) => {
+        if (!selectedSurface || !selectedFolder) return;
+
         const newParams = {};
         surfaceTypes[newType].forEach(param => {
             newParams[param] = selectedSurface.parameters[param] || '0';
         });
+        // Preserve Step parameter
+        newParams['Step'] = selectedSurface.parameters['Step'] || '1';
 
-        const updated = surfaces.map(s =>
-            s.id === selectedSurface.id ? { ...s, type: newType, parameters: newParams } : s
-        );
-        setSurfaces(updated);
+        const updatedSurface = { ...selectedSurface, type: newType, parameters: newParams };
+
+        // Save to disk
+        if (window.electronAPI) {
+            await window.electronAPI.saveSurface(selectedFolder.name, updatedSurface);
+        }
+
+        const updated = folders.map(f => ({
+            ...f,
+            surfaces: f.surfaces.map(s =>
+                s.id === selectedSurface.id ? updatedSurface : s
+            )
+        }));
+        setFolders(updated);
+        setSelectedSurface(updatedSurface);
     };
 
-    const updateParameter = (param, value) => {
-        const updated = surfaces.map(s =>
-            s.id === selectedSurface.id ? {
-                ...s,
-                parameters: { ...s.parameters, [param]: value }
-            } : s
-        );
-        setSurfaces(updated);
+    const updateParameter = async (param, value) => {
+        if (!selectedSurface || !selectedFolder) return;
+
+        const updatedSurface = {
+            ...selectedSurface,
+            parameters: { ...selectedSurface.parameters, [param]: value }
+        };
+
+        // Save to disk
+        if (window.electronAPI) {
+            await window.electronAPI.saveSurface(selectedFolder.name, updatedSurface);
+        }
+
+        const updated = folders.map(f => ({
+            ...f,
+            surfaces: f.surfaces.map(s =>
+                s.id === selectedSurface.id ? updatedSurface : s
+            )
+        }));
+        setFolders(updated);
+        setSelectedSurface(updatedSurface);
     };
 
-    const addSurface = () => {
-        const newId = Math.max(...surfaces.map(s => s.id)) + 1;
+    const addSurface = async () => {
+        if (!selectedFolder) return;
+
+        const allSurfaces = folders.flatMap(f => f.surfaces);
+        const newId = allSurfaces.length > 0 ? Math.max(...allSurfaces.map(s => s.id)) + 1 : 1;
         const colors = ['#4a90e2', '#e94560', '#2ecc71', '#f39c12', '#9b59b6'];
         const newSurface = {
             id: newId,
@@ -449,19 +562,145 @@ const OpticalSurfaceAnalyzer = () => {
             parameters: {
                 'Radius': '100.0',
                 'Min Height': '0',
-                'Max Height': '20.0'
+                'Max Height': '20.0',
+                'Step': '1'
             }
         };
-        setSurfaces([...surfaces, newSurface]);
+
+        // Save to disk
+        if (window.electronAPI) {
+            await window.electronAPI.saveSurface(selectedFolder.name, newSurface);
+        }
+
+        const updated = folders.map(f =>
+            f.id === selectedFolder.id
+                ? { ...f, surfaces: [...f.surfaces, newSurface] }
+                : f
+        );
+        setFolders(updated);
         setSelectedSurface(newSurface);
     };
 
-    const removeSurface = () => {
-        if (surfaces.length <= 1) return;
+    const removeSurface = async () => {
+        if (!selectedSurface || !selectedFolder) return;
 
-        const filtered = surfaces.filter(s => s.id !== selectedSurface.id);
-        setSurfaces(filtered);
-        setSelectedSurface(filtered[0]);
+        const folder = folders.find(f => f.id === selectedFolder.id);
+        if (!folder || folder.surfaces.length === 0) return;
+
+        // Delete from disk
+        if (window.electronAPI) {
+            await window.electronAPI.deleteSurface(selectedFolder.name, selectedSurface.name);
+        }
+
+        const updated = folders.map(f => {
+            if (f.id === selectedFolder.id) {
+                const filtered = f.surfaces.filter(s => s.id !== selectedSurface.id);
+                return { ...f, surfaces: filtered };
+            }
+            return f;
+        });
+
+        setFolders(updated);
+
+        // Select another surface
+        const updatedFolder = updated.find(f => f.id === selectedFolder.id);
+        if (updatedFolder && updatedFolder.surfaces.length > 0) {
+            setSelectedSurface(updatedFolder.surfaces[0]);
+        } else {
+            setSelectedSurface(null);
+        }
+    };
+
+    const addFolder = async (name) => {
+        if (!name || !name.trim()) return;
+
+        // Create folder on disk
+        if (window.electronAPI) {
+            try {
+                const result = await window.electronAPI.createFolder(name);
+                if (!result.success) {
+                    alert(result.error || 'Failed to create folder');
+                    return;
+                }
+            } catch (error) {
+                alert('Error creating folder: ' + error.message);
+                return;
+            }
+        }
+
+        const newFolder = {
+            id: name,
+            name: name,
+            expanded: true,
+            surfaces: []
+        };
+        setFolders([...folders, newFolder]);
+        setSelectedFolder(newFolder);
+    };
+
+    const removeFolder = async (folderId) => {
+        if (folders.length <= 1) return;
+
+        const folder = folders.find(f => f.id === folderId);
+        if (!folder) return;
+
+        // Delete folder on disk
+        if (window.electronAPI) {
+            const result = await window.electronAPI.deleteFolder(folder.name);
+            if (!result.success) {
+                alert(result.error || 'Failed to delete folder');
+                return;
+            }
+        }
+
+        const filtered = folders.filter(f => f.id !== folderId);
+        setFolders(filtered);
+        if (selectedFolder && selectedFolder.id === folderId) {
+            setSelectedFolder(filtered[0]);
+            if (filtered[0].surfaces.length > 0) {
+                setSelectedSurface(filtered[0].surfaces[0]);
+            } else {
+                setSelectedSurface(null);
+            }
+        }
+    };
+
+    const renameFolder = async (folderId, newName) => {
+        if (!newName || !newName.trim()) return;
+
+        const folder = folders.find(f => f.id === folderId);
+        if (!folder) return;
+
+        // Rename folder on disk
+        if (window.electronAPI) {
+            try {
+                const result = await window.electronAPI.renameFolder(folder.name, newName);
+                if (!result.success) {
+                    alert(result.error || 'Failed to rename folder');
+                    return;
+                }
+            } catch (error) {
+                alert('Error renaming folder: ' + error.message);
+                return;
+            }
+        }
+
+        const updated = folders.map(f =>
+            f.id === folderId ? { ...f, id: newName, name: newName } : f
+        );
+        setFolders(updated);
+
+        // Update selected folder if it was renamed
+        if (selectedFolder && selectedFolder.id === folderId) {
+            setSelectedFolder({ ...selectedFolder, id: newName, name: newName });
+        }
+    };
+
+    const toggleFolderExpanded = (folderId) => {
+        const updated = folders.map(f =>
+            f.id === folderId ? { ...f, expanded: !f.expanded } : f
+        );
+        setFolders(updated);
     };
 
     const classifySurfaceShape = () => {
@@ -522,7 +761,8 @@ const OpticalSurfaceAnalyzer = () => {
             display: 'flex',
             flexDirection: 'column',
             overflow: 'hidden'
-        }
+        },
+        onClick: () => setContextMenu(null)
     },
         // Settings Modal
         showSettings && React.createElement(SettingsModal, {
@@ -541,8 +781,9 @@ const OpticalSurfaceAnalyzer = () => {
         // Conversion Dialog
         showConvert && React.createElement(ConversionDialog, {
             selectedSurface,
-            surfaces,
-            setSurfaces,
+            folders,
+            selectedFolder,
+            setFolders,
             setSelectedSurface,
             setShowConvert,
             setShowConvertResults,
@@ -552,12 +793,191 @@ const OpticalSurfaceAnalyzer = () => {
         // Conversion Results Dialog
         showConvertResults && React.createElement(ConversionResultsDialog, {
             convertResults,
-            surfaces,
-            setSurfaces,
+            folders,
+            selectedFolder,
+            setFolders,
             setSelectedSurface,
             onClose: () => setShowConvertResults(false),
             c
         }),
+        // Context Menu
+        contextMenu && React.createElement('div', {
+            style: {
+                position: 'fixed',
+                left: contextMenu.x + 'px',
+                top: contextMenu.y + 'px',
+                backgroundColor: c.panel,
+                border: `1px solid ${c.border}`,
+                borderRadius: '6px',
+                boxShadow: '0 4px 12px rgba(0,0,0,0.3)',
+                zIndex: 10000,
+                minWidth: '160px',
+                overflow: 'hidden'
+            },
+            onClick: (e) => e.stopPropagation()
+        },
+            contextMenu.type === 'folder' ? [
+                React.createElement('div', {
+                    key: 'rename',
+                    style: {
+                        padding: '10px 16px',
+                        cursor: 'pointer',
+                        fontSize: '13px',
+                        borderBottom: `1px solid ${c.border}`
+                    },
+                    onClick: (e) => {
+                        e.stopPropagation();
+                        const targetId = contextMenu.target.id;
+                        const targetName = contextMenu.target.name;
+                        setContextMenu(null);
+                        setInputDialog({
+                            title: 'Rename Folder',
+                            defaultValue: targetName,
+                            onConfirm: (name) => {
+                                if (name && name.trim()) {
+                                    renameFolder(targetId, name.trim());
+                                }
+                                setInputDialog(null);
+                            },
+                            onCancel: () => setInputDialog(null)
+                        });
+                    },
+                    onMouseEnter: (e) => e.currentTarget.style.backgroundColor = c.hover,
+                    onMouseLeave: (e) => e.currentTarget.style.backgroundColor = 'transparent'
+                }, 'Rename'),
+                React.createElement('div', {
+                    key: 'delete',
+                    style: {
+                        padding: '10px 16px',
+                        cursor: folders.length > 1 ? 'pointer' : 'not-allowed',
+                        fontSize: '13px',
+                        color: folders.length > 1 ? '#e94560' : c.textDim
+                    },
+                    onClick: () => {
+                        if (folders.length > 1 && confirm(`Delete folder "${contextMenu.target.name}"?`)) {
+                            removeFolder(contextMenu.target.id);
+                        }
+                        setContextMenu(null);
+                    },
+                    onMouseEnter: (e) => {
+                        if (folders.length > 1) e.currentTarget.style.backgroundColor = c.hover;
+                    },
+                    onMouseLeave: (e) => e.currentTarget.style.backgroundColor = 'transparent'
+                }, 'Delete Folder')
+            ] : [
+                React.createElement('div', {
+                    key: 'delete',
+                    style: {
+                        padding: '10px 16px',
+                        cursor: 'pointer',
+                        fontSize: '13px',
+                        color: '#e94560'
+                    },
+                    onClick: () => {
+                        removeSurface();
+                        setContextMenu(null);
+                    },
+                    onMouseEnter: (e) => e.currentTarget.style.backgroundColor = c.hover,
+                    onMouseLeave: (e) => e.currentTarget.style.backgroundColor = 'transparent'
+                }, 'Delete Surface')
+            ]
+        ),
+        // Input Dialog
+        inputDialog && React.createElement('div', {
+            style: {
+                position: 'fixed',
+                top: 0,
+                left: 0,
+                right: 0,
+                bottom: 0,
+                backgroundColor: 'rgba(0,0,0,0.5)',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                zIndex: 10001
+            },
+            onClick: () => inputDialog.onCancel()
+        },
+            React.createElement('div', {
+                style: {
+                    backgroundColor: c.panel,
+                    border: `1px solid ${c.border}`,
+                    borderRadius: '8px',
+                    padding: '20px',
+                    minWidth: '400px',
+                    boxShadow: '0 8px 24px rgba(0,0,0,0.4)'
+                },
+                onClick: (e) => e.stopPropagation()
+            },
+                React.createElement('h3', {
+                    style: {
+                        margin: '0 0 16px 0',
+                        color: c.text,
+                        fontSize: '16px',
+                        fontWeight: '500'
+                    }
+                }, inputDialog.title),
+                React.createElement('input', {
+                    type: 'text',
+                    defaultValue: inputDialog.defaultValue,
+                    autoFocus: true,
+                    onKeyDown: (e) => {
+                        if (e.key === 'Enter') {
+                            inputDialog.onConfirm(e.target.value);
+                        } else if (e.key === 'Escape') {
+                            inputDialog.onCancel();
+                        }
+                    },
+                    style: {
+                        width: '100%',
+                        padding: '8px 12px',
+                        backgroundColor: c.bg,
+                        color: c.text,
+                        border: `1px solid ${c.border}`,
+                        borderRadius: '4px',
+                        fontSize: '14px',
+                        outline: 'none',
+                        boxSizing: 'border-box'
+                    }
+                }),
+                React.createElement('div', {
+                    style: {
+                        display: 'flex',
+                        gap: '8px',
+                        marginTop: '16px',
+                        justifyContent: 'flex-end'
+                    }
+                },
+                    React.createElement('button', {
+                        onClick: () => inputDialog.onCancel(),
+                        style: {
+                            padding: '8px 16px',
+                            backgroundColor: c.panel,
+                            color: c.text,
+                            border: `1px solid ${c.border}`,
+                            borderRadius: '4px',
+                            cursor: 'pointer',
+                            fontSize: '13px'
+                        }
+                    }, 'Cancel'),
+                    React.createElement('button', {
+                        onClick: (e) => {
+                            const input = e.target.parentElement.parentElement.querySelector('input');
+                            inputDialog.onConfirm(input.value);
+                        },
+                        style: {
+                            padding: '8px 16px',
+                            backgroundColor: c.accent,
+                            color: '#fff',
+                            border: 'none',
+                            borderRadius: '4px',
+                            cursor: 'pointer',
+                            fontSize: '13px'
+                        }
+                    }, 'OK')
+                )
+            )
+        ),
         // Main Content Area
         React.createElement('div', { style: { display: 'flex', flex: 1, overflow: 'hidden' } },
             // Left Panel - Surfaces
@@ -578,95 +998,165 @@ const OpticalSurfaceAnalyzer = () => {
                         fontWeight: 'bold'
                     }
                 }, 'Surfaces'),
-                React.createElement('div', { style: { flex: 1, overflow: 'auto', padding: '8px' } },
-                    surfaces.map(surface =>
-                        React.createElement('div', {
-                            key: surface.id,
-                            onClick: () => setSelectedSurface(surface),
-                            style: {
-                                padding: '10px',
-                                marginBottom: '4px',
-                                backgroundColor: selectedSurface.id === surface.id ? c.hover : 'transparent',
-                                borderRadius: '4px',
-                                cursor: 'pointer',
-                                display: 'flex',
-                                alignItems: 'center',
-                                gap: '8px',
-                                transition: 'background-color 0.2s'
-                            },
-                            onMouseEnter: (e) => {
-                                if (selectedSurface.id !== surface.id) {
-                                    e.currentTarget.style.backgroundColor = c.border;
-                                }
-                            },
-                            onMouseLeave: (e) => {
-                                if (selectedSurface.id !== surface.id) {
-                                    e.currentTarget.style.backgroundColor = 'transparent';
-                                }
-                            }
-                        },
+                React.createElement('div', { style: { flex: 1, overflow: 'auto', padding: '4px' } },
+                    folders.map(folder =>
+                        React.createElement('div', { key: folder.id, style: { marginBottom: '4px' } },
+                            // Folder header
                             React.createElement('div', {
                                 style: {
-                                    width: '12px',
-                                    height: '12px',
-                                    borderRadius: '2px',
-                                    backgroundColor: surface.color,
-                                    flexShrink: 0
+                                    padding: '8px',
+                                    backgroundColor: selectedFolder?.id === folder.id ? c.hover : 'transparent',
+                                    borderRadius: '4px',
+                                    cursor: 'pointer',
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    gap: '6px',
+                                    fontSize: '12px',
+                                    fontWeight: '600'
+                                },
+                                onClick: () => {
+                                    toggleFolderExpanded(folder.id);
+                                    setSelectedFolder(folder);
+                                },
+                                onContextMenu: (e) => {
+                                    e.preventDefault();
+                                    setSelectedFolder(folder);
+                                    setContextMenu({
+                                        x: e.clientX,
+                                        y: e.clientY,
+                                        type: 'folder',
+                                        target: folder
+                                    });
                                 }
-                            }),
-                            React.createElement('div', { style: { flex: 1, minWidth: 0 } },
-                                React.createElement('div', {
-                                    style: { fontSize: '13px', fontWeight: '500', marginBottom: '2px' }
-                                }, surface.name),
-                                React.createElement('div', {
-                                    style: { fontSize: '11px', color: c.textDim }
-                                }, surface.type)
+                            },
+                                React.createElement('span', { style: { fontSize: '10px', userSelect: 'none' } },
+                                    folder.expanded ? '▼' : '▶'
+                                ),
+                                React.createElement('span', { style: { flex: 1 } }, folder.name),
+                                React.createElement('span', {
+                                    style: { fontSize: '10px', color: c.textDim }
+                                }, `(${folder.surfaces.length})`)
+                            ),
+                            // Folder surfaces
+                            folder.expanded && React.createElement('div', { style: { paddingLeft: '16px' } },
+                                folder.surfaces.map(surface =>
+                                    React.createElement('div', {
+                                        key: surface.id,
+                                        onClick: (e) => {
+                                            e.stopPropagation();
+                                            setSelectedSurface(surface);
+                                            setSelectedFolder(folder);
+                                        },
+                                        onContextMenu: (e) => {
+                                            e.preventDefault();
+                                            e.stopPropagation();
+                                            setSelectedSurface(surface);
+                                            setSelectedFolder(folder);
+                                            setContextMenu({
+                                                x: e.clientX,
+                                                y: e.clientY,
+                                                type: 'surface',
+                                                target: surface,
+                                                folder: folder
+                                            });
+                                        },
+                                        style: {
+                                            padding: '8px',
+                                            marginTop: '2px',
+                                            backgroundColor: selectedSurface?.id === surface.id ? c.hover : 'transparent',
+                                            borderRadius: '4px',
+                                            cursor: 'pointer',
+                                            display: 'flex',
+                                            alignItems: 'center',
+                                            gap: '8px',
+                                            transition: 'background-color 0.2s'
+                                        },
+                                        onMouseEnter: (e) => {
+                                            if (selectedSurface?.id !== surface.id) {
+                                                e.currentTarget.style.backgroundColor = c.border;
+                                            }
+                                        },
+                                        onMouseLeave: (e) => {
+                                            if (selectedSurface?.id !== surface.id) {
+                                                e.currentTarget.style.backgroundColor = 'transparent';
+                                            }
+                                        }
+                                    },
+                                        React.createElement('div', {
+                                            style: {
+                                                width: '10px',
+                                                height: '10px',
+                                                borderRadius: '2px',
+                                                backgroundColor: surface.color,
+                                                flexShrink: 0
+                                            }
+                                        }),
+                                        React.createElement('div', { style: { flex: 1, minWidth: 0 } },
+                                            React.createElement('div', {
+                                                style: { fontSize: '12px', fontWeight: '500', marginBottom: '1px' }
+                                            }, surface.name),
+                                            React.createElement('div', {
+                                                style: { fontSize: '10px', color: c.textDim }
+                                            }, surface.type)
+                                        )
+                                    )
+                                )
                             )
                         )
                     )
                 ),
+                // Add buttons
                 React.createElement('div', {
                     style: {
                         padding: '8px',
                         borderTop: `1px solid ${c.border}`,
                         display: 'flex',
-                        gap: '8px'
+                        gap: '6px',
+                        fontSize: '12px'
                     }
                 },
                     React.createElement('button', {
-                        onClick: addSurface,
+                        onClick: (e) => {
+                            e.stopPropagation();
+                            setInputDialog({
+                                title: 'New Folder',
+                                defaultValue: 'New Folder',
+                                onConfirm: (name) => {
+                                    if (name && name.trim()) {
+                                        addFolder(name.trim());
+                                    }
+                                    setInputDialog(null);
+                                },
+                                onCancel: () => setInputDialog(null)
+                            });
+                        },
                         style: {
                             flex: 1,
                             padding: '8px',
-                            backgroundColor: c.accent,
-                            color: 'white',
-                            border: 'none',
-                            borderRadius: '4px',
-                            cursor: 'pointer',
-                            fontSize: '12px',
-                            display: 'flex',
-                            alignItems: 'center',
-                            justifyContent: 'center',
-                            gap: '4px'
-                        }
-                    }, React.createElement(PlusIcon), ' Add'),
-                    React.createElement('button', {
-                        onClick: removeSurface,
-                        style: {
-                            flex: 1,
-                            padding: '8px',
-                            backgroundColor: c.hover,
+                            backgroundColor: c.panel,
                             color: c.text,
                             border: `1px solid ${c.border}`,
                             borderRadius: '4px',
                             cursor: 'pointer',
                             fontSize: '12px',
-                            display: 'flex',
-                            alignItems: 'center',
-                            justifyContent: 'center',
-                            gap: '4px'
+                            fontWeight: '500'
                         }
-                    }, React.createElement(MinusIcon), ' Remove')
+                    }, '+ Folder'),
+                    React.createElement('button', {
+                        onClick: addSurface,
+                        disabled: !selectedFolder,
+                        style: {
+                            flex: 1,
+                            padding: '8px',
+                            backgroundColor: selectedFolder ? c.accent : c.border,
+                            color: 'white',
+                            border: 'none',
+                            borderRadius: '4px',
+                            cursor: selectedFolder ? 'pointer' : 'not-allowed',
+                            fontSize: '12px',
+                            fontWeight: '500'
+                        }
+                    }, '+ Surface')
                 )
             ),
 
@@ -757,6 +1247,23 @@ const OpticalSurfaceAnalyzer = () => {
 
                 // Content Area
                 React.createElement('div', { style: { flex: 1, overflow: 'auto', backgroundColor: c.bg } },
+                    !selectedSurface ?
+                        React.createElement('div', {
+                            style: {
+                                width: '100%',
+                                height: '100%',
+                                display: 'flex',
+                                alignItems: 'center',
+                                justifyContent: 'center',
+                                flexDirection: 'column',
+                                gap: '12px',
+                                color: c.textDim,
+                                fontSize: '14px'
+                            }
+                        },
+                            React.createElement('div', { style: { fontSize: '48px' } }, '📊'),
+                            React.createElement('div', null, 'Select a surface or create a new one')
+                        ) :
                     activeTab === 'summary' ?
                         React.createElement(SummaryView, { selectedSurface, c }) :
                     activeSubTab === 'data' ?
@@ -955,15 +1462,16 @@ const calculateSurfaceValues = (r, surface) => {
 
 // Helper Components
 const SummaryView = ({ selectedSurface, c }) => {
+    if (!selectedSurface) return null;
+
     // Generate data table for summary
     const generateDataTable = () => {
         const minHeight = parseFloat(selectedSurface.parameters['Min Height']) || 0;
         const maxHeight = parseFloat(selectedSurface.parameters['Max Height']) || 25;
-        const steps = 20;
+        const step = parseFloat(selectedSurface.parameters['Step']) || 1;
         const data = [];
 
-        for (let i = 0; i <= steps; i++) {
-            const r = minHeight + (maxHeight - minHeight) * i / steps;
+        for (let r = minHeight; r < maxHeight; r += step) {
             const values = calculateSurfaceValues(r, selectedSurface);
             data.push({
                 r: r.toFixed(7),
@@ -975,6 +1483,19 @@ const SummaryView = ({ selectedSurface, c }) => {
                 aberration: formatValue(values.aberration)
             });
         }
+
+        // Always include maxHeight
+        const values = calculateSurfaceValues(maxHeight, selectedSurface);
+        data.push({
+            r: maxHeight.toFixed(7),
+            sag: formatValue(values.sag),
+            slope: formatValue(values.slope),
+            angle: formatValue(values.angle),
+            angleDMS: degreesToDMS(values.angle),
+            asphericity: formatValue(values.asphericity),
+            aberration: formatValue(values.aberration)
+        });
+
         return data;
     };
 
@@ -1133,14 +1654,15 @@ const SummaryView = ({ selectedSurface, c }) => {
 };
 
 const DataView = ({ activeTab, selectedSurface, c }) => {
+    if (!selectedSurface) return null;
+
     const generateTabData = () => {
         const minHeight = parseFloat(selectedSurface.parameters['Min Height']) || 0;
         const maxHeight = parseFloat(selectedSurface.parameters['Max Height']) || 25;
-        const steps = 30;
+        const step = parseFloat(selectedSurface.parameters['Step']) || 1;
         const data = [];
 
-        for (let i = 0; i <= steps; i++) {
-            const r = minHeight + (maxHeight - minHeight) * i / steps;
+        for (let r = minHeight; r < maxHeight; r += step) {
             const values = calculateSurfaceValues(r, selectedSurface);
 
             let value = 0;
@@ -1154,6 +1676,19 @@ const DataView = ({ activeTab, selectedSurface, c }) => {
                 value: formatValue(value)
             });
         }
+
+        // Always include maxHeight
+        const values = calculateSurfaceValues(maxHeight, selectedSurface);
+        let value = 0;
+        if (activeTab === 'sag') value = values.sag;
+        else if (activeTab === 'slope') value = values.slope;
+        else if (activeTab === 'asphericity') value = values.asphericity;
+        else if (activeTab === 'aberration') value = values.aberration;
+        data.push({
+            r: maxHeight.toFixed(7),
+            value: formatValue(value)
+        });
+
         return data;
     };
 
@@ -1191,19 +1726,34 @@ const DataView = ({ activeTab, selectedSurface, c }) => {
 };
 
 const PropertiesPanel = ({ selectedSurface, updateSurfaceName, updateSurfaceType, updateParameter, classifySurfaceShape, onConvert, c }) => {
+    if (!selectedSurface) {
+        return React.createElement('div', {
+            style: {
+                width: '300px',
+                backgroundColor: c.panel,
+                borderLeft: `1px solid ${c.border}`,
+                padding: '20px',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                color: c.textDim,
+                fontSize: '13px'
+            }
+        }, 'No surface selected');
+    }
+
     // Calculate metrics for display
     const calculateMetrics = () => {
         const minHeight = parseFloat(selectedSurface.parameters['Min Height']) || 0;
         const maxHeight = parseFloat(selectedSurface.parameters['Max Height']) || 25;
+        const step = parseFloat(selectedSurface.parameters['Step']) || 1;
         const R = parseFloat(selectedSurface.parameters['Radius']) || 0;
 
-        const steps = 20;
         let maxSag = 0, maxSlope = 0, maxAngle = 0, maxAsphericity = 0, maxAberration = 0;
         let maxAsphGradient = 0;
         const values = [];
 
-        for (let i = 0; i <= steps; i++) {
-            const r = minHeight + (maxHeight - minHeight) * i / steps;
+        for (let r = minHeight; r < maxHeight; r += step) {
             const v = calculateSurfaceValues(r, selectedSurface);
             values.push({ r, ...v });
             maxSag = Math.max(maxSag, v.sag);
@@ -1212,6 +1762,15 @@ const PropertiesPanel = ({ selectedSurface, updateSurfaceName, updateSurfaceType
             maxAsphericity = Math.max(maxAsphericity, Math.abs(v.asphericity));
             maxAberration = Math.max(maxAberration, Math.abs(v.aberration));
         }
+
+        // Always include maxHeight
+        const vMax = calculateSurfaceValues(maxHeight, selectedSurface);
+        values.push({ r: maxHeight, ...vMax });
+        maxSag = Math.max(maxSag, vMax.sag);
+        maxSlope = Math.max(maxSlope, Math.abs(vMax.slope));
+        maxAngle = Math.max(maxAngle, Math.abs(vMax.angle));
+        maxAsphericity = Math.max(maxAsphericity, Math.abs(vMax.asphericity));
+        maxAberration = Math.max(maxAberration, Math.abs(vMax.aberration));
 
         // Calculate max asphericity gradient
         for (let i = 1; i < values.length; i++) {
@@ -1346,7 +1905,7 @@ const PropertiesPanel = ({ selectedSurface, updateSurfaceName, updateSurfaceType
                             letterSpacing: '0.3px'
                         }
                     }, 'Universal'),
-                    ['Radius', 'Min Height', 'Max Height'].map(param => (
+                    ['Radius', 'Min Height', 'Max Height', 'Step'].map(param => (
                         selectedSurface.parameters[param] !== undefined &&
                         React.createElement('div', { key: param, style: { marginBottom: '8px' } },
                             React.createElement('label', {
@@ -1729,7 +2288,7 @@ const ZMXImportDialog = ({ zmxSurfaces, onImport, onClose, c }) => {
     );
 };
 
-const ConversionDialog = ({ selectedSurface, surfaces, setSurfaces, setSelectedSurface, setShowConvert, setShowConvertResults, setConvertResults, c }) => {
+const ConversionDialog = ({ selectedSurface, folders, selectedFolder, setFolders, setSelectedSurface, setShowConvert, setShowConvertResults, setConvertResults, c }) => {
     const [targetType, setTargetType] = useState('1'); // 1=Even Asphere, 2=Odd Asphere, 3=Opal UnZ, 4=Opal UnU, 5=Poly
     const [algorithm, setAlgorithm] = useState('leastsq');
     const [radius, setRadius] = useState(selectedSurface.parameters['Radius'] || '100');
@@ -2115,11 +2674,39 @@ const ConversionDialog = ({ selectedSurface, surfaces, setSurfaces, setSelectedS
     );
 };
 
-const ConversionResultsDialog = ({ convertResults, surfaces, setSurfaces, setSelectedSurface, onClose, c }) => {
+const ConversionResultsDialog = ({ convertResults, folders, selectedFolder, setFolders, setSelectedSurface, onClose, c }) => {
+    const [showDetailsDialog, setShowDetailsDialog] = React.useState(false);
+    const [saveResults, setSaveResults] = React.useState(true);
+
+    // Calculate max deviation from deviations data
+    const calculateMaxDeviation = () => {
+        if (!convertResults || !convertResults.deviations) return 0;
+
+        const lines = convertResults.deviations.split('\n');
+        let maxDev = 0;
+
+        for (const line of lines) {
+            if (line.trim() && !line.includes('Height')) { // Skip header
+                const parts = line.trim().split(/\s+/);
+                if (parts.length >= 4) {
+                    const deviation = Math.abs(parseFloat(parts[3])); // 4th column is deviation
+                    if (!isNaN(deviation)) {
+                        maxDev = Math.max(maxDev, deviation);
+                    }
+                }
+            }
+        }
+
+        return maxDev;
+    };
+
+    const maxDeviation = calculateMaxDeviation();
+
     const createSurfaceFromFitReport = (fitReport, originalSurface) => {
         const type = fitReport.Type;
         const colors = ['#4a90e2', '#e94560', '#2ecc71', '#f39c12', '#9b59b6', '#e67e22', '#1abc9c', '#34495e'];
-        const newId = surfaces.length > 0 ? Math.max(...surfaces.map(s => s.id)) + 1 : 1;
+        const allSurfaces = folders.flatMap(f => f.surfaces);
+        const newId = allSurfaces.length > 0 ? Math.max(...allSurfaces.map(s => s.id)) + 1 : 1;
         const color = colors[newId % colors.length];
         let surfaceType, parameters;
 
@@ -2236,12 +2823,42 @@ const ConversionResultsDialog = ({ convertResults, surfaces, setSurfaces, setSel
         };
     };
 
-    const handleAddSurface = () => {
+    const handleAddSurface = async () => {
         const newSurface = createSurfaceFromFitReport(
             convertResults.fitReport,
             convertResults.originalSurface
         );
-        setSurfaces([...surfaces, newSurface]);
+
+        if (!selectedFolder) return;
+
+        // Save results if checkbox is checked
+        if (saveResults && window.electronAPI && window.electronAPI.saveConversionResults) {
+            // Reconstruct the file contents from convertResults
+            const metricsContent = Object.keys(convertResults.metrics)
+                .map(key => `${key} = ${convertResults.metrics[key]}`)
+                .join('\n');
+
+            const fitReportContent = Object.keys(convertResults.fitReport)
+                .map(key => `${key}=${convertResults.fitReport[key]}`)
+                .join('\n');
+
+            await window.electronAPI.saveConversionResults(
+                selectedFolder.name,
+                newSurface.name,
+                {
+                    metricsContent,
+                    fitReportContent,
+                    deviations: convertResults.deviations
+                }
+            );
+        }
+
+        const updated = folders.map(f =>
+            f.id === selectedFolder.id
+                ? { ...f, surfaces: [...f.surfaces, newSurface] }
+                : f
+        );
+        setFolders(updated);
         setSelectedSurface(newSurface);
         onClose();
     };
@@ -2316,14 +2933,67 @@ const ConversionResultsDialog = ({ convertResults, surfaces, setSurfaces, setSel
                                 style: { padding: '10px', textAlign: 'right', fontFamily: 'monospace', color: c.text }
                             }, String(convertResults.metrics[key]))
                         )
+                    ),
+                    // Add max deviation row
+                    React.createElement('tr', {
+                        key: 'max-deviation',
+                        style: { borderBottom: `1px solid ${c.border}`, backgroundColor: c.bg }
+                    },
+                        React.createElement('td', {
+                            style: { padding: '10px', color: c.text, fontWeight: 'bold' }
+                        }, 'Max Sag Deviation'),
+                        React.createElement('td', {
+                            style: { padding: '10px', textAlign: 'right', fontFamily: 'monospace', color: c.text, fontWeight: 'bold' }
+                        }, maxDeviation.toExponential(6) + ' mm')
                     )
                 )
             ),
 
+            // Save checkbox
+            React.createElement('div', {
+                style: {
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '8px',
+                    marginBottom: '20px',
+                    padding: '10px',
+                    backgroundColor: c.bg,
+                    borderRadius: '4px'
+                }
+            },
+                React.createElement('input', {
+                    type: 'checkbox',
+                    id: 'save-results-checkbox',
+                    checked: saveResults,
+                    onChange: (e) => setSaveResults(e.target.checked),
+                    style: { cursor: 'pointer' }
+                }),
+                React.createElement('label', {
+                    htmlFor: 'save-results-checkbox',
+                    style: { color: c.text, fontSize: '13px', cursor: 'pointer' }
+                }, 'Save results to text files')
+            ),
+
             // Action buttons
             React.createElement('div', {
-                style: { display: 'flex', justifyContent: 'flex-end', gap: '10px' }
+                style: { display: 'flex', justifyContent: 'space-between', gap: '10px' }
             },
+                React.createElement('button', {
+                    onClick: () => setShowDetailsDialog(true),
+                    style: {
+                        padding: '10px 20px',
+                        backgroundColor: c.hover,
+                        color: c.text,
+                        border: `1px solid ${c.border}`,
+                        borderRadius: '4px',
+                        cursor: 'pointer',
+                        fontSize: '13px',
+                        fontWeight: '600'
+                    }
+                }, 'View Results'),
+                React.createElement('div', {
+                    style: { display: 'flex', gap: '10px' }
+                },
                 React.createElement('button', {
                     onClick: onClose,
                     style: {
@@ -2350,6 +3020,144 @@ const ConversionResultsDialog = ({ convertResults, surfaces, setSurfaces, setSel
                         fontWeight: '600'
                     }
                 }, 'Add to Surfaces')
+                )
+            ),
+
+            // Details dialog
+            showDetailsDialog && React.createElement('div', {
+                style: {
+                    position: 'fixed',
+                    top: 0,
+                    left: 0,
+                    right: 0,
+                    bottom: 0,
+                    backgroundColor: 'rgba(0, 0, 0, 0.8)',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    zIndex: 1001
+                },
+                onClick: () => setShowDetailsDialog(false)
+            },
+                React.createElement('div', {
+                    style: {
+                        backgroundColor: c.panel,
+                        borderRadius: '8px',
+                        padding: '24px',
+                        width: '800px',
+                        maxHeight: '90vh',
+                        overflow: 'auto',
+                        boxShadow: '0 10px 40px rgba(0, 0, 0, 0.5)',
+                        border: `1px solid ${c.border}`
+                    },
+                    onClick: (e) => e.stopPropagation()
+                },
+                    React.createElement('h2', {
+                        style: {
+                            marginTop: 0,
+                            marginBottom: '20px',
+                            fontSize: '18px',
+                            fontWeight: 'bold',
+                            color: c.text
+                        }
+                    }, 'Detailed Fit Results'),
+
+                    // Fit Report section
+                    React.createElement('h3', {
+                        style: {
+                            marginTop: '20px',
+                            marginBottom: '10px',
+                            fontSize: '14px',
+                            fontWeight: 'bold',
+                            color: c.textDim
+                        }
+                    }, 'Fit Report'),
+                    React.createElement('pre', {
+                        style: {
+                            backgroundColor: c.bg,
+                            padding: '10px',
+                            borderRadius: '4px',
+                            fontSize: '11px',
+                            fontFamily: 'monospace',
+                            color: c.text,
+                            overflow: 'auto',
+                            whiteSpace: 'pre-wrap',
+                            marginBottom: '20px'
+                        }
+                    }, Object.keys(convertResults.fitReport).map(key =>
+                        `${key}=${convertResults.fitReport[key]}`
+                    ).join('\n')),
+
+                    // Fit Metrics section
+                    React.createElement('h3', {
+                        style: {
+                            marginTop: '20px',
+                            marginBottom: '10px',
+                            fontSize: '14px',
+                            fontWeight: 'bold',
+                            color: c.textDim
+                        }
+                    }, 'Fit Metrics'),
+                    React.createElement('pre', {
+                        style: {
+                            backgroundColor: c.bg,
+                            padding: '10px',
+                            borderRadius: '4px',
+                            fontSize: '11px',
+                            fontFamily: 'monospace',
+                            color: c.text,
+                            overflow: 'auto',
+                            whiteSpace: 'pre-wrap',
+                            marginBottom: '20px'
+                        }
+                    }, Object.keys(convertResults.metrics).map(key =>
+                        `${key} = ${convertResults.metrics[key]}`
+                    ).join('\n')),
+
+                    // Fit Deviations section
+                    React.createElement('h3', {
+                        style: {
+                            marginTop: '20px',
+                            marginBottom: '10px',
+                            fontSize: '14px',
+                            fontWeight: 'bold',
+                            color: c.textDim
+                        }
+                    }, 'Fit Deviations'),
+                    React.createElement('pre', {
+                        style: {
+                            backgroundColor: c.bg,
+                            padding: '10px',
+                            borderRadius: '4px',
+                            fontSize: '11px',
+                            fontFamily: 'monospace',
+                            color: c.text,
+                            overflow: 'auto',
+                            whiteSpace: 'pre-wrap',
+                            marginBottom: '20px',
+                            maxHeight: '300px'
+                        }
+                    }, convertResults.deviations),
+
+                    // Close button
+                    React.createElement('div', {
+                        style: { display: 'flex', justifyContent: 'flex-end' }
+                    },
+                        React.createElement('button', {
+                            onClick: () => setShowDetailsDialog(false),
+                            style: {
+                                padding: '10px 20px',
+                                backgroundColor: c.accent,
+                                color: 'white',
+                                border: 'none',
+                                borderRadius: '4px',
+                                cursor: 'pointer',
+                                fontSize: '13px',
+                                fontWeight: '600'
+                            }
+                        }, 'Close')
+                    )
+                )
             )
         )
     );

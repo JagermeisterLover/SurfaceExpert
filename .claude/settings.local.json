@@ -1,0 +1,17 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(npm start)",
+      "Bash(npm install:*)",
+      "Bash(npm run dev:*)",
+      "Bash(node -c:*)",
+      "Bash(npx electron . --dev)",
+      "Bash(npm ls:*)",
+      "Bash(node -e:*)",
+      "Bash(git stash:*)",
+      "Bash(cat:*)"
+    ],
+    "deny": [],
+    "ask": []
+  }
+}
