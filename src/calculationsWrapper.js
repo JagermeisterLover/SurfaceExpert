@@ -75,10 +75,21 @@ class SurfaceCalculations {
             const rp = Math.sqrt(xp*xp + yp*yp);
 
             // Base conic surface
-            const c = 1/R;
-            const baseSag = (c * rp**2) / (1 + Math.sqrt(1 - (1 + k) * c**2 * rp**2));
+            let baseSag = 0;
+            if (R !== 0) {
+                const c = 1/R;
+                const discriminant = 1 - (1 + k) * c**2 * rp**2;
+                if (discriminant >= 0) {
+                    baseSag = (c * rp**2) / (1 + Math.sqrt(discriminant));
+                } else {
+                    // Invalid geometry - discriminant is negative
+                    baseSag = 0;
+                }
+            }
 
-            // Normalized coordinates
+            // Normalized coordinates (avoid division by zero)
+            if (rMax === 0) return baseSag;
+
             const rho_x = xp / rMax;
             const rho_y = yp / rMax;
             const rho = Math.sqrt(rho_x**2 + rho_y**2);

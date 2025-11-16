@@ -1766,7 +1766,10 @@ const PropertiesPanel = ({ selectedSurface, updateSurfaceName, updateSurfaceType
         for (let r = minHeight; r < maxHeight; r += step) {
             const v = calculateSurfaceValues(r, selectedSurface);
             values.push({ r, ...v });
-            maxSag = Math.max(maxSag, v.sag);
+            // For sag, track the value with maximum absolute value (preserving sign)
+            if (Math.abs(v.sag) > Math.abs(maxSag)) {
+                maxSag = v.sag;
+            }
             maxSlope = Math.max(maxSlope, Math.abs(v.slope));
             maxAngle = Math.max(maxAngle, Math.abs(v.angle));
             maxAsphericity = Math.max(maxAsphericity, Math.abs(v.asphericity));
@@ -1776,7 +1779,10 @@ const PropertiesPanel = ({ selectedSurface, updateSurfaceName, updateSurfaceType
         // Always include maxHeight
         const vMax = calculateSurfaceValues(maxHeight, selectedSurface);
         values.push({ r: maxHeight, ...vMax });
-        maxSag = Math.max(maxSag, vMax.sag);
+        // For sag, track the value with maximum absolute value (preserving sign)
+        if (Math.abs(vMax.sag) > Math.abs(maxSag)) {
+            maxSag = vMax.sag;
+        }
         maxSlope = Math.max(maxSlope, Math.abs(vMax.slope));
         maxAngle = Math.max(maxAngle, Math.abs(vMax.angle));
         maxAsphericity = Math.max(maxAsphericity, Math.abs(vMax.asphericity));
