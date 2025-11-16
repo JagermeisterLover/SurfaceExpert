@@ -96,5 +96,3 @@ export const SettingsModal = ({ colorscale, setColorscale, onClose, c }) => (
         )
     )
 );
-
-export { SettingsModal };
