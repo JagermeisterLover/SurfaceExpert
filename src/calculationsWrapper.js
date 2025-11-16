@@ -394,4 +394,125 @@ class SurfaceCalculations {
         if (slope === 0) return 0;
         return z + r / slope - R;
     }
+
+    /**
+     * Calculate Zernike polynomial value
+     * Uses Fringe/Standard indexing (1-based)
+     * @param {number} n - Zernike term number (1-37)
+     * @param {number} rho - Normalized radial coordinate (0-1)
+     * @param {number} theta - Angle in radians
+     * @returns {number} Zernike polynomial value
+     */
+    static calculateZernikePolynomial(n, rho, theta) {
+        if (rho > 1) rho = 1; // Clamp to normalized range
+
+        // Fringe/Standard Zernike polynomials (1-indexed)
+        // See: https://en.wikipedia.org/wiki/Zernike_polynomials
+        const rho2 = rho * rho;
+        const rho3 = rho2 * rho;
+        const rho4 = rho2 * rho2;
+        const rho5 = rho4 * rho;
+        const rho6 = rho3 * rho3;
+
+        switch(n) {
+            case 1: return 1; // Piston
+            case 2: return 2 * rho * Math.cos(theta); // Tilt X
+            case 3: return 2 * rho * Math.sin(theta); // Tilt Y
+            case 4: return Math.sqrt(3) * (2 * rho2 - 1); // Defocus
+            case 5: return Math.sqrt(6) * rho2 * Math.sin(2 * theta); // Astigmatism 0°
+            case 6: return Math.sqrt(6) * rho2 * Math.cos(2 * theta); // Astigmatism 45°
+            case 7: return Math.sqrt(8) * (3 * rho3 - 2 * rho) * Math.sin(theta); // Coma Y
+            case 8: return Math.sqrt(8) * (3 * rho3 - 2 * rho) * Math.cos(theta); // Coma X
+            case 9: return Math.sqrt(8) * rho3 * Math.sin(3 * theta); // Trefoil Y
+            case 10: return Math.sqrt(8) * rho3 * Math.cos(3 * theta); // Trefoil X
+            case 11: return Math.sqrt(5) * (6 * rho4 - 6 * rho2 + 1); // Spherical
+            case 12: return Math.sqrt(10) * (4 * rho4 - 3 * rho2) * Math.cos(2 * theta); // Secondary Astigmatism 45°
+            case 13: return Math.sqrt(10) * (4 * rho4 - 3 * rho2) * Math.sin(2 * theta); // Secondary Astigmatism 0°
+            case 14: return Math.sqrt(10) * rho4 * Math.cos(4 * theta); // Tetrafoil X
+            case 15: return Math.sqrt(10) * rho4 * Math.sin(4 * theta); // Tetrafoil Y
+            case 16: return Math.sqrt(12) * (10 * rho5 - 12 * rho3 + 3 * rho) * Math.cos(theta); // Secondary Coma X
+            case 17: return Math.sqrt(12) * (10 * rho5 - 12 * rho3 + 3 * rho) * Math.sin(theta); // Secondary Coma Y
+            case 18: return Math.sqrt(12) * (5 * rho5 - 4 * rho3) * Math.cos(3 * theta); // Secondary Trefoil X
+            case 19: return Math.sqrt(12) * (5 * rho5 - 4 * rho3) * Math.sin(3 * theta); // Secondary Trefoil Y
+            case 20: return Math.sqrt(12) * rho5 * Math.cos(5 * theta); // Pentafoil X
+            case 21: return Math.sqrt(12) * rho5 * Math.sin(5 * theta); // Pentafoil Y
+            case 22: return Math.sqrt(7) * (20 * rho6 - 30 * rho4 + 12 * rho2 - 1); // Secondary Spherical
+            case 23: return Math.sqrt(14) * (15 * rho6 - 20 * rho4 + 6 * rho2) * Math.sin(2 * theta);
+            case 24: return Math.sqrt(14) * (15 * rho6 - 20 * rho4 + 6 * rho2) * Math.cos(2 * theta);
+            case 25: return Math.sqrt(14) * (6 * rho6 - 5 * rho4) * Math.sin(4 * theta);
+            case 26: return Math.sqrt(14) * (6 * rho6 - 5 * rho4) * Math.cos(4 * theta);
+            case 27: return Math.sqrt(14) * rho6 * Math.sin(6 * theta);
+            case 28: return Math.sqrt(14) * rho6 * Math.cos(6 * theta);
+            // Add more terms as needed up to 37
+            default:
+                // For terms beyond 28, return 0 (can be extended)
+                return 0;
+        }
+    }
+
+    /**
+     * Calculate Zernike surface sag
+     * @param {number} x - X coordinate
+     * @param {number} y - Y coordinate
+     * @param {number} R - Radius of curvature
+     * @param {number} k - Conic constant
+     * @param {number} normRadius - Normalization radius
+     * @param {number} dx - Decenter X
+     * @param {number} dy - Decenter Y
+     * @param {number} A2 - Aspheric coefficient A2 (r^2)
+     * @param {number} A4 - Aspheric coefficient A4 (r^4)
+     * @param {number} A6 - Aspheric coefficient A6 (r^6)
+     * @param {number} A8 - Aspheric coefficient A8 (r^8)
+     * @param {number} A10 - Aspheric coefficient A10 (r^10)
+     * @param {number} A12 - Aspheric coefficient A12 (r^12)
+     * @param {number} A14 - Aspheric coefficient A14 (r^14)
+     * @param {number} A16 - Aspheric coefficient A16 (r^16)
+     * @param {Object} coeffs - Object with Z1, Z2, ..., Z37 coefficients
+     * @returns {number} Sag value
+     */
+    static calculateZernikeSag(x, y, R, k, normRadius, dx, dy, A2, A4, A6, A8, A10, A12, A14, A16, coeffs) {
+        try {
+            // Apply decenter
+            const x_local = x - dx;
+            const y_local = y - dy;
+
+            // Calculate radial distance
+            const r = Math.sqrt(x_local * x_local + y_local * y_local);
+
+            // Base conic surface sag
+            let baseSag = 0;
+            if (R !== 0) {
+                const c = 1 / R;
+                const r2 = r * r;
+                const discriminant = 1 - (1 + k) * c * c * r2;
+                if (discriminant >= 0) {
+                    baseSag = (c * r2) / (1 + Math.sqrt(discriminant));
+                }
+            }
+
+            // Aspheric terms
+            const asphericSag = A2 * r**2 + A4 * r**4 + A6 * r**6 + A8 * r**8 +
+                               A10 * r**10 + A12 * r**12 + A14 * r**14 + A16 * r**16;
+
+            // Zernike aberration terms
+            if (normRadius === 0) return baseSag + asphericSag;
+
+            // Normalized coordinates
+            const rho = Math.min(r / normRadius, 1);
+            const theta = Math.atan2(y_local, x_local);
+
+            // Sum Zernike terms
+            let zernikeSag = 0;
+            for (let i = 1; i <= 37; i++) {
+                const coeff = coeffs[`Z${i}`] || 0;
+                if (coeff !== 0) {
+                    zernikeSag += coeff * this.calculateZernikePolynomial(i, rho, theta);
+                }
+            }
+
+            return baseSag + asphericSag + zernikeSag;
+        } catch {
+            return 0;
+        }
+    }
 }
