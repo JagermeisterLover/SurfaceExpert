@@ -1,5 +1,5 @@
 // ============================================
-// Optical Surface Analyzer - Modular Version
+// SurfaceExpert - Modular Version
 // ============================================
 // Full application using ES6 modules
 // Original: src/renderer.js (3,435 lines)
@@ -1355,7 +1355,7 @@ const OpticalSurfaceAnalyzer = () => {
 
 // Wait for DOM and all scripts to be ready before mounting
 const mountApp = () => {
-    console.log('📦 Mounting Optical Surface Analyzer (Modular)...');
+    console.log('📦 Mounting SurfaceExpert (Modular)...');
 
     // Check if dependencies are available
     if (typeof SurfaceCalculations === 'undefined') {
