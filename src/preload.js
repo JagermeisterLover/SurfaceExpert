@@ -3,5 +3,12 @@ const { contextBridge, ipcRenderer } = require('electron');
 contextBridge.exposeInMainWorld('electronAPI', {
   onMenuAction: (callback) => ipcRenderer.on('menu-action', (event, action) => callback(action)),
   openZMXDialog: () => ipcRenderer.invoke('open-zmx-dialog'),
-  runConversion: (surfaceData, settings) => ipcRenderer.invoke('run-conversion', surfaceData, settings)
+  runConversion: (surfaceData, settings) => ipcRenderer.invoke('run-conversion', surfaceData, settings),
+  saveConversionResults: (folderName, surfaceName, results) => ipcRenderer.invoke('save-conversion-results', folderName, surfaceName, results),
+  loadFolders: () => ipcRenderer.invoke('load-folders'),
+  saveSurface: (folderName, surface) => ipcRenderer.invoke('save-surface', folderName, surface),
+  deleteSurface: (folderName, surfaceName) => ipcRenderer.invoke('delete-surface', folderName, surfaceName),
+  createFolder: (folderName) => ipcRenderer.invoke('create-folder', folderName),
+  renameFolder: (oldName, newName) => ipcRenderer.invoke('rename-folder', oldName, newName),
+  deleteFolder: (folderName) => ipcRenderer.invoke('delete-folder', folderName)
 });

@@ -38,6 +38,162 @@ function createWindow() {
 }
 
 function setupIpcHandlers() {
+  // Get app directory path for storing surfaces
+  const surfacesDir = path.join(__dirname, '..', 'surfaces');
+
+  // Ensure surfaces directory exists
+  if (!fs.existsSync(surfacesDir)) {
+    fs.mkdirSync(surfacesDir, { recursive: true });
+  }
+
+  // Handler for loading folder structure from disk
+  ipcMain.handle('load-folders', async () => {
+    try {
+      const folders = [];
+
+      // Read all subdirectories in surfaces folder
+      const entries = fs.readdirSync(surfacesDir, { withFileTypes: true });
+      const folderDirs = entries.filter(e => e.isDirectory());
+
+      if (folderDirs.length === 0) {
+        // Create default folder if none exist
+        const defaultFolderPath = path.join(surfacesDir, 'My Surfaces');
+        fs.mkdirSync(defaultFolderPath, { recursive: true });
+        return {
+          success: true,
+          folders: [{
+            id: 'My Surfaces',
+            name: 'My Surfaces',
+            expanded: true,
+            surfaces: []
+          }]
+        };
+      }
+
+      // Load each folder and its surfaces
+      for (const folderDir of folderDirs) {
+        const folderPath = path.join(surfacesDir, folderDir.name);
+        const surfaces = [];
+
+        // Read all JSON files in this folder
+        const files = fs.readdirSync(folderPath);
+        const jsonFiles = files.filter(f => f.endsWith('.json'));
+
+        for (const jsonFile of jsonFiles) {
+          try {
+            const filePath = path.join(folderPath, jsonFile);
+            const content = fs.readFileSync(filePath, 'utf-8');
+            const surface = JSON.parse(content);
+            surfaces.push(surface);
+          } catch (err) {
+            console.error(`Error loading ${jsonFile}:`, err);
+          }
+        }
+
+        folders.push({
+          id: folderDir.name,
+          name: folderDir.name,
+          expanded: true,
+          surfaces: surfaces
+        });
+      }
+
+      return { success: true, folders };
+    } catch (error) {
+      return { success: false, error: error.message };
+    }
+  });
+
+  // Handler for saving a single surface
+  ipcMain.handle('save-surface', async (event, folderName, surface) => {
+    try {
+      const folderPath = path.join(surfacesDir, folderName);
+
+      // Ensure folder exists
+      if (!fs.existsSync(folderPath)) {
+        fs.mkdirSync(folderPath, { recursive: true });
+      }
+
+      // Sanitize surface name for filename
+      const sanitizedName = surface.name.replace(/[<>:"/\\|?*]/g, '_');
+      const filePath = path.join(folderPath, `${sanitizedName}.json`);
+
+      fs.writeFileSync(filePath, JSON.stringify(surface, null, 2), 'utf-8');
+      return { success: true };
+    } catch (error) {
+      return { success: false, error: error.message };
+    }
+  });
+
+  // Handler for deleting a surface
+  ipcMain.handle('delete-surface', async (event, folderName, surfaceName) => {
+    try {
+      const sanitizedName = surfaceName.replace(/[<>:"/\\|?*]/g, '_');
+      const filePath = path.join(surfacesDir, folderName, `${sanitizedName}.json`);
+
+      if (fs.existsSync(filePath)) {
+        fs.unlinkSync(filePath);
+      }
+      return { success: true };
+    } catch (error) {
+      return { success: false, error: error.message };
+    }
+  });
+
+  // Handler for creating a folder
+  ipcMain.handle('create-folder', async (event, folderName) => {
+    try {
+      const folderPath = path.join(surfacesDir, folderName);
+
+      if (fs.existsSync(folderPath)) {
+        return { success: false, error: 'Folder already exists' };
+      }
+
+      fs.mkdirSync(folderPath, { recursive: true });
+      return { success: true };
+    } catch (error) {
+      return { success: false, error: error.message };
+    }
+  });
+
+  // Handler for renaming a folder
+  ipcMain.handle('rename-folder', async (event, oldName, newName) => {
+    try {
+      const oldPath = path.join(surfacesDir, oldName);
+      const newPath = path.join(surfacesDir, newName);
+
+      if (!fs.existsSync(oldPath)) {
+        return { success: false, error: 'Folder does not exist' };
+      }
+
+      if (fs.existsSync(newPath)) {
+        return { success: false, error: 'Target folder name already exists' };
+      }
+
+      fs.renameSync(oldPath, newPath);
+      return { success: true };
+    } catch (error) {
+      return { success: false, error: error.message };
+    }
+  });
+
+  // Handler for deleting a folder
+  ipcMain.handle('delete-folder', async (event, folderName) => {
+    try {
+      const folderPath = path.join(surfacesDir, folderName);
+
+      if (!fs.existsSync(folderPath)) {
+        return { success: false, error: 'Folder does not exist' };
+      }
+
+      // Delete folder and all its contents
+      fs.rmSync(folderPath, { recursive: true, force: true });
+      return { success: true };
+    } catch (error) {
+      return { success: false, error: error.message };
+    }
+  });
+
   // Handler for opening ZMX file dialog
   ipcMain.handle('open-zmx-dialog', async () => {
     const result = await dialog.showOpenDialog(mainWindow, {
@@ -71,7 +227,7 @@ function setupIpcHandlers() {
       const dataContent = surfaceData.map(p => `${p.r}\t${p.z}`).join('\n');
       fs.writeFileSync(path.join(tempDir, 'tempsurfacedata.txt'), dataContent);
 
-      // Write settings to file
+      // Write settings to file (temporary, will be deleted after reading)
       const settingsContent = Object.keys(settings).map(key => `${key}=${settings[key]}`).join('\n');
       fs.writeFileSync(path.join(tempDir, 'ConvertSettings.txt'), settingsContent);
 
@@ -112,10 +268,22 @@ function setupIpcHandlers() {
             const metricsContent = fs.readFileSync(metricsPath, 'utf-8');
             const metrics = parseMetrics(metricsContent);
 
+            // Read deviations
+            const deviationsPath = path.join(tempDir, 'FitDeviations.txt');
+            const deviations = fs.readFileSync(deviationsPath, 'utf-8');
+
+            // Delete temporary files
+            fs.unlinkSync(path.join(tempDir, 'ConvertSettings.txt'));
+            fs.unlinkSync(fitReportPath);
+            fs.unlinkSync(metricsPath);
+            fs.unlinkSync(deviationsPath);
+            fs.unlinkSync(path.join(tempDir, 'tempsurfacedata.txt'));
+
             resolve({
               success: true,
               fitReport,
               metrics,
+              deviations,
               stdout
             });
           } catch (error) {
@@ -128,6 +296,39 @@ function setupIpcHandlers() {
         success: false,
         error: error.message
       };
+    }
+  });
+
+  // Handler for saving conversion results
+  ipcMain.handle('save-conversion-results', async (event, folderName, surfaceName, results) => {
+    const surfacesDir = path.join(__dirname, '..', 'surfaces');
+    const folderPath = path.join(surfacesDir, folderName);
+
+    try {
+      if (!fs.existsSync(folderPath)) {
+        fs.mkdirSync(folderPath, { recursive: true });
+      }
+
+      const sanitizedName = surfaceName.replace(/[<>:"/\\|?*]/g, '_');
+      const filePath = path.join(folderPath, `${sanitizedName}_FitResults.txt`);
+
+      // Merge all results into a single file
+      const combinedContent = [
+        '=== FIT REPORT ===',
+        results.fitReportContent,
+        '',
+        '=== FIT METRICS ===',
+        results.metricsContent,
+        '',
+        '=== FIT DEVIATIONS ===',
+        results.deviations
+      ].join('\n');
+
+      fs.writeFileSync(filePath, combinedContent);
+
+      return { success: true };
+    } catch (error) {
+      return { success: false, error: error.message };
     }
   });
 }
