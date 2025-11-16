@@ -1353,6 +1353,19 @@ const OpticalSurfaceAnalyzer = () => {
 // MOUNT APPLICATION
 // ============================================
 
-console.log('📦 Mounting Optical Surface Analyzer (Modular)...');
-ReactDOM.render(h(OpticalSurfaceAnalyzer), document.getElementById('root'));
-console.log('✅ Application mounted successfully!');
+// Wait for global dependencies to load before mounting
+const mountApp = () => {
+    if (typeof window.SurfaceCalculations === 'undefined' ||
+        typeof window.ZMXParser === 'undefined' ||
+        typeof window.Plotly === 'undefined') {
+        console.log('⏳ Waiting for dependencies to load...');
+        setTimeout(mountApp, 50);
+        return;
+    }
+
+    console.log('📦 Mounting Optical Surface Analyzer (Modular)...');
+    ReactDOM.render(h(OpticalSurfaceAnalyzer), document.getElementById('root'));
+    console.log('✅ Application mounted successfully!');
+};
+
+mountApp();
