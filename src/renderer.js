@@ -5,6 +5,7 @@ const surfaceTypes = {
     'Sphere': ['Radius', 'Min Height', 'Max Height'],
     'Even Asphere': ['Radius', 'Conic Constant', 'A4', 'A6', 'A8', 'A10', 'A12', 'A14', 'A16', 'A18', 'A20', 'Min Height', 'Max Height'],
     'Odd Asphere': ['Radius', 'Conic Constant', 'A3', 'A4', 'A5', 'A6', 'A7', 'A8', 'A9', 'A10', 'A11', 'A12', 'A13', 'A14', 'A15', 'A16', 'A17', 'A18', 'A19', 'A20', 'Min Height', 'Max Height'],
+    'Irregular': ['Radius', 'Conic Constant', 'Decenter X', 'Decenter Y', 'Tilt X', 'Tilt Y', 'Spherical', 'Astigmatism', 'Coma', 'Angle', 'Min Height', 'Max Height'],
     'Opal Un U': ['Radius', 'e2', 'H', 'A2', 'A3', 'A4', 'A5', 'A6', 'A7', 'A8', 'A9', 'A10', 'A11', 'A12', 'Min Height', 'Max Height'],
     'Opal Un Z': ['Radius', 'e2', 'H', 'A3', 'A4', 'A5', 'A6', 'A7', 'A8', 'A9', 'A10', 'A11', 'A12', 'A13', 'Min Height', 'Max Height'],
     'Poly': ['A1', 'A2', 'A3', 'A4', 'A5', 'A6', 'A7', 'A8', 'A9', 'A10', 'A11', 'A12', 'A13', 'Min Height', 'Max Height']
@@ -1417,6 +1418,15 @@ const calculateSurfaceValues = (r, surface) => {
             const A18 = parseParam('A18'), A19 = parseParam('A19'), A20 = parseParam('A20');
             sag = SurfaceCalculations.calculateOddAsphereSag(r, R, k, A3, A4, A5, A6, A7, A8, A9, A10, A11, A12, A13, A14, A15, A16, A17, A18, A19, A20);
             slope = SurfaceCalculations.calculateOddAsphereSlope(r, R, k, A3, A4, A5, A6, A7, A8, A9, A10, A11, A12, A13, A14, A15, A16, A17, A18, A19, A20);
+        } else if (surface.type === 'Irregular') {
+            const R = parseParam('Radius'), k = parseParam('Conic Constant');
+            const dx = parseParam('Decenter X'), dy = parseParam('Decenter Y');
+            const tiltX = parseParam('Tilt X'), tiltY = parseParam('Tilt Y');
+            const Zs = parseParam('Spherical'), Za = parseParam('Astigmatism'), Zc = parseParam('Coma');
+            const angle = parseParam('Angle');
+            const maxHeight = parseParam('Max Height');
+            sag = SurfaceCalculations.calculateIrregularSag(r, R, k, dx, dy, tiltX, tiltY, Zs, Za, Zc, angle, maxHeight);
+            slope = SurfaceCalculations.calculateIrregularSlope(r, R, k, dx, dy, tiltX, tiltY, Zs, Za, Zc, angle, maxHeight);
         } else if (surface.type === 'Opal Un U') {
             const R = parseParam('Radius'), e2 = parseParam('e2'), H = parseParam('H');
             const A2 = parseParam('A2'), A3 = parseParam('A3'), A4 = parseParam('A4'), A5 = parseParam('A5'), A6 = parseParam('A6');
