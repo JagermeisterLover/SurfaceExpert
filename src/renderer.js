@@ -236,8 +236,9 @@ const OpticalSurfaceAnalyzer = () => {
         const minHeight = parseFloat(selectedSurface.parameters['Min Height']) || 0;
         const maxHeight = parseFloat(selectedSurface.parameters['Max Height']) || 25;
         const size = 100;
-        const z = [];
 
+        // Generate grid data
+        const gridData = [];
         for (let i = 0; i < size; i++) {
             const xi = -maxHeight + (i * (2 * maxHeight)) / (size - 1);
             const row = [];
@@ -245,9 +246,8 @@ const OpticalSurfaceAnalyzer = () => {
                 const yj = -maxHeight + (j * (2 * maxHeight)) / (size - 1);
                 const r = Math.sqrt(xi * xi + yj * yj);
 
-                if (r < minHeight || r > maxHeight) {
-                    row.push(null);
-                } else {
+                if (r >= minHeight && r <= maxHeight) {
+                    // For non-rotationally symmetric surfaces (Zernike, Irregular), pass x,y coordinates; for others use r
                     const values = (selectedSurface.type === 'Irregular' || selectedSurface.type === 'Zernike')
                         ? calculateSurfaceValues(r, selectedSurface, xi, yj)
                         : calculateSurfaceValues(r, selectedSurface);
@@ -257,36 +257,62 @@ const OpticalSurfaceAnalyzer = () => {
                     else if (activeTab === 'asphericity') val = values.asphericity;
                     else if (activeTab === 'aberration') val = values.aberration;
                     row.push(val);
+                } else {
+                    row.push(null);
                 }
             }
-            z.push(row);
+            gridData.push(row);
         }
 
-        const data = [{
-            z: z,
-            type: 'contour',
-            colorscale: colorscale,
-            showscale: true,
-            contours: {
-                coloring: 'heatmap'
-            },
-            colorbar: {
-                title: {
-                    text: activeTab.charAt(0).toUpperCase() + activeTab.slice(1),
-                    side: 'right'
-                },
-                titlefont: { color: '#e0e0e0' },
-                tickfont: { color: '#e0e0e0' }
+        // Convert grid to scatter points with color mapping
+        const x = [], y = [], color = [], hovertext = [];
+        for (let i = 0; i < size; i++) {
+            for (let j = 0; j < size; j++) {
+                if (gridData[i][j] !== null) {
+                    const xi = -maxHeight + (i * (2 * maxHeight)) / (size - 1);
+                    const yj = -maxHeight + (j * (2 * maxHeight)) / (size - 1);
+                    x.push(xi);
+                    y.push(yj);
+                    color.push(gridData[i][j]);
+                    hovertext.push(`X: ${xi.toFixed(2)}<br>Y: ${yj.toFixed(2)}<br>${activeTab}: ${gridData[i][j].toFixed(6)}`);
+                }
             }
+        }
+
+        const zMin = Math.min(...color);
+        const zMax = Math.max(...color);
+        const unit = activeTab === 'slope' ? 'rad' : 'mm';
+
+        const data = [{
+            x, y,
+            mode: 'markers',
+            type: 'scatter',
+            marker: {
+                size: 6,
+                color,
+                colorscale: colorscale,
+                showscale: true,
+                cmin: zMin,
+                cmax: zMax,
+                colorbar: {
+                    title: `${activeTab}<br>(${unit})`,
+                    thickness: 15,
+                    len: 0.7
+                }
+            },
+            text: hovertext,
+            hoverinfo: 'text',
+            showlegend: false
         }];
 
         const layout = {
-            xaxis: { title: 'X (mm)', color: '#e0e0e0', gridcolor: '#454545', zerolinecolor: '#656565' },
-            yaxis: { title: 'Y (mm)', color: '#e0e0e0', gridcolor: '#454545', zerolinecolor: '#656565' },
-            paper_bgcolor: '#2b2b2b',
-            plot_bgcolor: '#2b2b2b',
-            margin: { l: 60, r: 60, t: 20, b: 60 },
-            font: { color: '#e0e0e0' }
+            title: `${activeTab.charAt(0).toUpperCase() + activeTab.slice(1)} False Color Map`,
+            xaxis: { title: 'X (mm)', scaleanchor: 'y', scaleratio: 1 },
+            yaxis: { title: 'Y (mm)', scaleanchor: 'x', scaleratio: 1 },
+            paper_bgcolor: c.panel,
+            plot_bgcolor: c.bg,
+            font: { color: c.text },
+            margin: { l: 60, r: 120, t: 60, b: 60 }
         };
 
         const config = {
@@ -301,37 +327,68 @@ const OpticalSurfaceAnalyzer = () => {
     const createCrossSection = () => {
         const minHeight = parseFloat(selectedSurface.parameters['Min Height']) || 0;
         const maxHeight = parseFloat(selectedSurface.parameters['Max Height']) || 25;
-        const numPoints = 100;
-        const r = [], values = [];
+        const step = parseFloat(selectedSurface.parameters['Step']) || 1;
+        const x = [], y = [];
+        const unit = activeTab === 'slope' ? 'rad' : 'mm';
 
-        for (let i = 0; i <= numPoints; i++) {
-            const ri = minHeight + (i * (maxHeight - minHeight)) / numPoints;
-            r.push(ri);
+        // Plot from -maxHeight to +maxHeight (diameter) using step
+        // Build array of r values, ensuring we always include minHeight and maxHeight
+        const rValues = [];
+        for (let r = -maxHeight; r < maxHeight; r += step) {
+            rValues.push(r);
+        }
+        // Always include maxHeight endpoint
+        if (rValues[rValues.length - 1] !== maxHeight) {
+            rValues.push(maxHeight);
+        }
 
-            const vals = calculateSurfaceValues(ri, selectedSurface);
-            let val = 0;
-            if (activeTab === 'sag') val = vals.sag;
-            else if (activeTab === 'slope') val = vals.slope;
-            else if (activeTab === 'asphericity') val = vals.asphericity;
-            else if (activeTab === 'aberration') val = vals.aberration;
-            values.push(val);
+        for (const r of rValues) {
+            x.push(r);
+
+            const absR = Math.abs(r);
+            if (absR >= minHeight && absR <= maxHeight) {
+                // For non-rotationally symmetric surfaces (Zernike, Irregular), use scan angle to determine direction
+                let values;
+                if (selectedSurface.type === 'Irregular' || selectedSurface.type === 'Zernike') {
+                    const scanAngle = parseFloat(selectedSurface.parameters['Scan Angle']) || 0;
+                    const scanAngleRad = scanAngle * Math.PI / 180;
+                    const xCoord = r * Math.cos(scanAngleRad);
+                    const yCoord = r * Math.sin(scanAngleRad);
+                    values = calculateSurfaceValues(absR, selectedSurface, xCoord, yCoord);
+                } else {
+                    values = calculateSurfaceValues(absR, selectedSurface);
+                }
+                let val = 0;
+                if (activeTab === 'sag') val = values.sag;
+                else if (activeTab === 'slope') val = values.slope;
+                else if (activeTab === 'asphericity') val = values.asphericity;
+                else if (activeTab === 'aberration') val = values.aberration;
+                y.push(val);
+            } else {
+                y.push(null);
+            }
         }
 
         const data = [{
-            x: r,
-            y: values,
+            x: x,
+            y: y,
             type: 'scatter',
             mode: 'lines',
             line: { color: '#4a90e2', width: 2 }
         }];
 
         const layout = {
-            xaxis: { title: 'Radial Position (mm)', color: '#e0e0e0', gridcolor: '#454545', zerolinecolor: '#656565' },
-            yaxis: { title: `${activeTab.charAt(0).toUpperCase() + activeTab.slice(1)} (${activeTab === 'slope' ? 'rad' : 'mm'})`, color: '#e0e0e0', gridcolor: '#454545', zerolinecolor: '#656565' },
-            paper_bgcolor: '#2b2b2b',
+            xaxis: { title: 'Radial Distance (mm)', zeroline: true },
+            yaxis: {
+                title: `${activeTab.charAt(0).toUpperCase() + activeTab.slice(1)} (${unit})`,
+                // For sag tab, maintain 1:1 aspect ratio with radial distance
+                scaleanchor: activeTab === 'sag' ? 'x' : undefined,
+                scaleratio: activeTab === 'sag' ? 1 : undefined
+            },
+            paper_bgcolor: '#353535',
             plot_bgcolor: '#2b2b2b',
-            margin: { l: 80, r: 40, t: 20, b: 60 },
-            font: { color: '#e0e0e0' }
+            font: { color: '#e0e0e0' },
+            margin: { l: 60, r: 20, t: 20, b: 60 }
         };
 
         const config = {
@@ -344,156 +401,224 @@ const OpticalSurfaceAnalyzer = () => {
     };
 
     const updateSurfaceName = async (newName) => {
-        const updatedFolders = folders.map(folder => ({
-            ...folder,
-            surfaces: folder.surfaces.map(s =>
-                s.id === selectedSurface.id ? { ...s, name: newName } : s
+        if (!selectedSurface || !selectedFolder) return;
+
+        const oldName = selectedSurface.name;
+        const updatedSurface = { ...selectedSurface, name: newName };
+
+        // Delete old file if name changed
+        if (oldName !== newName && window.electronAPI && window.electronAPI.deleteSurface) {
+            await window.electronAPI.deleteSurface(selectedFolder.name, oldName);
+        }
+
+        // Save with new name
+        if (window.electronAPI && window.electronAPI.saveSurface) {
+            await window.electronAPI.saveSurface(selectedFolder.name, updatedSurface);
+        }
+
+        const updatedFolders = folders.map(f => ({
+            ...f,
+            surfaces: f.surfaces.map(s =>
+                s.id === selectedSurface.id ? updatedSurface : s
             )
         }));
-
         setFolders(updatedFolders);
-
-        if (window.electronAPI && window.electronAPI.saveFolders) {
-            await window.electronAPI.saveFolders(updatedFolders);
-        }
+        setSelectedSurface(updatedSurface);
     };
 
     const updateSurfaceType = async (newType) => {
+        if (!selectedSurface || !selectedFolder) return;
+
         const newParams = {};
         surfaceTypes[newType].forEach(param => {
-            newParams[param] = '0';
+            newParams[param] = selectedSurface.parameters[param] || '0';
         });
+        // Preserve Step parameter
+        newParams['Step'] = selectedSurface.parameters['Step'] || '1';
 
-        const updatedFolders = folders.map(folder => ({
-            ...folder,
-            surfaces: folder.surfaces.map(s =>
-                s.id === selectedSurface.id ? { ...s, type: newType, parameters: newParams } : s
+        const updatedSurface = { ...selectedSurface, type: newType, parameters: newParams };
+
+        // Save to disk
+        if (window.electronAPI && window.electronAPI.saveSurface) {
+            await window.electronAPI.saveSurface(selectedFolder.name, updatedSurface);
+        }
+
+        const updatedFolders = folders.map(f => ({
+            ...f,
+            surfaces: f.surfaces.map(s =>
+                s.id === selectedSurface.id ? updatedSurface : s
             )
         }));
-
         setFolders(updatedFolders);
-
-        if (window.electronAPI && window.electronAPI.saveFolders) {
-            await window.electronAPI.saveFolders(updatedFolders);
-        }
     };
 
     const updateParameter = async (param, value) => {
-        const updatedFolders = folders.map(folder => ({
-            ...folder,
-            surfaces: folder.surfaces.map(s =>
-                s.id === selectedSurface.id
-                    ? { ...s, parameters: { ...s.parameters, [param]: value } }
-                    : s
+        if (!selectedSurface || !selectedFolder) return;
+
+        const updatedSurface = {
+            ...selectedSurface,
+            parameters: { ...selectedSurface.parameters, [param]: value }
+        };
+
+        // Save to disk
+        if (window.electronAPI && window.electronAPI.saveSurface) {
+            await window.electronAPI.saveSurface(selectedFolder.name, updatedSurface);
+        }
+
+        const updatedFolders = folders.map(f => ({
+            ...f,
+            surfaces: f.surfaces.map(s =>
+                s.id === selectedSurface.id ? updatedSurface : s
             )
         }));
-
         setFolders(updatedFolders);
-
-        if (window.electronAPI && window.electronAPI.saveFolders) {
-            await window.electronAPI.saveFolders(updatedFolders);
-        }
+        setSelectedSurface(updatedSurface);
     };
 
     const addSurface = async () => {
+        if (!selectedFolder) return;
+
+        const newId = Date.now();
+        const colors = ['#4a90e2', '#e94560', '#2ecc71', '#f39c12', '#9b59b6'];
         const newSurface = {
-            id: Date.now(),
-            name: 'New Surface',
+            id: newId,
+            name: `Surface ${newId}`,
             type: 'Sphere',
-            color: '#4a90e2',
+            color: colors[newId % colors.length],
             parameters: {
                 'Radius': '100.0',
                 'Min Height': '0',
-                'Max Height': '25.0'
+                'Max Height': '20.0',
+                'Step': '1'
             }
         };
 
-        const updatedFolders = folders.map(folder =>
-            folder.id === selectedFolder.id
-                ? { ...folder, surfaces: [...folder.surfaces, newSurface] }
-                : folder
-        );
+        // Save to disk
+        if (window.electronAPI && window.electronAPI.saveSurface) {
+            await window.electronAPI.saveSurface(selectedFolder.name, newSurface);
+        }
 
+        const updatedFolders = folders.map(f =>
+            f.id === selectedFolder.id
+                ? { ...f, surfaces: [...f.surfaces, newSurface] }
+                : f
+        );
         setFolders(updatedFolders);
         setSelectedSurface(newSurface);
-
-        if (window.electronAPI && window.electronAPI.saveFolders) {
-            await window.electronAPI.saveFolders(updatedFolders);
-        }
     };
 
     const removeSurface = async () => {
-        const updatedFolders = folders.map(folder => ({
-            ...folder,
-            surfaces: folder.surfaces.filter(s => s.id !== selectedSurface.id)
-        }));
+        if (!selectedSurface || !selectedFolder) return;
 
-        // Find a new surface to select
-        let newSelectedSurface = null;
-        for (const folder of updatedFolders) {
-            if (folder.surfaces.length > 0) {
-                newSelectedSurface = folder.surfaces[0];
-                break;
-            }
+        const folder = folders.find(f => f.id === selectedFolder.id);
+        if (!folder || folder.surfaces.length === 0) return;
+
+        // Delete from disk
+        if (window.electronAPI && window.electronAPI.deleteSurface) {
+            await window.electronAPI.deleteSurface(selectedFolder.name, selectedSurface.name);
         }
 
-        setFolders(updatedFolders);
-        setSelectedSurface(newSelectedSurface);
+        const updatedFolders = folders.map(f => {
+            if (f.id === selectedFolder.id) {
+                const filtered = f.surfaces.filter(s => s.id !== selectedSurface.id);
+                return { ...f, surfaces: filtered };
+            }
+            return f;
+        });
 
-        if (window.electronAPI && window.electronAPI.saveFolders) {
-            await window.electronAPI.saveFolders(updatedFolders);
+        setFolders(updatedFolders);
+
+        // Select another surface
+        const updatedFolder = updatedFolders.find(f => f.id === selectedFolder.id);
+        if (updatedFolder && updatedFolder.surfaces.length > 0) {
+            setSelectedSurface(updatedFolder.surfaces[0]);
+        } else {
+            setSelectedSurface(null);
         }
     };
 
     const addFolder = async (name) => {
+        if (!name || !name.trim()) return;
+
+        // Create folder on disk
+        if (window.electronAPI && window.electronAPI.createFolder) {
+            try {
+                const result = await window.electronAPI.createFolder(name);
+                if (!result.success) {
+                    alert(result.error || 'Failed to create folder');
+                    return;
+                }
+            } catch (error) {
+                alert('Error creating folder: ' + error.message);
+                return;
+            }
+        }
+
         const newFolder = {
-            id: `folder-${Date.now()}`,
+            id: name,
             name: name,
             expanded: true,
             surfaces: []
         };
-
-        const updatedFolders = [...folders, newFolder];
-        setFolders(updatedFolders);
+        setFolders([...folders, newFolder]);
         setSelectedFolder(newFolder);
-
-        if (window.electronAPI && window.electronAPI.saveFolders) {
-            await window.electronAPI.saveFolders(updatedFolders);
-        }
     };
 
     const removeFolder = async (folderId) => {
-        const updatedFolders = folders.filter(f => f.id !== folderId);
+        if (folders.length <= 1) return;
 
-        // If removing selected folder, select first remaining folder
-        let newSelectedFolder = selectedFolder;
-        if (selectedFolder?.id === folderId && updatedFolders.length > 0) {
-            newSelectedFolder = updatedFolders[0];
-            setSelectedFolder(newSelectedFolder);
-            // Select first surface from new folder
-            if (newSelectedFolder.surfaces.length > 0) {
-                setSelectedSurface(newSelectedFolder.surfaces[0]);
+        const folder = folders.find(f => f.id === folderId);
+        if (!folder) return;
+
+        // Delete folder on disk
+        if (window.electronAPI && window.electronAPI.deleteFolder) {
+            const result = await window.electronAPI.deleteFolder(folder.name);
+            if (!result.success) {
+                alert(result.error || 'Failed to delete folder');
+                return;
+            }
+        }
+
+        const filtered = folders.filter(f => f.id !== folderId);
+        setFolders(filtered);
+        if (selectedFolder && selectedFolder.id === folderId) {
+            setSelectedFolder(filtered[0]);
+            if (filtered[0].surfaces.length > 0) {
+                setSelectedSurface(filtered[0].surfaces[0]);
             } else {
                 setSelectedSurface(null);
             }
         }
-
-        setFolders(updatedFolders);
-
-        if (window.electronAPI && window.electronAPI.saveFolders) {
-            await window.electronAPI.saveFolders(updatedFolders);
-        }
     };
 
     const renameFolder = async (folderId, newName) => {
-        const updatedFolders = folders.map(f =>
-            f.id === folderId ? { ...f, name: newName } : f
+        if (!newName || !newName.trim()) return;
+
+        const folder = folders.find(f => f.id === folderId);
+        if (!folder) return;
+
+        // Rename folder on disk
+        if (window.electronAPI && window.electronAPI.renameFolder) {
+            try {
+                const result = await window.electronAPI.renameFolder(folder.name, newName);
+                if (!result.success) {
+                    alert(result.error || 'Failed to rename folder');
+                    return;
+                }
+            } catch (error) {
+                alert('Error renaming folder: ' + error.message);
+                return;
+            }
+        }
+
+        const updated = folders.map(f =>
+            f.id === folderId ? { ...f, id: newName, name: newName } : f
         );
+        setFolders(updated);
 
-        setFolders(updatedFolders);
-
-        if (window.electronAPI && window.electronAPI.saveFolders) {
-            await window.electronAPI.saveFolders(updatedFolders);
+        // Update selected folder if it was renamed
+        if (selectedFolder && selectedFolder.id === folderId) {
+            setSelectedFolder({ ...selectedFolder, id: newName, name: newName });
         }
     };
 
@@ -903,71 +1028,94 @@ const OpticalSurfaceAnalyzer = () => {
                 overflow: 'hidden'
             }
         },
-            // Tabs
-            selectedSurface && React.createElement('div', {
+            // Main Tabs
+            React.createElement('div', {
                 style: {
                     display: 'flex',
+                    backgroundColor: c.panel,
                     borderBottom: `1px solid ${c.border}`,
-                    gap: '4px',
-                    padding: '4px 12px',
-                    backgroundColor: c.panel
+                    gap: '2px',
+                    padding: '8px 8px 0 8px'
                 }
             },
-                ['summary', 'sag', 'slope', 'asphericity', 'aberration'].map(tab =>
-                    React.createElement('button', {
+                (selectedSurface && (selectedSurface.type === 'Irregular' || selectedSurface.type === 'Zernike')
+                    ? ['summary', 'sag']  // Non-rotationally symmetric surfaces only support sag
+                    : ['summary', 'sag', 'slope', 'asphericity', 'aberration']
+                ).map(tab =>
+                    React.createElement('div', {
                         key: tab,
-                        onClick: () => setActiveTab(tab),
+                        onClick: () => {
+                            setActiveTab(tab);
+                            if (tab !== 'summary') setActiveSubTab('3d');
+                        },
                         style: {
                             padding: '8px 16px',
-                            backgroundColor: activeTab === tab ? c.accent : 'transparent',
-                            border: 'none',
-                            borderRadius: '4px',
-                            color: activeTab === tab ? 'white' : c.text,
                             cursor: 'pointer',
+                            backgroundColor: activeTab === tab ? c.bg : 'transparent',
+                            borderTopLeftRadius: '4px',
+                            borderTopRightRadius: '4px',
+                            borderBottom: activeTab === tab ? 'none' : `1px solid ${c.border}`,
                             fontSize: '13px',
-                            fontWeight: activeTab === tab ? 'bold' : 'normal'
+                            fontWeight: activeTab === tab ? '600' : '400',
+                            color: activeTab === tab ? c.text : c.textDim,
+                            transition: 'all 0.2s'
+                        },
+                        onMouseEnter: (e) => {
+                            if (activeTab !== tab) {
+                                e.currentTarget.style.backgroundColor = c.hover;
+                            }
+                        },
+                        onMouseLeave: (e) => {
+                            if (activeTab !== tab) {
+                                e.currentTarget.style.backgroundColor = 'transparent';
+                            }
                         }
                     }, tab.charAt(0).toUpperCase() + tab.slice(1))
                 )
             ),
 
-            // Sub-tabs for non-summary views
-            selectedSurface && activeTab !== 'summary' && React.createElement('div', {
+            // Sub-tabs for non-summary tabs
+            activeTab !== 'summary' && React.createElement('div', {
                 style: {
                     display: 'flex',
+                    backgroundColor: c.bg,
                     borderBottom: `1px solid ${c.border}`,
-                    gap: '4px',
-                    padding: '4px 12px',
-                    backgroundColor: c.bg
+                    gap: '2px',
+                    padding: '4px 8px'
                 }
             },
                 ['3d', '2d', 'cross', 'data'].map(subTab =>
-                    React.createElement('button', {
+                    React.createElement('div', {
                         key: subTab,
                         onClick: () => setActiveSubTab(subTab),
                         style: {
                             padding: '6px 12px',
-                            backgroundColor: activeSubTab === subTab ? c.hover : 'transparent',
-                            border: `1px solid ${activeSubTab === subTab ? c.border : 'transparent'}`,
-                            borderRadius: '4px',
-                            color: c.text,
                             cursor: 'pointer',
-                            fontSize: '12px'
+                            backgroundColor: activeSubTab === subTab ? c.panel : 'transparent',
+                            borderRadius: '3px',
+                            fontSize: '12px',
+                            fontWeight: activeSubTab === subTab ? '500' : '400',
+                            color: activeSubTab === subTab ? c.text : c.textDim,
+                            transition: 'all 0.2s'
+                        },
+                        onMouseEnter: (e) => {
+                            if (activeSubTab !== subTab) {
+                                e.currentTarget.style.backgroundColor = c.hover;
+                            }
+                        },
+                        onMouseLeave: (e) => {
+                            if (activeSubTab !== subTab) {
+                                e.currentTarget.style.backgroundColor = 'transparent';
+                            }
                         }
-                    }, subTab.toUpperCase())
+                    }, subTab === '3d' ? '3D View' :
+                       subTab === '2d' ? '2D Contour' :
+                       subTab === 'cross' ? 'Cross-Section' : 'Data')
                 )
             ),
 
-            // Plot area
-            React.createElement('div', {
-                style: {
-                    flex: 1,
-                    overflow: 'auto',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center'
-                }
-            },
+            // Content Area
+            React.createElement('div', { style: { flex: 1, overflow: 'auto', backgroundColor: c.bg } },
                 !selectedSurface ?
                     React.createElement('div', {
                         style: {
