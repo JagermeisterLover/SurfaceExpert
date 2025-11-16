@@ -257,7 +257,10 @@ const OpticalSurfaceAnalyzer = () => {
                 const r = Math.sqrt(xi * xi + yj * yj);
 
                 if (r >= minHeight && r <= maxHeight) {
-                    const values = calculateSurfaceValues(r, selectedSurface);
+                    // For Irregular surfaces, pass x,y coordinates; for others use r
+                    const values = selectedSurface.type === 'Irregular'
+                        ? calculateSurfaceValues(r, selectedSurface, xi, yj)
+                        : calculateSurfaceValues(r, selectedSurface);
                     let val = 0;
                     if (activeTab === 'sag') val = values.sag;
                     else if (activeTab === 'slope') val = values.slope;
