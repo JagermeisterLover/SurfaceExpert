@@ -398,6 +398,7 @@ class SurfaceCalculations {
     /**
      * Calculate Zernike polynomial value
      * Uses Fringe/Standard indexing (1-based)
+     * Non-normalized Zernike polynomials
      * @param {number} n - Zernike term number (1-37)
      * @param {number} rho - Normalized radial coordinate (0-1)
      * @param {number} theta - Angle in radians
@@ -406,46 +407,57 @@ class SurfaceCalculations {
     static calculateZernikePolynomial(n, rho, theta) {
         if (rho > 1) rho = 1; // Clamp to normalized range
 
-        // Fringe/Standard Zernike polynomials (1-indexed)
-        // See: https://en.wikipedia.org/wiki/Zernike_polynomials
+        // Pre-calculate powers of rho for efficiency
         const rho2 = rho * rho;
         const rho3 = rho2 * rho;
         const rho4 = rho2 * rho2;
         const rho5 = rho4 * rho;
         const rho6 = rho3 * rho3;
+        const rho7 = rho6 * rho;
+        const rho8 = rho4 * rho4;
+        const rho9 = rho8 * rho;
+        const rho10 = rho5 * rho5;
+        const rho12 = rho6 * rho6;
 
         switch(n) {
-            case 1: return 1; // Piston
-            case 2: return 2 * rho * Math.cos(theta); // Tilt X
-            case 3: return 2 * rho * Math.sin(theta); // Tilt Y
-            case 4: return Math.sqrt(3) * (2 * rho2 - 1); // Defocus
-            case 5: return Math.sqrt(6) * rho2 * Math.sin(2 * theta); // Astigmatism 0°
-            case 6: return Math.sqrt(6) * rho2 * Math.cos(2 * theta); // Astigmatism 45°
-            case 7: return Math.sqrt(8) * (3 * rho3 - 2 * rho) * Math.sin(theta); // Coma Y
-            case 8: return Math.sqrt(8) * (3 * rho3 - 2 * rho) * Math.cos(theta); // Coma X
-            case 9: return Math.sqrt(8) * rho3 * Math.sin(3 * theta); // Trefoil Y
-            case 10: return Math.sqrt(8) * rho3 * Math.cos(3 * theta); // Trefoil X
-            case 11: return Math.sqrt(5) * (6 * rho4 - 6 * rho2 + 1); // Spherical
-            case 12: return Math.sqrt(10) * (4 * rho4 - 3 * rho2) * Math.cos(2 * theta); // Secondary Astigmatism 45°
-            case 13: return Math.sqrt(10) * (4 * rho4 - 3 * rho2) * Math.sin(2 * theta); // Secondary Astigmatism 0°
-            case 14: return Math.sqrt(10) * rho4 * Math.cos(4 * theta); // Tetrafoil X
-            case 15: return Math.sqrt(10) * rho4 * Math.sin(4 * theta); // Tetrafoil Y
-            case 16: return Math.sqrt(12) * (10 * rho5 - 12 * rho3 + 3 * rho) * Math.cos(theta); // Secondary Coma X
-            case 17: return Math.sqrt(12) * (10 * rho5 - 12 * rho3 + 3 * rho) * Math.sin(theta); // Secondary Coma Y
-            case 18: return Math.sqrt(12) * (5 * rho5 - 4 * rho3) * Math.cos(3 * theta); // Secondary Trefoil X
-            case 19: return Math.sqrt(12) * (5 * rho5 - 4 * rho3) * Math.sin(3 * theta); // Secondary Trefoil Y
-            case 20: return Math.sqrt(12) * rho5 * Math.cos(5 * theta); // Pentafoil X
-            case 21: return Math.sqrt(12) * rho5 * Math.sin(5 * theta); // Pentafoil Y
-            case 22: return Math.sqrt(7) * (20 * rho6 - 30 * rho4 + 12 * rho2 - 1); // Secondary Spherical
-            case 23: return Math.sqrt(14) * (15 * rho6 - 20 * rho4 + 6 * rho2) * Math.sin(2 * theta);
-            case 24: return Math.sqrt(14) * (15 * rho6 - 20 * rho4 + 6 * rho2) * Math.cos(2 * theta);
-            case 25: return Math.sqrt(14) * (6 * rho6 - 5 * rho4) * Math.sin(4 * theta);
-            case 26: return Math.sqrt(14) * (6 * rho6 - 5 * rho4) * Math.cos(4 * theta);
-            case 27: return Math.sqrt(14) * rho6 * Math.sin(6 * theta);
-            case 28: return Math.sqrt(14) * rho6 * Math.cos(6 * theta);
-            // Add more terms as needed up to 37
+            case 1: return 1;
+            case 2: return rho * Math.cos(theta);
+            case 3: return rho * Math.sin(theta);
+            case 4: return 2 * rho2 - 1;
+            case 5: return rho2 * Math.cos(2 * theta);
+            case 6: return rho2 * Math.sin(2 * theta);
+            case 7: return (3 * rho2 - 2) * rho * Math.cos(theta);
+            case 8: return (3 * rho2 - 2) * rho * Math.sin(theta);
+            case 9: return 6 * rho4 - 6 * rho2 + 1;
+            case 10: return rho3 * Math.cos(3 * theta);
+            case 11: return rho3 * Math.sin(3 * theta);
+            case 12: return (4 * rho2 - 3) * rho2 * Math.cos(2 * theta);
+            case 13: return (4 * rho2 - 3) * rho2 * Math.sin(2 * theta);
+            case 14: return (10 * rho4 - 12 * rho2 + 3) * rho * Math.cos(theta);
+            case 15: return (10 * rho4 - 12 * rho2 + 3) * rho * Math.sin(theta);
+            case 16: return 20 * rho6 - 30 * rho4 + 12 * rho2 - 1;
+            case 17: return rho4 * Math.cos(4 * theta);
+            case 18: return rho4 * Math.sin(4 * theta);
+            case 19: return (5 * rho2 - 4) * rho3 * Math.cos(3 * theta);
+            case 20: return (5 * rho2 - 4) * rho3 * Math.sin(3 * theta);
+            case 21: return (15 * rho4 - 20 * rho2 + 6) * rho2 * Math.cos(2 * theta);
+            case 22: return (15 * rho4 - 20 * rho2 + 6) * rho2 * Math.sin(2 * theta);
+            case 23: return (35 * rho6 - 60 * rho4 + 30 * rho2 - 4) * rho * Math.cos(theta);
+            case 24: return (35 * rho6 - 60 * rho4 + 30 * rho2 - 4) * rho * Math.sin(theta);
+            case 25: return 70 * rho8 - 140 * rho6 + 90 * rho4 - 20 * rho2 + 1;
+            case 26: return rho5 * Math.cos(5 * theta);
+            case 27: return rho5 * Math.sin(5 * theta);
+            case 28: return (6 * rho2 - 5) * rho4 * Math.cos(4 * theta);
+            case 29: return (6 * rho2 - 5) * rho4 * Math.sin(4 * theta);
+            case 30: return (21 * rho4 - 30 * rho4 + 10) * rho3 * Math.cos(3 * theta);
+            case 31: return (21 * rho4 - 30 * rho4 + 10) * rho3 * Math.sin(3 * theta);
+            case 32: return (56 * rho6 - 105 * rho4 + 60 * rho2 - 10) * rho2 * Math.cos(2 * theta);
+            case 33: return (56 * rho6 - 105 * rho4 + 60 * rho2 - 10) * rho2 * Math.sin(2 * theta);
+            case 34: return (126 * rho8 - 280 * rho6 + 210 * rho4 - 60 * rho2 + 5) * rho * Math.cos(theta);
+            case 35: return (126 * rho8 - 280 * rho6 + 210 * rho4 - 60 * rho2 + 5) * rho * Math.sin(theta);
+            case 36: return 252 * rho10 - 630 * rho8 + 560 * rho6 - 210 * rho4 + 30 * rho2 - 1;
+            case 37: return 924 * rho12 - 2772 * rho10 + 3150 * rho8 - 1680 * rho6 + 420 * rho4 - 42 * rho2 + 1;
             default:
-                // For terms beyond 28, return 0 (can be extended)
                 return 0;
         }
     }
