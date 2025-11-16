@@ -2090,9 +2090,58 @@ const PropertiesPanel = ({ selectedSurface, updateSurfaceName, updateSurfaceType
                     ))
                 ),
 
+                // Scan & Coordinates box for non-rotationally symmetric surfaces
+                (selectedSurface.type === 'Zernike' || selectedSurface.type === 'Irregular') &&
+                React.createElement('div', {
+                    style: {
+                        padding: '10px',
+                        backgroundColor: c.bg,
+                        borderRadius: '4px',
+                        marginBottom: '12px',
+                        border: `1px solid ${c.border}`
+                    }
+                },
+                    React.createElement('div', {
+                        style: {
+                            fontSize: '11px',
+                            fontWeight: '600',
+                            color: c.textDim,
+                            marginBottom: '8px',
+                            textTransform: 'uppercase',
+                            letterSpacing: '0.3px'
+                        }
+                    }, 'Scan & Coordinates'),
+                    ['Scan Angle', 'X Coordinate', 'Y Coordinate'].map(param => (
+                        selectedSurface.parameters[param] !== undefined &&
+                        React.createElement('div', { key: param, style: { marginBottom: '8px' } },
+                            React.createElement('label', {
+                                style: { fontSize: '12px', color: c.textDim, display: 'block', marginBottom: '4px' }
+                            }, param),
+                            React.createElement('input', {
+                                type: 'text',
+                                value: selectedSurface.parameters[param] || '0',
+                                onChange: (e) => updateParameter(param, e.target.value),
+                                style: {
+                                    width: '100%',
+                                    padding: '6px 8px',
+                                    backgroundColor: c.panel,
+                                    color: c.text,
+                                    border: `1px solid ${c.border}`,
+                                    borderRadius: '3px',
+                                    fontSize: '13px',
+                                    textAlign: 'right'
+                                }
+                            })
+                        )
+                    ))
+                ),
+
                 surfaceTypes[selectedSurface.type].filter(param => {
                     // Filter out universal parameters
                     if (['Radius', 'Min Height', 'Max Height'].includes(param)) return false;
+
+                    // Filter out scan & coordinate parameters (they have their own box)
+                    if (['Scan Angle', 'X Coordinate', 'Y Coordinate'].includes(param)) return false;
 
                     // For Zernike surfaces, only show Z1-ZN based on "Number of Terms"
                     if (selectedSurface.type === 'Zernike' && param.match(/^Z\d+$/)) {
