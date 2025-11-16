@@ -219,7 +219,9 @@ class ZMXParser {
             // XDAT 3-39 = Z1-Z37 (Zernike coefficients)
             surfaceType = 'Zernike';
 
-            // Get normalization radius from XDAT2, default to max height if not specified
+            // Get key parameters
+            const extrapolate = zmxSurface.parameters['PARM0'] || 0;
+            const numTerms = zmxSurface.parameters['XDAT1'] || 0;
             const normRadius = zmxSurface.parameters['XDAT2'] || maxHeight;
             const decenterX = zmxSurface.parameters['PARM9'] || 0;
             const decenterY = zmxSurface.parameters['PARM10'] || 0;
@@ -227,7 +229,9 @@ class ZMXParser {
             parameters = {
                 'Radius': String(radius),
                 'Conic Constant': String(conicConstant),
+                'Extrapolate': String(extrapolate),
                 'Norm Radius': String(normRadius),
+                'Number of Terms': String(numTerms),
                 'A2': String(zmxSurface.parameters['PARM1'] || 0),
                 'A4': String(zmxSurface.parameters['PARM2'] || 0),
                 'A6': String(zmxSurface.parameters['PARM3'] || 0),
