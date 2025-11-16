@@ -210,46 +210,71 @@ class ZMXParser {
             };
         } else if (zmxSurface.type === 'FZERNSAG') {
             // FZERNSAG surface (Zernike Standard Sag)
-            // PARM 0 = Maximum term number
-            // PARM 1-37 = Zernike coefficients Z1-Z37
-            // XDAT 1 = Normalization radius
+            // PARM 0 = Extrapolate
+            // PARM 1-8 = A2, A4, A6, A8, A10, A12, A14, A16 (aspheric coefficients)
+            // PARM 9 = Zernike Decenter X
+            // PARM 10 = Zernike Decenter Y
+            // XDAT 1 = Number of Terms
+            // XDAT 2 = Normalization Radius
+            // XDAT 3-39 = Z1-Z37 (Zernike coefficients)
             surfaceType = 'Zernike';
 
-            // Get normalization radius from XDAT1, default to max height if not specified
-            const normRadius = zmxSurface.parameters['XDAT1'] || maxHeight;
+            // Get normalization radius from XDAT2, default to max height if not specified
+            const normRadius = zmxSurface.parameters['XDAT2'] || maxHeight;
+            const decenterX = zmxSurface.parameters['PARM9'] || 0;
+            const decenterY = zmxSurface.parameters['PARM10'] || 0;
 
             parameters = {
                 'Radius': String(radius),
                 'Conic Constant': String(conicConstant),
                 'Norm Radius': String(normRadius),
-                'Z1': String(zmxSurface.parameters['PARM1'] || 0),
-                'Z2': String(zmxSurface.parameters['PARM2'] || 0),
-                'Z3': String(zmxSurface.parameters['PARM3'] || 0),
-                'Z4': String(zmxSurface.parameters['PARM4'] || 0),
-                'Z5': String(zmxSurface.parameters['PARM5'] || 0),
-                'Z6': String(zmxSurface.parameters['PARM6'] || 0),
-                'Z7': String(zmxSurface.parameters['PARM7'] || 0),
-                'Z8': String(zmxSurface.parameters['PARM8'] || 0),
-                'Z9': String(zmxSurface.parameters['PARM9'] || 0),
-                'Z10': String(zmxSurface.parameters['PARM10'] || 0),
-                'Z11': String(zmxSurface.parameters['PARM11'] || 0),
-                'Z12': String(zmxSurface.parameters['PARM12'] || 0),
-                'Z13': String(zmxSurface.parameters['PARM13'] || 0),
-                'Z14': String(zmxSurface.parameters['PARM14'] || 0),
-                'Z15': String(zmxSurface.parameters['PARM15'] || 0),
-                'Z16': String(zmxSurface.parameters['PARM16'] || 0),
-                'Z17': String(zmxSurface.parameters['PARM17'] || 0),
-                'Z18': String(zmxSurface.parameters['PARM18'] || 0),
-                'Z19': String(zmxSurface.parameters['PARM19'] || 0),
-                'Z20': String(zmxSurface.parameters['PARM20'] || 0),
-                'Z21': String(zmxSurface.parameters['PARM21'] || 0),
-                'Z22': String(zmxSurface.parameters['PARM22'] || 0),
-                'Z23': String(zmxSurface.parameters['PARM23'] || 0),
-                'Z24': String(zmxSurface.parameters['PARM24'] || 0),
-                'Z25': String(zmxSurface.parameters['PARM25'] || 0),
-                'Z26': String(zmxSurface.parameters['PARM26'] || 0),
-                'Z27': String(zmxSurface.parameters['PARM27'] || 0),
-                'Z28': String(zmxSurface.parameters['PARM28'] || 0),
+                'A2': String(zmxSurface.parameters['PARM1'] || 0),
+                'A4': String(zmxSurface.parameters['PARM2'] || 0),
+                'A6': String(zmxSurface.parameters['PARM3'] || 0),
+                'A8': String(zmxSurface.parameters['PARM4'] || 0),
+                'A10': String(zmxSurface.parameters['PARM5'] || 0),
+                'A12': String(zmxSurface.parameters['PARM6'] || 0),
+                'A14': String(zmxSurface.parameters['PARM7'] || 0),
+                'A16': String(zmxSurface.parameters['PARM8'] || 0),
+                'Decenter X': String(decenterX),
+                'Decenter Y': String(decenterY),
+                'Z1': String(zmxSurface.parameters['XDAT3'] || 0),
+                'Z2': String(zmxSurface.parameters['XDAT4'] || 0),
+                'Z3': String(zmxSurface.parameters['XDAT5'] || 0),
+                'Z4': String(zmxSurface.parameters['XDAT6'] || 0),
+                'Z5': String(zmxSurface.parameters['XDAT7'] || 0),
+                'Z6': String(zmxSurface.parameters['XDAT8'] || 0),
+                'Z7': String(zmxSurface.parameters['XDAT9'] || 0),
+                'Z8': String(zmxSurface.parameters['XDAT10'] || 0),
+                'Z9': String(zmxSurface.parameters['XDAT11'] || 0),
+                'Z10': String(zmxSurface.parameters['XDAT12'] || 0),
+                'Z11': String(zmxSurface.parameters['XDAT13'] || 0),
+                'Z12': String(zmxSurface.parameters['XDAT14'] || 0),
+                'Z13': String(zmxSurface.parameters['XDAT15'] || 0),
+                'Z14': String(zmxSurface.parameters['XDAT16'] || 0),
+                'Z15': String(zmxSurface.parameters['XDAT17'] || 0),
+                'Z16': String(zmxSurface.parameters['XDAT18'] || 0),
+                'Z17': String(zmxSurface.parameters['XDAT19'] || 0),
+                'Z18': String(zmxSurface.parameters['XDAT20'] || 0),
+                'Z19': String(zmxSurface.parameters['XDAT21'] || 0),
+                'Z20': String(zmxSurface.parameters['XDAT22'] || 0),
+                'Z21': String(zmxSurface.parameters['XDAT23'] || 0),
+                'Z22': String(zmxSurface.parameters['XDAT24'] || 0),
+                'Z23': String(zmxSurface.parameters['XDAT25'] || 0),
+                'Z24': String(zmxSurface.parameters['XDAT26'] || 0),
+                'Z25': String(zmxSurface.parameters['XDAT27'] || 0),
+                'Z26': String(zmxSurface.parameters['XDAT28'] || 0),
+                'Z27': String(zmxSurface.parameters['XDAT29'] || 0),
+                'Z28': String(zmxSurface.parameters['XDAT30'] || 0),
+                'Z29': String(zmxSurface.parameters['XDAT31'] || 0),
+                'Z30': String(zmxSurface.parameters['XDAT32'] || 0),
+                'Z31': String(zmxSurface.parameters['XDAT33'] || 0),
+                'Z32': String(zmxSurface.parameters['XDAT34'] || 0),
+                'Z33': String(zmxSurface.parameters['XDAT35'] || 0),
+                'Z34': String(zmxSurface.parameters['XDAT36'] || 0),
+                'Z35': String(zmxSurface.parameters['XDAT37'] || 0),
+                'Z36': String(zmxSurface.parameters['XDAT38'] || 0),
+                'Z37': String(zmxSurface.parameters['XDAT39'] || 0),
                 'X Coordinate': '0',
                 'Y Coordinate': '0',
                 'Min Height': '0',
