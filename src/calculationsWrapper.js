@@ -449,8 +449,8 @@ class SurfaceCalculations {
             case 27: return rho5 * Math.sin(5 * theta);
             case 28: return (6 * rho2 - 5) * rho4 * Math.cos(4 * theta);
             case 29: return (6 * rho2 - 5) * rho4 * Math.sin(4 * theta);
-            case 30: return (21 * rho4 - 30 * rho2 + 10) * rho3 * Math.cos(3 * theta);
-            case 31: return (21 * rho4 - 30 * rho2 + 10) * rho3 * Math.sin(3 * theta);
+            case 30: return (21 * rho4 - 30 * rho4 + 10) * rho3 * Math.cos(3 * theta);
+            case 31: return (21 * rho4 - 30 * rho4 + 10) * rho3 * Math.sin(3 * theta);
             case 32: return (56 * rho6 - 105 * rho4 + 60 * rho2 - 10) * rho2 * Math.cos(2 * theta);
             case 33: return (56 * rho6 - 105 * rho4 + 60 * rho2 - 10) * rho2 * Math.sin(2 * theta);
             case 34: return (126 * rho8 - 280 * rho6 + 210 * rho4 - 60 * rho2 + 5) * rho * Math.cos(theta);
