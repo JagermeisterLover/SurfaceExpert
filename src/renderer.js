@@ -5,7 +5,7 @@ const surfaceTypes = {
     'Sphere': ['Radius', 'Min Height', 'Max Height'],
     'Even Asphere': ['Radius', 'Conic Constant', 'A4', 'A6', 'A8', 'A10', 'A12', 'A14', 'A16', 'A18', 'A20', 'Min Height', 'Max Height'],
     'Odd Asphere': ['Radius', 'Conic Constant', 'A3', 'A4', 'A5', 'A6', 'A7', 'A8', 'A9', 'A10', 'A11', 'A12', 'A13', 'A14', 'A15', 'A16', 'A17', 'A18', 'A19', 'A20', 'Min Height', 'Max Height'],
-    'Zernike': ['Radius', 'Conic Constant', 'Norm Radius', 'Z1', 'Z2', 'Z3', 'Z4', 'Z5', 'Z6', 'Z7', 'Z8', 'Z9', 'Z10', 'Z11', 'Z12', 'Z13', 'Z14', 'Z15', 'Z16', 'Z17', 'Z18', 'Z19', 'Z20', 'Z21', 'Z22', 'Z23', 'Z24', 'Z25', 'Z26', 'Z27', 'Z28', 'X Coordinate', 'Y Coordinate', 'Min Height', 'Max Height'],
+    'Zernike': ['Radius', 'Conic Constant', 'Norm Radius', 'A2', 'A4', 'A6', 'A8', 'A10', 'A12', 'A14', 'A16', 'Decenter X', 'Decenter Y', 'Z1', 'Z2', 'Z3', 'Z4', 'Z5', 'Z6', 'Z7', 'Z8', 'Z9', 'Z10', 'Z11', 'Z12', 'Z13', 'Z14', 'Z15', 'Z16', 'Z17', 'Z18', 'Z19', 'Z20', 'Z21', 'Z22', 'Z23', 'Z24', 'Z25', 'Z26', 'Z27', 'Z28', 'Z29', 'Z30', 'Z31', 'Z32', 'Z33', 'Z34', 'Z35', 'Z36', 'Z37', 'X Coordinate', 'Y Coordinate', 'Min Height', 'Max Height'],
     'Irregular': ['Radius', 'Conic Constant', 'Decenter X', 'Decenter Y', 'Tilt X', 'Tilt Y', 'Spherical', 'Astigmatism', 'Coma', 'Angle', 'X Coordinate', 'Y Coordinate', 'Min Height', 'Max Height'],
     'Opal Un U': ['Radius', 'e2', 'H', 'A2', 'A3', 'A4', 'A5', 'A6', 'A7', 'A8', 'A9', 'A10', 'A11', 'A12', 'Min Height', 'Max Height'],
     'Opal Un Z': ['Radius', 'e2', 'H', 'A3', 'A4', 'A5', 'A6', 'A7', 'A8', 'A9', 'A10', 'A11', 'A12', 'A13', 'Min Height', 'Max Height'],
@@ -1439,10 +1439,15 @@ const calculateSurfaceValues = (r, surface, x = null, y = null) => {
             // Only sag is calculated for Zernike surfaces
             const R = parseParam('Radius'), k = parseParam('Conic Constant');
             const normRadius = parseParam('Norm Radius');
+            const dx = parseParam('Decenter X'), dy = parseParam('Decenter Y');
 
-            // Collect all Zernike coefficients
+            // Collect aspheric coefficients
+            const A2 = parseParam('A2'), A4 = parseParam('A4'), A6 = parseParam('A6'), A8 = parseParam('A8');
+            const A10 = parseParam('A10'), A12 = parseParam('A12'), A14 = parseParam('A14'), A16 = parseParam('A16');
+
+            // Collect all Zernike coefficients (Z1-Z37)
             const coeffs = {};
-            for (let i = 1; i <= 28; i++) {
+            for (let i = 1; i <= 37; i++) {
                 coeffs[`Z${i}`] = parseParam(`Z${i}`);
             }
 
@@ -1450,7 +1455,7 @@ const calculateSurfaceValues = (r, surface, x = null, y = null) => {
             const xCoord = x !== null ? x : r;
             const yCoord = y !== null ? y : 0;
 
-            sag = SurfaceCalculations.calculateZernikeSag(xCoord, yCoord, R, k, normRadius, coeffs);
+            sag = SurfaceCalculations.calculateZernikeSag(xCoord, yCoord, R, k, normRadius, dx, dy, A2, A4, A6, A8, A10, A12, A14, A16, coeffs);
             // No slope, asphericity, aberration for Zernike surfaces
             return { sag, slope: 0, asphericity: 0, aberration: 0, angle: 0 };
         } else if (surface.type === 'Irregular') {

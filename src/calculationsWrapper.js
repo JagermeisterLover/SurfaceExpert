@@ -457,13 +457,27 @@ class SurfaceCalculations {
      * @param {number} R - Radius of curvature
      * @param {number} k - Conic constant
      * @param {number} normRadius - Normalization radius
+     * @param {number} dx - Decenter X
+     * @param {number} dy - Decenter Y
+     * @param {number} A2 - Aspheric coefficient A2 (r^2)
+     * @param {number} A4 - Aspheric coefficient A4 (r^4)
+     * @param {number} A6 - Aspheric coefficient A6 (r^6)
+     * @param {number} A8 - Aspheric coefficient A8 (r^8)
+     * @param {number} A10 - Aspheric coefficient A10 (r^10)
+     * @param {number} A12 - Aspheric coefficient A12 (r^12)
+     * @param {number} A14 - Aspheric coefficient A14 (r^14)
+     * @param {number} A16 - Aspheric coefficient A16 (r^16)
      * @param {Object} coeffs - Object with Z1, Z2, ..., Z37 coefficients
      * @returns {number} Sag value
      */
-    static calculateZernikeSag(x, y, R, k, normRadius, coeffs) {
+    static calculateZernikeSag(x, y, R, k, normRadius, dx, dy, A2, A4, A6, A8, A10, A12, A14, A16, coeffs) {
         try {
+            // Apply decenter
+            const x_local = x - dx;
+            const y_local = y - dy;
+
             // Calculate radial distance
-            const r = Math.sqrt(x * x + y * y);
+            const r = Math.sqrt(x_local * x_local + y_local * y_local);
 
             // Base conic surface sag
             let baseSag = 0;
@@ -476,12 +490,16 @@ class SurfaceCalculations {
                 }
             }
 
+            // Aspheric terms
+            const asphericSag = A2 * r**2 + A4 * r**4 + A6 * r**6 + A8 * r**8 +
+                               A10 * r**10 + A12 * r**12 + A14 * r**14 + A16 * r**16;
+
             // Zernike aberration terms
-            if (normRadius === 0 || r === 0) return baseSag;
+            if (normRadius === 0) return baseSag + asphericSag;
 
             // Normalized coordinates
             const rho = Math.min(r / normRadius, 1);
-            const theta = Math.atan2(y, x);
+            const theta = Math.atan2(y_local, x_local);
 
             // Sum Zernike terms
             let zernikeSag = 0;
@@ -492,7 +510,7 @@ class SurfaceCalculations {
                 }
             }
 
-            return baseSag + zernikeSag;
+            return baseSag + asphericSag + zernikeSag;
         } catch {
             return 0;
         }
