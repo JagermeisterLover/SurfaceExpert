@@ -86,17 +86,41 @@ class SurfaceCalculations {
 
             // Zernike-like aberration terms
             // Normalized coordinates (avoid division by zero)
-            if (rMax === 0) return baseSag;
+            let aberration = 0;
+            if (rMax !== 0) {
+                const rho_x = x_local / rMax;
+                const rho_y = y_local / rMax;
+                const rho = Math.sqrt(rho_x * rho_x + rho_y * rho_y);
+                const rho_y_prime = rho_y * Math.cos(theta) - rho_x * Math.sin(theta);
 
-            const rho_x = x_local / rMax;
-            const rho_y = y_local / rMax;
-            const rho = Math.sqrt(rho_x * rho_x + rho_y * rho_y);
-            const rho_y_prime = rho_y * Math.cos(theta) - rho_x * Math.sin(theta);
+                // Aberration coefficients applied at max aperture
+                aberration = Zs * Math.pow(rho, 4) + Za * Math.pow(rho_y_prime, 2) + Zc * Math.pow(rho, 2) * rho_y_prime;
+            }
 
-            // Aberration coefficients applied at max aperture
-            const aberration = Zs * Math.pow(rho, 4) + Za * Math.pow(rho_y_prime, 2) + Zc * Math.pow(rho, 2) * rho_y_prime;
+            // The sag in local coordinate system
+            const z_local = baseSag + aberration;
 
-            return baseSag + aberration;
+            // Transform the point back from local to global coordinates
+            // The surface is defined in local (tilted) coordinates, but we need to return
+            // the global z-coordinate for the 3D visualization.
+            // Reverse the transformations: un-tilt about Y, un-tilt about X, un-decenter
+
+            // Step 1: Un-tilt about Y-axis (reverse rotation)
+            const x3 = x_local * Math.cos(tiltYRad) - z_local * Math.sin(tiltYRad);
+            const y3 = y_local;
+            const z3 = x_local * Math.sin(tiltYRad) + z_local * Math.cos(tiltYRad);
+
+            // Step 2: Un-tilt about X-axis (reverse rotation)
+            const x4 = x3;
+            const y4 = y3 * Math.cos(tiltXRad) + z3 * Math.sin(tiltXRad);
+            const z4 = -y3 * Math.sin(tiltXRad) + z3 * Math.cos(tiltXRad);
+
+            // Step 3: Un-decenter (add back the decenters)
+            // const x_global = x4 + dx;  // Not needed, we only return z
+            // const y_global = y4 + dy;  // Not needed, we only return z
+            const z_global = z4;
+
+            return z_global;
         } catch {
             return 0;
         }
