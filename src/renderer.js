@@ -5,8 +5,8 @@ const surfaceTypes = {
     'Sphere': ['Radius', 'Min Height', 'Max Height'],
     'Even Asphere': ['Radius', 'Conic Constant', 'A4', 'A6', 'A8', 'A10', 'A12', 'A14', 'A16', 'A18', 'A20', 'Min Height', 'Max Height'],
     'Odd Asphere': ['Radius', 'Conic Constant', 'A3', 'A4', 'A5', 'A6', 'A7', 'A8', 'A9', 'A10', 'A11', 'A12', 'A13', 'A14', 'A15', 'A16', 'A17', 'A18', 'A19', 'A20', 'Min Height', 'Max Height'],
-    'Zernike': ['Radius', 'Conic Constant', 'Extrapolate', 'Norm Radius', 'Number of Terms', 'A2', 'A4', 'A6', 'A8', 'A10', 'A12', 'A14', 'A16', 'Decenter X', 'Decenter Y', 'Z1', 'Z2', 'Z3', 'Z4', 'Z5', 'Z6', 'Z7', 'Z8', 'Z9', 'Z10', 'Z11', 'Z12', 'Z13', 'Z14', 'Z15', 'Z16', 'Z17', 'Z18', 'Z19', 'Z20', 'Z21', 'Z22', 'Z23', 'Z24', 'Z25', 'Z26', 'Z27', 'Z28', 'Z29', 'Z30', 'Z31', 'Z32', 'Z33', 'Z34', 'Z35', 'Z36', 'Z37', 'X Coordinate', 'Y Coordinate', 'Min Height', 'Max Height'],
-    'Irregular': ['Radius', 'Conic Constant', 'Decenter X', 'Decenter Y', 'Tilt X', 'Tilt Y', 'Spherical', 'Astigmatism', 'Coma', 'Angle', 'X Coordinate', 'Y Coordinate', 'Min Height', 'Max Height'],
+    'Zernike': ['Radius', 'Conic Constant', 'Extrapolate', 'Norm Radius', 'Number of Terms', 'A2', 'A4', 'A6', 'A8', 'A10', 'A12', 'A14', 'A16', 'Decenter X', 'Decenter Y', 'Z1', 'Z2', 'Z3', 'Z4', 'Z5', 'Z6', 'Z7', 'Z8', 'Z9', 'Z10', 'Z11', 'Z12', 'Z13', 'Z14', 'Z15', 'Z16', 'Z17', 'Z18', 'Z19', 'Z20', 'Z21', 'Z22', 'Z23', 'Z24', 'Z25', 'Z26', 'Z27', 'Z28', 'Z29', 'Z30', 'Z31', 'Z32', 'Z33', 'Z34', 'Z35', 'Z36', 'Z37', 'Scan Angle', 'X Coordinate', 'Y Coordinate', 'Min Height', 'Max Height'],
+    'Irregular': ['Radius', 'Conic Constant', 'Decenter X', 'Decenter Y', 'Tilt X', 'Tilt Y', 'Spherical', 'Astigmatism', 'Coma', 'Angle', 'Scan Angle', 'X Coordinate', 'Y Coordinate', 'Min Height', 'Max Height'],
     'Opal Un U': ['Radius', 'e2', 'H', 'A2', 'A3', 'A4', 'A5', 'A6', 'A7', 'A8', 'A9', 'A10', 'A11', 'A12', 'Min Height', 'Max Height'],
     'Opal Un Z': ['Radius', 'e2', 'H', 'A3', 'A4', 'A5', 'A6', 'A7', 'A8', 'A9', 'A10', 'A11', 'A12', 'A13', 'Min Height', 'Max Height'],
     'Poly': ['A1', 'A2', 'A3', 'A4', 'A5', 'A6', 'A7', 'A8', 'A9', 'A10', 'A11', 'A12', 'A13', 'Min Height', 'Max Height']
@@ -440,10 +440,17 @@ const OpticalSurfaceAnalyzer = () => {
 
             const absR = Math.abs(r);
             if (absR >= minHeight && absR <= maxHeight) {
-                // For non-rotationally symmetric surfaces (Zernike, Irregular), use cross-section along x-axis (y=0)
-                const values = (selectedSurface.type === 'Irregular' || selectedSurface.type === 'Zernike')
-                    ? calculateSurfaceValues(absR, selectedSurface, r, 0)
-                    : calculateSurfaceValues(absR, selectedSurface);
+                // For non-rotationally symmetric surfaces (Zernike, Irregular), use scan angle to determine direction
+                let values;
+                if (selectedSurface.type === 'Irregular' || selectedSurface.type === 'Zernike') {
+                    const scanAngle = parseFloat(selectedSurface.parameters['Scan Angle']) || 0;
+                    const scanAngleRad = scanAngle * Math.PI / 180;
+                    const x = r * Math.cos(scanAngleRad);
+                    const y = r * Math.sin(scanAngleRad);
+                    values = calculateSurfaceValues(absR, selectedSurface, x, y);
+                } else {
+                    values = calculateSurfaceValues(absR, selectedSurface);
+                }
                 let val = 0;
                 if (activeTab === 'sag') val = values.sag;
                 else if (activeTab === 'slope') val = values.slope;
@@ -1530,10 +1537,17 @@ const SummaryView = ({ selectedSurface, c }) => {
         const data = [];
 
         for (let r = minHeight; r < maxHeight; r += step) {
-            // For non-rotationally symmetric surfaces (Zernike, Irregular), use x-axis cross-section (y=0)
-            const values = (selectedSurface.type === 'Irregular' || selectedSurface.type === 'Zernike')
-                ? calculateSurfaceValues(r, selectedSurface, r, 0)
-                : calculateSurfaceValues(r, selectedSurface);
+            // For non-rotationally symmetric surfaces (Zernike, Irregular), use scan angle to determine direction
+            let values;
+            if (selectedSurface.type === 'Irregular' || selectedSurface.type === 'Zernike') {
+                const scanAngle = parseFloat(selectedSurface.parameters['Scan Angle']) || 0;
+                const scanAngleRad = scanAngle * Math.PI / 180;
+                const x = r * Math.cos(scanAngleRad);
+                const y = r * Math.sin(scanAngleRad);
+                values = calculateSurfaceValues(r, selectedSurface, x, y);
+            } else {
+                values = calculateSurfaceValues(r, selectedSurface);
+            }
             data.push({
                 r: r.toFixed(7),
                 sag: formatValue(values.sag),
@@ -1546,9 +1560,16 @@ const SummaryView = ({ selectedSurface, c }) => {
         }
 
         // Always include maxHeight
-        const values = (selectedSurface.type === 'Irregular' || selectedSurface.type === 'Zernike')
-            ? calculateSurfaceValues(maxHeight, selectedSurface, maxHeight, 0)
-            : calculateSurfaceValues(maxHeight, selectedSurface);
+        let values;
+        if (selectedSurface.type === 'Irregular' || selectedSurface.type === 'Zernike') {
+            const scanAngle = parseFloat(selectedSurface.parameters['Scan Angle']) || 0;
+            const scanAngleRad = scanAngle * Math.PI / 180;
+            const x = maxHeight * Math.cos(scanAngleRad);
+            const y = maxHeight * Math.sin(scanAngleRad);
+            values = calculateSurfaceValues(maxHeight, selectedSurface, x, y);
+        } else {
+            values = calculateSurfaceValues(maxHeight, selectedSurface);
+        }
         data.push({
             r: maxHeight.toFixed(7),
             sag: formatValue(values.sag),
@@ -1777,10 +1798,17 @@ const DataView = ({ activeTab, selectedSurface, c }) => {
         const data = [];
 
         for (let r = minHeight; r < maxHeight; r += step) {
-            // For non-rotationally symmetric surfaces (Zernike, Irregular), use x-axis cross-section (y=0)
-            const values = (selectedSurface.type === 'Irregular' || selectedSurface.type === 'Zernike')
-                ? calculateSurfaceValues(r, selectedSurface, r, 0)
-                : calculateSurfaceValues(r, selectedSurface);
+            // For non-rotationally symmetric surfaces (Zernike, Irregular), use scan angle to determine direction
+            let values;
+            if (selectedSurface.type === 'Irregular' || selectedSurface.type === 'Zernike') {
+                const scanAngle = parseFloat(selectedSurface.parameters['Scan Angle']) || 0;
+                const scanAngleRad = scanAngle * Math.PI / 180;
+                const x = r * Math.cos(scanAngleRad);
+                const y = r * Math.sin(scanAngleRad);
+                values = calculateSurfaceValues(r, selectedSurface, x, y);
+            } else {
+                values = calculateSurfaceValues(r, selectedSurface);
+            }
 
             let value = 0;
             if (activeTab === 'sag') value = values.sag;
@@ -1795,9 +1823,16 @@ const DataView = ({ activeTab, selectedSurface, c }) => {
         }
 
         // Always include maxHeight
-        const values = (selectedSurface.type === 'Irregular' || selectedSurface.type === 'Zernike')
-            ? calculateSurfaceValues(maxHeight, selectedSurface, maxHeight, 0)
-            : calculateSurfaceValues(maxHeight, selectedSurface);
+        let values;
+        if (selectedSurface.type === 'Irregular' || selectedSurface.type === 'Zernike') {
+            const scanAngle = parseFloat(selectedSurface.parameters['Scan Angle']) || 0;
+            const scanAngleRad = scanAngle * Math.PI / 180;
+            const x = maxHeight * Math.cos(scanAngleRad);
+            const y = maxHeight * Math.sin(scanAngleRad);
+            values = calculateSurfaceValues(maxHeight, selectedSurface, x, y);
+        } else {
+            values = calculateSurfaceValues(maxHeight, selectedSurface);
+        }
         let value = 0;
         if (activeTab === 'sag') value = values.sag;
         else if (activeTab === 'slope') value = values.slope;
@@ -2055,9 +2090,58 @@ const PropertiesPanel = ({ selectedSurface, updateSurfaceName, updateSurfaceType
                     ))
                 ),
 
+                // Scan & Coordinates box for non-rotationally symmetric surfaces
+                (selectedSurface.type === 'Zernike' || selectedSurface.type === 'Irregular') &&
+                React.createElement('div', {
+                    style: {
+                        padding: '10px',
+                        backgroundColor: c.bg,
+                        borderRadius: '4px',
+                        marginBottom: '12px',
+                        border: `1px solid ${c.border}`
+                    }
+                },
+                    React.createElement('div', {
+                        style: {
+                            fontSize: '11px',
+                            fontWeight: '600',
+                            color: c.textDim,
+                            marginBottom: '8px',
+                            textTransform: 'uppercase',
+                            letterSpacing: '0.3px'
+                        }
+                    }, 'Scan & Coordinates'),
+                    ['Scan Angle', 'X Coordinate', 'Y Coordinate'].map(param => (
+                        selectedSurface.parameters[param] !== undefined &&
+                        React.createElement('div', { key: param, style: { marginBottom: '8px' } },
+                            React.createElement('label', {
+                                style: { fontSize: '12px', color: c.textDim, display: 'block', marginBottom: '4px' }
+                            }, param),
+                            React.createElement('input', {
+                                type: 'text',
+                                value: selectedSurface.parameters[param] || '0',
+                                onChange: (e) => updateParameter(param, e.target.value),
+                                style: {
+                                    width: '100%',
+                                    padding: '6px 8px',
+                                    backgroundColor: c.panel,
+                                    color: c.text,
+                                    border: `1px solid ${c.border}`,
+                                    borderRadius: '3px',
+                                    fontSize: '13px',
+                                    textAlign: 'right'
+                                }
+                            })
+                        )
+                    ))
+                ),
+
                 surfaceTypes[selectedSurface.type].filter(param => {
                     // Filter out universal parameters
                     if (['Radius', 'Min Height', 'Max Height'].includes(param)) return false;
+
+                    // Filter out scan & coordinate parameters (they have their own box)
+                    if (['Scan Angle', 'X Coordinate', 'Y Coordinate'].includes(param)) return false;
 
                     // For Zernike surfaces, only show Z1-ZN based on "Number of Terms"
                     if (selectedSurface.type === 'Zernike' && param.match(/^Z\d+$/)) {
