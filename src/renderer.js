@@ -10,16 +10,16 @@ import { formatValue, degreesToDMS } from './utils/formatters.js';
 import { calculateSurfaceValues, calculateSagOnly, getBestFitSphereParams } from './utils/calculations.js';
 
 // Import components
-import { SummaryView } from './components/SummaryView.js';
-import { DataView } from './components/DataView.js';
-import { PropertiesPanel } from './components/PropertiesPanel.js';
+import SummaryView from './components/SummaryView.js';
+import DataView from './components/DataView.js';
+import PropertiesPanel from './components/PropertiesPanel.js';
 import { PropertySection, PropertyRow } from './components/PropertySection.js';
 
 // Import dialogs
-import { SettingsModal } from './components/dialogs/SettingsModal.js';
-import { ZMXImportDialog } from './components/dialogs/ZMXImportDialog.js';
-import { ConversionDialog } from './components/dialogs/ConversionDialog.js';
-import { ConversionResultsDialog } from './components/dialogs/ConversionResultsDialog.js';
+import SettingsModal from './components/dialogs/SettingsModal.js';
+import ZMXImportDialog from './components/dialogs/ZMXImportDialog.js';
+import ConversionDialog from './components/dialogs/ConversionDialog.js';
+import ConversionResultsDialog from './components/dialogs/ConversionResultsDialog.js';
 
 const { useState, useEffect, useRef } = React;
 

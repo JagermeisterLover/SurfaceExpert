@@ -99,7 +99,4 @@ const SettingsModal = ({ colorscale, setColorscale, onClose, c }) => (
     )
 );
 
-// Export as default
-if (typeof module !== 'undefined' && module.exports) {
-    module.exports = SettingsModal;
-}
+export default SettingsModal;
