@@ -172,6 +172,32 @@ class ZMXParser {
                 'Min Height': '0',
                 'Max Height': String(maxHeight)
             };
+        } else if (zmxSurface.type === 'IRREGULA') {
+            // IRREGULA surface
+            // PARM 1 = Decenter X
+            // PARM 2 = Decenter Y
+            // PARM 3 = Tilt X
+            // PARM 4 = Tilt Y
+            // PARM 5 = Spherical aberration
+            // PARM 6 = Astigmatism
+            // PARM 7 = Coma
+            // PARM 8 = Angle
+            // CONI = Conic Constant
+            surfaceType = 'Irregular';
+            parameters = {
+                'Radius': String(radius),
+                'Conic Constant': String(conicConstant),
+                'Decenter X': String(zmxSurface.parameters['PARM1'] || 0),
+                'Decenter Y': String(zmxSurface.parameters['PARM2'] || 0),
+                'Tilt X': String(zmxSurface.parameters['PARM3'] || 0),
+                'Tilt Y': String(zmxSurface.parameters['PARM4'] || 0),
+                'Spherical': String(zmxSurface.parameters['PARM5'] || 0),
+                'Astigmatism': String(zmxSurface.parameters['PARM6'] || 0),
+                'Coma': String(zmxSurface.parameters['PARM7'] || 0),
+                'Angle': String(zmxSurface.parameters['PARM8'] || 0),
+                'Min Height': '0',
+                'Max Height': String(maxHeight)
+            };
         } else {
             // Unsupported surface type, default to Even Asphere
             surfaceType = 'Even Asphere';

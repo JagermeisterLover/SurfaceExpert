@@ -46,6 +46,61 @@ class SurfaceCalculations {
         }
     }
 
+    static calculateIrregularSag(r, R, k, dx, dy, tiltX, tiltY, Zs, Za, Zc, angle, rMax) {
+        try {
+            // Convert angle to radians
+            const theta = angle * Math.PI / 180;
+            const tiltXRad = tiltX * Math.PI / 180;
+            const tiltYRad = tiltY * Math.PI / 180;
+
+            // For a radially symmetric calculation (r only, no x/y separation),
+            // we need to make assumptions about x and y
+            // Assume x = r*cos(0) = r and y = 0 for the radial profile
+            let x = r;
+            let y = 0;
+
+            // Apply tilt (rotation matrix)
+            // Rotation about X-axis
+            const y1 = y * Math.cos(tiltXRad);
+            const z1 = -y * Math.sin(tiltXRad);
+
+            // Rotation about Y-axis
+            const x2 = x * Math.cos(tiltYRad) + z1 * Math.sin(tiltYRad);
+            const z2 = -x * Math.sin(tiltYRad) + z1 * Math.cos(tiltYRad);
+            const y2 = y1;
+
+            // Apply decenter
+            const xp = x2 - dx;
+            const yp = y2 - dy;
+            const rp = Math.sqrt(xp*xp + yp*yp);
+
+            // Base conic surface
+            const c = 1/R;
+            const baseSag = (c * rp**2) / (1 + Math.sqrt(1 - (1 + k) * c**2 * rp**2));
+
+            // Normalized coordinates
+            const rho_x = xp / rMax;
+            const rho_y = yp / rMax;
+            const rho = Math.sqrt(rho_x**2 + rho_y**2);
+            const rho_y_prime = rho_y * Math.cos(theta) - rho_x * Math.sin(theta);
+
+            // Zernike-like aberration terms
+            const zernike = Zs * rho**4 + Za * rho_y_prime**2 + Zc * rho**2 * rho_y_prime;
+
+            return baseSag + zernike;
+        } catch {
+            return 0;
+        }
+    }
+
+    static calculateIrregularSlope(r, R, k, dx, dy, tiltX, tiltY, Zs, Za, Zc, angle, rMax) {
+        // Numerical derivative
+        const h = 0.001;
+        const z1 = this.calculateIrregularSag(r + h, R, k, dx, dy, tiltX, tiltY, Zs, Za, Zc, angle, rMax);
+        const z2 = this.calculateIrregularSag(r - h, R, k, dx, dy, tiltX, tiltY, Zs, Za, Zc, angle, rMax);
+        return (z1 - z2) / (2 * h);
+    }
+
     static calculateOpalUnUSag(r, R, e2, H, A2, A3, A4, A5, A6, A7, A8, A9, A10, A11, A12) {
         let z = 0;
         const tolerance = 1e-15;
