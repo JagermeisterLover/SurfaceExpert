@@ -96,5 +96,3 @@ export const DataView = ({ activeTab, selectedSurface, c }) => {
         )
     );
 };
-
-export { DataView };
