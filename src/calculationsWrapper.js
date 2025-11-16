@@ -49,9 +49,10 @@ class SurfaceCalculations {
     static calculateIrregularSag(x, y, R, k, dx, dy, tiltX, tiltY, Zs, Za, Zc, angle, rMax) {
         try {
             // Convert angles to radians
+            // Note: Negate tilt angles to match Zemax sign convention
             const theta = angle * Math.PI / 180;
-            const tiltXRad = tiltX * Math.PI / 180;
-            const tiltYRad = tiltY * Math.PI / 180;
+            const tiltXRad = -tiltX * Math.PI / 180;
+            const tiltYRad = -tiltY * Math.PI / 180;
 
             // Transform coordinates from global to local (decentered and tilted) system
             // According to Zemax: decenter, then tilt about x, then tilt about y
