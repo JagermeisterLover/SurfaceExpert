@@ -101,3 +101,5 @@ export const InputDialog = ({ inputDialog, c }) => {
         )
     );
 };
+
+export { InputDialog };

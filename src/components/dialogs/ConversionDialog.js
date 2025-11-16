@@ -390,3 +390,5 @@ const ConversionDialog = ({ selectedSurface, folders, selectedFolder, setFolders
         )
     );
 };
+
+export { ConversionDialog };
