@@ -486,7 +486,6 @@ class SurfaceCalculations {
     static calculateOpalUnUSlope(r, R, e2, H, A2, A3, A4, A5, A6, A7, A8, A9, A10, A11, A12) {
         const z = this.calculateOpalUnUSag(r, R, e2, H, A2, A3, A4, A5, A6, A7, A8, A9, A10, A11, A12);
         const rSquared = r * r;
-        const invR2 = 1.0 / (2 * R);
         const w = rSquared / (H * H);
 
         // Calculate dQ/dw where Q = A2*w² + A3*w³ + A4*w⁴ + ... + A12*w¹²
@@ -504,7 +503,7 @@ class SurfaceCalculations {
 
         const denominator = 1 - (1 - e2) * z / R;
         if (denominator === 0) return 0;
-        return (r * invR2 + dQdr) / denominator;
+        return (r / R + dQdr) / denominator;
     }
 
     static calculateOpalUnZSlope(r, R, e2, H, A3, A4, A5, A6, A7, A8, A9, A10, A11, A12, A13) {
