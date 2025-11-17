@@ -294,16 +294,19 @@ public class SurfaceCalculations
         var invR2 = 1.0 / (2 * R);
         var w = rSquared / (H * H);
 
-        double dQdr = 0;
+        // Calculate dQ/dw where Q = A2*w² + A3*w³ + A4*w⁴ + ... + A12*w¹²
+        // dQ/dw = 2*A2*w + 3*A3*w² + 4*A4*w³ + ... + 12*A12*w¹¹
+        double dQdw = 0;
         var wPower = w; // start with w
         double[] coeffs = { A2, A3, A4, A5, A6, A7, A8, A9, A10, A11, A12 };
-        for (var i = 1; i < coeffs.Length; i++)
+        for (var i = 0; i < coeffs.Length; i++)
         {
-            dQdr += i * coeffs[i] * wPower;
+            dQdw += (i + 2) * coeffs[i] * wPower; // Derivative coefficient: 2,3,4,...,12
             wPower *= w;
         }
 
-        dQdr *= 2 * r / (H * H);
+        // Apply chain rule: dQ/dr = dQ/dw * dw/dr, where dw/dr = 2r/H²
+        var dQdr = dQdw * 2 * r / (H * H);
 
         return (r * invR2 + dQdr) / (1 - (1 - e2) * z / R);
     }
