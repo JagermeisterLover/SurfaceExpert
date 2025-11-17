@@ -2,8 +2,7 @@ const { useState } = React;
 const { createElement: h } = React;
 
 // Import calculateSurfaceValues from utils
-// Note: This will be imported when the component is used in renderer.js
-// For now, we assume it's available in the global scope or will be passed as needed
+import { calculateSurfaceValues } from '../../utils/calculations.js';
 
 const ConversionDialog = ({ selectedSurface, folders, selectedFolder, setFolders, setSelectedSurface, setShowConvert, setShowConvertResults, setConvertResults, c }) => {
     const [targetType, setTargetType] = useState('1'); // 1=Even Asphere, 2=Odd Asphere, 3=Opal UnZ, 4=Opal UnU, 5=Poly
