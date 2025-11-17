@@ -131,22 +131,22 @@ class ZMXParser {
             };
         } else if (zmxSurface.type === 'EVENASPH') {
             // EVENASPH surface
-            // PARM 1 is conic (ignore, use CONI instead)
-            // PARM 2 is A2 (ignore, not supported)
-            // PARM 3 is A4, PARM 4 is A6, etc.
+            // PARM 1 is A2 (r² term - ignore, not used in standard even asphere)
+            // PARM 2 is A4 (r⁴ term)
+            // PARM 3 is A6 (r⁶ term), etc.
             surfaceType = 'Even Asphere';
             parameters = {
                 'Radius': String(radius),
                 'Conic Constant': String(conicConstant),
-                'A4': String(zmxSurface.parameters['PARM3'] || 0),
-                'A6': String(zmxSurface.parameters['PARM4'] || 0),
-                'A8': String(zmxSurface.parameters['PARM5'] || 0),
-                'A10': String(zmxSurface.parameters['PARM6'] || 0),
-                'A12': String(zmxSurface.parameters['PARM7'] || 0),
-                'A14': String(zmxSurface.parameters['PARM8'] || 0),
-                'A16': String(zmxSurface.parameters['PARM9'] || 0),
-                'A18': String(zmxSurface.parameters['PARM10'] || 0),
-                'A20': String(zmxSurface.parameters['PARM11'] || 0),
+                'A4': String(zmxSurface.parameters['PARM2'] || 0),
+                'A6': String(zmxSurface.parameters['PARM3'] || 0),
+                'A8': String(zmxSurface.parameters['PARM4'] || 0),
+                'A10': String(zmxSurface.parameters['PARM5'] || 0),
+                'A12': String(zmxSurface.parameters['PARM6'] || 0),
+                'A14': String(zmxSurface.parameters['PARM7'] || 0),
+                'A16': String(zmxSurface.parameters['PARM8'] || 0),
+                'A18': String(zmxSurface.parameters['PARM9'] || 0),
+                'A20': String(zmxSurface.parameters['PARM10'] || 0),
                 'Min Height': '0',
                 'Max Height': String(maxHeight)
             };

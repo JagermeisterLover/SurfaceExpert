@@ -23,10 +23,44 @@ class SurfaceCalculations {
 
     static calculateEvenAsphereSag(r, R, k, A4, A6, A8, A10, A12, A14, A16, A18, A20) {
         try {
-            const baseSag = (r ** 2) / (R * (1 + Math.sqrt(1 - (1 + k) * (r ** 2) / (R ** 2))));
-            return (baseSag +
-                   A4 * r**4 + A6 * r**6 + A8 * r**8 + A10 * r**10 +
-                   A12 * r**12 + A14 * r**14 + A16 * r**16 + A18 * r**18 + A20 * r**20);
+            // Pre-compute common terms for better precision
+            const r2 = r * r;
+            const R2 = R * R;
+            const kp1 = 1.0 + k;
+
+            // Base sag: r²/[R*(1 + sqrt(1 - (1+k)*r²/R²))]
+            const sqrtTerm = Math.sqrt(1.0 - kp1 * r2 / R2);
+            const baseSag = r2 / (R * (1.0 + sqrtTerm));
+
+            // Polynomial terms using progressive powers
+            let rPower = r2 * r2; // r⁴
+            let polySag = A4 * rPower;
+
+            rPower *= r2; // r⁶
+            polySag += A6 * rPower;
+
+            rPower *= r2; // r⁸
+            polySag += A8 * rPower;
+
+            rPower *= r2; // r¹⁰
+            polySag += A10 * rPower;
+
+            rPower *= r2; // r¹²
+            polySag += A12 * rPower;
+
+            rPower *= r2; // r¹⁴
+            polySag += A14 * rPower;
+
+            rPower *= r2; // r¹⁶
+            polySag += A16 * rPower;
+
+            rPower *= r2; // r¹⁸
+            polySag += A18 * rPower;
+
+            rPower *= r2; // r²⁰
+            polySag += A20 * rPower;
+
+            return baseSag + polySag;
         } catch {
             return 0;
         }
@@ -35,12 +69,71 @@ class SurfaceCalculations {
     static calculateOddAsphereSag(r, R, k, A3, A4, A5, A6, A7, A8, A9, A10,
                                    A11, A12, A13, A14, A15, A16, A17, A18, A19, A20) {
         try {
-            const baseSag = (r ** 2) / (R * (1 + Math.sqrt(1 - (1 + k) * (r ** 2) / (R ** 2))));
-            return (baseSag +
-                   A3 * r**3 + A4 * r**4 + A5 * r**5 + A6 * r**6 + A7 * r**7 +
-                   A8 * r**8 + A9 * r**9 + A10 * r**10 + A11 * r**11 + A12 * r**12 +
-                   A13 * r**13 + A14 * r**14 + A15 * r**15 + A16 * r**16 + A17 * r**17 +
-                   A18 * r**18 + A19 * r**19 + A20 * r**20);
+            // Pre-compute common terms for better precision
+            const r2 = r * r;
+            const R2 = R * R;
+            const kp1 = 1.0 + k;
+
+            // Base sag: r²/[R*(1 + sqrt(1 - (1+k)*r²/R²))]
+            const sqrtTerm = Math.sqrt(1.0 - kp1 * r2 / R2);
+            const baseSag = r2 / (R * (1.0 + sqrtTerm));
+
+            // Polynomial terms using progressive powers
+            let rPower = r2 * r; // r³
+            let polySag = A3 * rPower;
+
+            rPower *= r; // r⁴
+            polySag += A4 * rPower;
+
+            rPower *= r; // r⁵
+            polySag += A5 * rPower;
+
+            rPower *= r; // r⁶
+            polySag += A6 * rPower;
+
+            rPower *= r; // r⁷
+            polySag += A7 * rPower;
+
+            rPower *= r; // r⁸
+            polySag += A8 * rPower;
+
+            rPower *= r; // r⁹
+            polySag += A9 * rPower;
+
+            rPower *= r; // r¹⁰
+            polySag += A10 * rPower;
+
+            rPower *= r; // r¹¹
+            polySag += A11 * rPower;
+
+            rPower *= r; // r¹²
+            polySag += A12 * rPower;
+
+            rPower *= r; // r¹³
+            polySag += A13 * rPower;
+
+            rPower *= r; // r¹⁴
+            polySag += A14 * rPower;
+
+            rPower *= r; // r¹⁵
+            polySag += A15 * rPower;
+
+            rPower *= r; // r¹⁶
+            polySag += A16 * rPower;
+
+            rPower *= r; // r¹⁷
+            polySag += A17 * rPower;
+
+            rPower *= r; // r¹⁸
+            polySag += A18 * rPower;
+
+            rPower *= r; // r¹⁹
+            polySag += A19 * rPower;
+
+            rPower *= r; // r²⁰
+            polySag += A20 * rPower;
+
+            return baseSag + polySag;
         } catch {
             return 0;
         }
@@ -262,13 +355,48 @@ class SurfaceCalculations {
 
     static calculateEvenAsphereSlope(r, R, k, A4, A6, A8, A10, A12, A14, A16, A18, A20) {
         try {
-            const Q = Math.sqrt(1 - (1 + k) * (r ** 2) / (R ** 2));
-            const baseSagSlope = ((2 * r * (1 + Q) + (1 + k) * (r ** 3) / ((R ** 2) * Q)) /
-                                (R * (1 + Q) ** 2));
+            // Pre-compute common terms to minimize floating-point errors
+            const r2 = r * r;
+            const r3 = r2 * r;
+            const R2 = R * R;
+            const kp1 = 1.0 + k;
 
-            const polySlope = (4 * A4 * r**3 + 6 * A6 * r**5 + 8 * A8 * r**7 +
-                             10 * A10 * r**9 + 12 * A12 * r**11 + 14 * A14 * r**13 +
-                             16 * A16 * r**15 + 18 * A18 * r**17 + 20 * A20 * r**19);
+            // Compute Q with pre-computed values
+            const Q = Math.sqrt(1.0 - kp1 * r2 / R2);
+            const Qp1 = 1.0 + Q;
+            const Qp1_sq = Qp1 * Qp1;
+
+            // Base sag slope: [2*r*(1+Q) + (1+k)*r³/(R²*Q)] / [R*(1+Q)²]
+            const numerator = 2.0 * r * Qp1 + kp1 * r3 / (R2 * Q);
+            const baseSagSlope = numerator / (R * Qp1_sq);
+
+            // Polynomial slope using progressive powers to minimize errors
+            let rPower = r3;  // Start with r³
+            let polySlope = 4.0 * A4 * rPower;
+
+            rPower *= r2; // r⁵
+            polySlope += 6.0 * A6 * rPower;
+
+            rPower *= r2; // r⁷
+            polySlope += 8.0 * A8 * rPower;
+
+            rPower *= r2; // r⁹
+            polySlope += 10.0 * A10 * rPower;
+
+            rPower *= r2; // r¹¹
+            polySlope += 12.0 * A12 * rPower;
+
+            rPower *= r2; // r¹³
+            polySlope += 14.0 * A14 * rPower;
+
+            rPower *= r2; // r¹⁵
+            polySlope += 16.0 * A16 * rPower;
+
+            rPower *= r2; // r¹⁷
+            polySlope += 18.0 * A18 * rPower;
+
+            rPower *= r2; // r¹⁹
+            polySlope += 20.0 * A20 * rPower;
 
             return baseSagSlope + polySlope;
         } catch {
@@ -279,15 +407,75 @@ class SurfaceCalculations {
     static calculateOddAsphereSlope(r, R, k, A3, A4, A5, A6, A7, A8, A9, A10,
                                      A11, A12, A13, A14, A15, A16, A17, A18, A19, A20) {
         try {
-            const Q = Math.sqrt(1 - (1 + k) * (r ** 2) / (R ** 2));
-            const baseSagSlope = ((2 * r * (1 + Q) + (1 + k) * (r ** 3) / ((R ** 2) * Q)) /
-                                (R * (1 + Q) ** 2));
+            // Pre-compute common terms to minimize floating-point errors
+            const r2 = r * r;
+            const r3 = r2 * r;
+            const R2 = R * R;
+            const kp1 = 1.0 + k;
 
-            const polySlope = (3 * A3 * r**2 + 4 * A4 * r**3 + 5 * A5 * r**4 + 6 * A6 * r**5 +
-                             7 * A7 * r**6 + 8 * A8 * r**7 + 9 * A9 * r**8 + 10 * A10 * r**9 +
-                             11 * A11 * r**10 + 12 * A12 * r**11 + 13 * A13 * r**12 + 14 * A14 * r**13 +
-                             15 * A15 * r**14 + 16 * A16 * r**15 + 17 * A17 * r**16 + 18 * A18 * r**17 +
-                             19 * A19 * r**18 + 20 * A20 * r**19);
+            // Compute Q with pre-computed values
+            const Q = Math.sqrt(1.0 - kp1 * r2 / R2);
+            const Qp1 = 1.0 + Q;
+            const Qp1_sq = Qp1 * Qp1;
+
+            // Base sag slope: [2*r*(1+Q) + (1+k)*r³/(R²*Q)] / [R*(1+Q)²]
+            const numerator = 2.0 * r * Qp1 + kp1 * r3 / (R2 * Q);
+            const baseSagSlope = numerator / (R * Qp1_sq);
+
+            // Polynomial slope using progressive powers to minimize errors
+            let rPower = r2;  // Start with r²
+            let polySlope = 3.0 * A3 * rPower;
+
+            rPower *= r; // r³
+            polySlope += 4.0 * A4 * rPower;
+
+            rPower *= r; // r⁴
+            polySlope += 5.0 * A5 * rPower;
+
+            rPower *= r; // r⁵
+            polySlope += 6.0 * A6 * rPower;
+
+            rPower *= r; // r⁶
+            polySlope += 7.0 * A7 * rPower;
+
+            rPower *= r; // r⁷
+            polySlope += 8.0 * A8 * rPower;
+
+            rPower *= r; // r⁸
+            polySlope += 9.0 * A9 * rPower;
+
+            rPower *= r; // r⁹
+            polySlope += 10.0 * A10 * rPower;
+
+            rPower *= r; // r¹⁰
+            polySlope += 11.0 * A11 * rPower;
+
+            rPower *= r; // r¹¹
+            polySlope += 12.0 * A12 * rPower;
+
+            rPower *= r; // r¹²
+            polySlope += 13.0 * A13 * rPower;
+
+            rPower *= r; // r¹³
+            polySlope += 14.0 * A14 * rPower;
+
+            rPower *= r; // r¹⁴
+            polySlope += 15.0 * A15 * rPower;
+
+            rPower *= r; // r¹⁵
+            polySlope += 16.0 * A16 * rPower;
+
+            rPower *= r; // r¹⁶
+            polySlope += 17.0 * A17 * rPower;
+
+            rPower *= r; // r¹⁷
+            polySlope += 18.0 * A18 * rPower;
+
+            rPower *= r; // r¹⁸
+            polySlope += 19.0 * A19 * rPower;
+
+            rPower *= r; // r¹⁹
+            polySlope += 20.0 * A20 * rPower;
 
             return baseSagSlope + polySlope;
         } catch {
