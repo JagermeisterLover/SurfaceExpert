@@ -290,7 +290,7 @@ const OpticalSurfaceAnalyzer = () => {
         setSelectedSurface(updatedSurface);
     };
 
-    const updateParameter = async (param, value) => {
+    const updateParameter = (param, value) => {
         if (!selectedSurface || !selectedFolder) return;
 
         const updatedSurface = {
@@ -298,11 +298,7 @@ const OpticalSurfaceAnalyzer = () => {
             parameters: { ...selectedSurface.parameters, [param]: value }
         };
 
-        // Save to disk
-        if (window.electronAPI) {
-            await window.electronAPI.saveSurface(selectedFolder.name, updatedSurface);
-        }
-
+        // Update state immediately for instant UI response
         const updated = folders.map(f => ({
             ...f,
             surfaces: f.surfaces.map(s =>
@@ -311,21 +307,32 @@ const OpticalSurfaceAnalyzer = () => {
         }));
         setFolders(updated);
         setSelectedSurface(updatedSurface);
+
+        // Save to disk in background (non-blocking)
+        if (window.electronAPI) {
+            window.electronAPI.saveSurface(selectedFolder.name, updatedSurface);
+        }
     };
 
     // Handle Enter key to navigate to next input field
     const handleEnterKeyNavigation = (currentInputElement) => {
         if (!propertiesPanelRef.current) return;
 
-        // Find all input elements in the properties panel
-        const inputs = Array.from(propertiesPanelRef.current.querySelectorAll('input[type="text"]'));
-        const currentIndex = inputs.indexOf(currentInputElement);
+        // Defer focus to next frame to allow re-render from save to complete first
+        // This prevents interruption when starting to type in the next input
+        setTimeout(() => {
+            if (!propertiesPanelRef.current) return;
 
-        // Focus the next input if available
-        if (currentIndex >= 0 && currentIndex < inputs.length - 1) {
-            inputs[currentIndex + 1].focus();
-            inputs[currentIndex + 1].select(); // Select all text in the next input
-        }
+            // Find all input elements in the properties panel
+            const inputs = Array.from(propertiesPanelRef.current.querySelectorAll('input[type="text"]'));
+            const currentIndex = inputs.indexOf(currentInputElement);
+
+            // Focus the next input if available
+            if (currentIndex >= 0 && currentIndex < inputs.length - 1) {
+                inputs[currentIndex + 1].focus();
+                inputs[currentIndex + 1].select(); // Select all text in the next input
+            }
+        }, 0);
     };
 
     const addSurface = async () => {
