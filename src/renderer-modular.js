@@ -19,6 +19,7 @@ import { calculateSurfaceValues, calculateSagOnly, getBestFitSphereParams } from
 // UI Components
 import { PropertySection } from './components/ui/PropertySection.js';
 import { PropertyRow } from './components/ui/PropertyRow.js';
+import { DebouncedInput } from './components/ui/DebouncedInput.js';
 
 // View Components
 import { SummaryView } from './components/views/SummaryView.js';
@@ -42,7 +43,7 @@ import { createCrossSection } from './components/plots/PlotCrossSection.js';
 // ============================================
 
 const { createElement: h } = React;
-const { useState, useEffect, useRef } = React;
+const { useState, useEffect, useLayoutEffect, useRef } = React;
 
 // ============================================
 // MAIN APPLICATION COMPONENT
@@ -68,6 +69,8 @@ const OpticalSurfaceAnalyzer = () => {
     const [contextMenu, setContextMenu] = useState(null);
     const [inputDialog, setInputDialog] = useState(null);
     const plotRef = useRef(null);
+    const propertiesPanelRef = useRef(null);
+    const scrollPositionRef = useRef(0);
 
     // ============================================
     // DATA LOADING
@@ -77,6 +80,21 @@ const OpticalSurfaceAnalyzer = () => {
     useEffect(() => {
         loadFoldersFromDisk();
     }, []);
+
+    // Preserve scroll position in properties panel during updates
+    // Use useLayoutEffect to restore scroll synchronously before paint
+    useLayoutEffect(() => {
+        if (propertiesPanelRef.current) {
+            propertiesPanelRef.current.scrollTop = scrollPositionRef.current;
+        }
+    }, [selectedSurface, folders]);
+
+    // Track scroll position continuously
+    const handlePropertiesPanelScroll = () => {
+        if (propertiesPanelRef.current) {
+            scrollPositionRef.current = propertiesPanelRef.current.scrollTop;
+        }
+    };
 
     const loadFoldersFromDisk = async () => {
         if (window.electronAPI && window.electronAPI.loadFolders) {
@@ -272,7 +290,7 @@ const OpticalSurfaceAnalyzer = () => {
         setSelectedSurface(updatedSurface);
     };
 
-    const updateParameter = async (param, value) => {
+    const updateParameter = (param, value) => {
         if (!selectedSurface || !selectedFolder) return;
 
         const updatedSurface = {
@@ -280,11 +298,7 @@ const OpticalSurfaceAnalyzer = () => {
             parameters: { ...selectedSurface.parameters, [param]: value }
         };
 
-        // Save to disk
-        if (window.electronAPI) {
-            await window.electronAPI.saveSurface(selectedFolder.name, updatedSurface);
-        }
-
+        // Update state immediately for instant UI response
         const updated = folders.map(f => ({
             ...f,
             surfaces: f.surfaces.map(s =>
@@ -293,6 +307,43 @@ const OpticalSurfaceAnalyzer = () => {
         }));
         setFolders(updated);
         setSelectedSurface(updatedSurface);
+
+        // Save to disk in background (non-blocking)
+        if (window.electronAPI) {
+            window.electronAPI.saveSurface(selectedFolder.name, updatedSurface);
+        }
+    };
+
+    // Handle Enter key to navigate to next input field
+    const handleEnterKeyNavigation = (currentParam) => {
+        if (!propertiesPanelRef.current) return;
+
+        // Defer focus to next frame to allow re-render from save to complete first
+        // This prevents interruption when starting to type in the next input
+        setTimeout(() => {
+            if (!propertiesPanelRef.current) return;
+
+            // Find all input elements in the properties panel
+            const inputs = Array.from(propertiesPanelRef.current.querySelectorAll('input[type="text"]'));
+
+            // Find the input for the current parameter by matching label text
+            let currentIndex = -1;
+            for (let i = 0; i < inputs.length; i++) {
+                const input = inputs[i];
+                const container = input.parentElement;
+                const label = container?.querySelector('label');
+                if (label?.textContent?.trim() === currentParam) {
+                    currentIndex = i;
+                    break;
+                }
+            }
+
+            // Focus the next input if available
+            if (currentIndex >= 0 && currentIndex < inputs.length - 1) {
+                inputs[currentIndex + 1].focus();
+                inputs[currentIndex + 1].select(); // Select all text in the next input
+            }
+        }, 0);
     };
 
     const addSurface = async () => {
@@ -550,6 +601,8 @@ const OpticalSurfaceAnalyzer = () => {
         const metrics = calculateMetrics();
 
         return h('div', {
+            ref: propertiesPanelRef,
+            onScroll: handlePropertiesPanelScroll,
             style: {
                 width: '320px',
                 backgroundColor: c.panel,
@@ -643,10 +696,11 @@ const OpticalSurfaceAnalyzer = () => {
                                 h('label', {
                                     style: { fontSize: '12px', color: c.textDim, display: 'block', marginBottom: '4px' }
                                 }, param),
-                                h('input', {
-                                    type: 'text',
+                                h(DebouncedInput, {
                                     value: selectedSurface.parameters[param] || '0',
-                                    onChange: (e) => updateParameter(param, e.target.value),
+                                    onChange: (value) => updateParameter(param, value),
+                                    onEnterKey: () => handleEnterKeyNavigation(param),
+                                    debounceMs: 300,
                                     style: {
                                         width: '100%',
                                         padding: '6px 8px',
@@ -689,10 +743,11 @@ const OpticalSurfaceAnalyzer = () => {
                                 h('label', {
                                     style: { fontSize: '12px', color: c.textDim, display: 'block', marginBottom: '4px' }
                                 }, param),
-                                h('input', {
-                                    type: 'text',
+                                h(DebouncedInput, {
                                     value: selectedSurface.parameters[param] || '0',
-                                    onChange: (e) => updateParameter(param, e.target.value),
+                                    onChange: (value) => updateParameter(param, value),
+                                    onEnterKey: () => handleEnterKeyNavigation(param),
+                                    debounceMs: 300,
                                     style: {
                                         width: '100%',
                                         padding: '6px 8px',
@@ -728,10 +783,11 @@ const OpticalSurfaceAnalyzer = () => {
                             h('label', {
                                 style: { fontSize: '12px', color: c.textDim, display: 'block', marginBottom: '4px' }
                             }, param),
-                            h('input', {
-                                type: 'text',
+                            h(DebouncedInput, {
                                 value: selectedSurface.parameters[param] || '0',
-                                onChange: (e) => updateParameter(param, e.target.value),
+                                onChange: (value) => updateParameter(param, value),
+                                onEnterKey: () => handleEnterKeyNavigation(param),
+                                debounceMs: 300,
                                 style: {
                                     width: '100%',
                                     padding: '6px 8px',
