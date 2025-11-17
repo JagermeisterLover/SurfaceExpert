@@ -5,6 +5,29 @@ const { createElement: h } = React;
 export const InputDialog = ({ inputDialog, c }) => {
     if (!inputDialog) return null;
 
+    const [value, setValue] = React.useState(inputDialog.defaultValue || '');
+    const [error, setError] = React.useState('');
+
+    // Validate input if validation function provided
+    React.useEffect(() => {
+        if (inputDialog.validate) {
+            const validationError = inputDialog.validate(value);
+            setError(validationError || '');
+        } else {
+            setError('');
+        }
+    }, [value, inputDialog.validate]);
+
+    // Also validate on mount
+    React.useEffect(() => {
+        if (inputDialog.validate) {
+            const validationError = inputDialog.validate(inputDialog.defaultValue || '');
+            setError(validationError || '');
+        }
+    }, []);
+
+    const isValid = !error && value.trim().length > 0;
+
     return h('div', {
         style: {
             position: 'fixed',
@@ -41,11 +64,12 @@ export const InputDialog = ({ inputDialog, c }) => {
             }, inputDialog.title),
             h('input', {
                 type: 'text',
-                defaultValue: inputDialog.defaultValue,
+                value: value,
+                onChange: (e) => setValue(e.target.value),
                 autoFocus: true,
                 onKeyDown: (e) => {
-                    if (e.key === 'Enter') {
-                        inputDialog.onConfirm(e.target.value);
+                    if (e.key === 'Enter' && isValid) {
+                        inputDialog.onConfirm(value);
                     } else if (e.key === 'Escape') {
                         inputDialog.onCancel();
                     }
@@ -55,13 +79,20 @@ export const InputDialog = ({ inputDialog, c }) => {
                     padding: '8px 12px',
                     backgroundColor: c.bg,
                     color: c.text,
-                    border: `1px solid ${c.border}`,
+                    border: `1px solid ${error ? '#e94560' : c.border}`,
                     borderRadius: '4px',
                     fontSize: '14px',
                     outline: 'none',
                     boxSizing: 'border-box'
                 }
             }),
+            error && h('div', {
+                style: {
+                    color: '#e94560',
+                    fontSize: '12px',
+                    marginTop: '8px'
+                }
+            }, error),
             h('div', {
                 style: {
                     display: 'flex',
@@ -83,18 +114,21 @@ export const InputDialog = ({ inputDialog, c }) => {
                     }
                 }, 'Cancel'),
                 h('button', {
-                    onClick: (e) => {
-                        const input = e.target.parentElement.parentElement.querySelector('input');
-                        inputDialog.onConfirm(input.value);
+                    onClick: () => {
+                        if (isValid) {
+                            inputDialog.onConfirm(value);
+                        }
                     },
+                    disabled: !isValid,
                     style: {
                         padding: '8px 16px',
-                        backgroundColor: c.accent,
-                        color: '#fff',
+                        backgroundColor: isValid ? c.accent : c.border,
+                        color: isValid ? '#fff' : c.textDim,
                         border: 'none',
                         borderRadius: '4px',
-                        cursor: 'pointer',
-                        fontSize: '13px'
+                        cursor: isValid ? 'pointer' : 'not-allowed',
+                        fontSize: '13px',
+                        opacity: isValid ? 1 : 0.5
                     }
                 }, 'OK')
             )

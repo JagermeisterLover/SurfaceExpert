@@ -5,6 +5,9 @@
 // Original: src/renderer.js (3,435 lines)
 // Modular: Imports from 17 extracted modules
 
+console.log('🚀🚀🚀 RENDERER-MODULAR.JS LOADED - VERSION WITH VALIDATION FIX 🚀🚀🚀');
+console.log('📅 Build timestamp:', new Date().toISOString());
+
 // ============================================
 // MODULE IMPORTS
 // ============================================
@@ -57,6 +60,8 @@ const OpticalSurfaceAnalyzer = () => {
     const [folders, setFolders] = useState([]);
     const [selectedSurface, setSelectedSurface] = useState(null);
     const [selectedFolder, setSelectedFolder] = useState(null);
+    const [selectedSurfaces, setSelectedSurfaces] = useState([]); // Multi-select state
+    const [lastClickedSurface, setLastClickedSurface] = useState(null); // For shift-click range selection
     const [activeTab, setActiveTab] = useState('summary');
     const [activeSubTab, setActiveSubTab] = useState('3d');
     const [showSettings, setShowSettings] = useState(false);
@@ -208,24 +213,56 @@ const OpticalSurfaceAnalyzer = () => {
     };
 
     const handleImportSelectedSurfaces = (selectedIndices) => {
-        if (!selectedFolder) return;
+        // If no folder exists, create a default one
+        let targetFolder = selectedFolder;
+        let currentFolders = folders;
+
+        if (!targetFolder) {
+            const defaultFolder = {
+                id: 'default',
+                name: 'My Surfaces',
+                expanded: true,
+                surfaces: []
+            };
+            currentFolders = [defaultFolder];
+            targetFolder = defaultFolder;
+        }
 
         const colorOptions = ['#4a90e2', '#e94560', '#2ecc71', '#f39c12', '#9b59b6', '#e67e22', '#1abc9c', '#34495e'];
-        const allSurfaces = folders.flatMap(f => f.surfaces);
+        const allSurfaces = currentFolders.flatMap(f => f.surfaces);
         let nextId = allSurfaces.length > 0 ? Math.max(...allSurfaces.map(s => s.id)) + 1 : 1;
+
+        // Helper to generate unique surface name
+        const getUniqueName = (baseName) => {
+            const existingNames = new Set(allSurfaces.map(s => s.name));
+            if (!existingNames.has(baseName)) return baseName;
+
+            let counter = 1;
+            let newName = `${baseName} (${counter})`;
+            while (existingNames.has(newName)) {
+                counter++;
+                newName = `${baseName} (${counter})`;
+            }
+            return newName;
+        };
 
         const newSurfaces = selectedIndices.map((index, i) => {
             const zmxSurface = zmxSurfaces[index];
             const color = colorOptions[(nextId + i) % colorOptions.length];
-            return window.ZMXParser.convertToAppSurface(zmxSurface, nextId + i, color);
+            const surface = window.ZMXParser.convertToAppSurface(zmxSurface, nextId + i, color);
+
+            // Ensure unique name
+            surface.name = getUniqueName(surface.name);
+            return surface;
         });
 
-        const updated = folders.map(f =>
-            f.id === selectedFolder.id
+        const updated = currentFolders.map(f =>
+            f.id === targetFolder.id
                 ? { ...f, surfaces: [...f.surfaces, ...newSurfaces] }
                 : f
         );
         setFolders(updated);
+        setSelectedFolder(targetFolder);
         setShowZMXImport(false);
 
         if (newSurfaces.length > 0) {
@@ -399,6 +436,7 @@ const OpticalSurfaceAnalyzer = () => {
         });
 
         setFolders(updated);
+        setSelectedSurfaces([]); // Clear multi-selection
 
         // Select another surface
         const updatedFolder = updated.find(f => f.id === selectedFolder.id);
@@ -406,6 +444,73 @@ const OpticalSurfaceAnalyzer = () => {
             setSelectedSurface(updatedFolder.surfaces[0]);
         } else {
             setSelectedSurface(null);
+        }
+    };
+
+    const removeSelectedSurfaces = async () => {
+        if (selectedSurfaces.length === 0 || !selectedFolder) return;
+
+        const folder = folders.find(f => f.id === selectedFolder.id);
+        if (!folder) return;
+
+        // Delete all selected surfaces from disk
+        if (window.electronAPI) {
+            for (const surfaceId of selectedSurfaces) {
+                const surface = folder.surfaces.find(s => s.id === surfaceId);
+                if (surface) {
+                    await window.electronAPI.deleteSurface(selectedFolder.name, surface.name);
+                }
+            }
+        }
+
+        const updated = folders.map(f => {
+            if (f.id === selectedFolder.id) {
+                const filtered = f.surfaces.filter(s => !selectedSurfaces.includes(s.id));
+                return { ...f, surfaces: filtered };
+            }
+            return f;
+        });
+
+        setFolders(updated);
+        setSelectedSurfaces([]); // Clear multi-selection
+
+        // Select another surface
+        const updatedFolder = updated.find(f => f.id === selectedFolder.id);
+        if (updatedFolder && updatedFolder.surfaces.length > 0) {
+            setSelectedSurface(updatedFolder.surfaces[0]);
+        } else {
+            setSelectedSurface(null);
+        }
+    };
+
+    const handleSurfaceClick = (e, surface, folder) => {
+        e.stopPropagation();
+        setSelectedFolder(folder);
+
+        if (e.ctrlKey || e.metaKey) {
+            // Ctrl/Cmd+Click: Toggle selection
+            if (selectedSurfaces.includes(surface.id)) {
+                setSelectedSurfaces(selectedSurfaces.filter(id => id !== surface.id));
+            } else {
+                setSelectedSurfaces([...selectedSurfaces, surface.id]);
+            }
+            setLastClickedSurface(surface);
+        } else if (e.shiftKey && lastClickedSurface) {
+            // Shift+Click: Select range
+            const folderSurfaces = folder.surfaces;
+            const startIdx = folderSurfaces.findIndex(s => s.id === lastClickedSurface.id);
+            const endIdx = folderSurfaces.findIndex(s => s.id === surface.id);
+
+            if (startIdx !== -1 && endIdx !== -1) {
+                const [minIdx, maxIdx] = [Math.min(startIdx, endIdx), Math.max(startIdx, endIdx)];
+                const rangeIds = folderSurfaces.slice(minIdx, maxIdx + 1).map(s => s.id);
+                setSelectedSurfaces([...new Set([...selectedSurfaces, ...rangeIds])]);
+            }
+        } else {
+            // Regular click: Single selection
+            setSelectedSurface(surface);
+            setSelectedSurfaces([]);
+            setLastClickedSurface(surface);
         }
     };
 
@@ -510,6 +615,16 @@ const OpticalSurfaceAnalyzer = () => {
     // ============================================
 
     const PropertiesPanel = ({ selectedSurface, updateSurfaceName, updateSurfaceType, updateParameter, onConvert, c }) => {
+        // Local state for surface name to avoid interrupting typing
+        const [localName, setLocalName] = React.useState(selectedSurface?.name || '');
+
+        // Update local name when selected surface changes
+        React.useEffect(() => {
+            if (selectedSurface) {
+                setLocalName(selectedSurface.name);
+            }
+        }, [selectedSurface?.id]);
+
         if (!selectedSurface) {
             return h('div', {
                 style: {
@@ -582,8 +697,16 @@ const OpticalSurfaceAnalyzer = () => {
             }
 
             // Calculate F/# (paraxial and working)
-            const paraxialFNum = R !== 0 ? Math.abs(R / (2 * maxHeight)) : 0;
-            const workingFNum = maxSlope !== 0 ? 1 / (2 * maxSlope) : 0;
+            // Paraxial F/# = EFFL / aperture_diameter = (R/2) / (2*maxHeight) = R / (4*maxHeight)
+            const paraxialFNum = R !== 0 ? Math.abs(R / (4 * maxHeight)) : 0;
+
+            // Working F/# based on marginal ray angle after reflection
+            // For a mirror: reflected ray angle = 2 * arctan(surface_slope)
+            // Working F/# = 1 / (2 * sin(reflected_angle))
+            const edgeSlope = Math.abs(vMax.slope);
+            const surfaceNormalAngle = Math.atan(edgeSlope); // angle of surface normal
+            const reflectedRayAngle = 2 * surfaceNormalAngle; // law of reflection for collimated input
+            const workingFNum = reflectedRayAngle !== 0 ? 1 / (2 * Math.sin(reflectedRayAngle)) : 0;
 
             return {
                 paraxialFNum: formatValue(paraxialFNum),
@@ -630,8 +753,18 @@ const OpticalSurfaceAnalyzer = () => {
                         }, 'Name'),
                         h('input', {
                             type: 'text',
-                            value: selectedSurface.name,
-                            onChange: (e) => updateSurfaceName(e.target.value),
+                            value: localName,
+                            onChange: (e) => setLocalName(e.target.value),
+                            onBlur: (e) => {
+                                if (e.target.value !== selectedSurface.name) {
+                                    updateSurfaceName(e.target.value);
+                                }
+                            },
+                            onKeyDown: (e) => {
+                                if (e.key === 'Enter') {
+                                    e.target.blur();
+                                }
+                            },
                             style: {
                                 width: '100%',
                                 padding: '6px 8px',
@@ -805,15 +938,16 @@ const OpticalSurfaceAnalyzer = () => {
 
                 // Calculated Metrics
                 h(PropertySection, { title: "Calculated Metrics", c },
-                    h(PropertyRow, { label: "Paraxial F/#", value: metrics.paraxialFNum, editable: false, c }),
-                    h(PropertyRow, { label: "Working F/#", value: metrics.workingFNum, editable: false, c }),
+                    // F/# only for rotationally symmetric surfaces
+                    selectedSurface.type !== 'Zernike' && selectedSurface.type !== 'Irregular' && h(PropertyRow, { label: "Paraxial F/#", value: metrics.paraxialFNum, editable: false, c }),
+                    selectedSurface.type !== 'Zernike' && selectedSurface.type !== 'Irregular' && h(PropertyRow, { label: "Working F/#", value: metrics.workingFNum, editable: false, c }),
                     h(PropertyRow, { label: "Max Sag", value: metrics.maxSag, editable: false, c }),
-                    h(PropertyRow, { label: "Max Slope", value: metrics.maxSlope, editable: false, c }),
-                    h(PropertyRow, { label: "Max Angle", value: metrics.maxAngle, editable: false, c }),
-                    h(PropertyRow, { label: "Max Angle DMS", value: metrics.maxAngleDMS, editable: false, c }),
-                    h(PropertyRow, { label: "Max Asphericity", value: metrics.maxAsphericity, editable: false, c }),
-                    h(PropertyRow, { label: "Max Asph. Gradient", value: metrics.maxAsphGradient, editable: false, c }),
-                    h(PropertyRow, { label: "Best Fit Sphere", value: metrics.bestFitSphere, editable: false, c })
+                    selectedSurface.type !== 'Zernike' && selectedSurface.type !== 'Irregular' && h(PropertyRow, { label: "Max Slope", value: metrics.maxSlope, editable: false, c }),
+                    selectedSurface.type !== 'Zernike' && selectedSurface.type !== 'Irregular' && h(PropertyRow, { label: "Max Angle", value: metrics.maxAngle, editable: false, c }),
+                    selectedSurface.type !== 'Zernike' && selectedSurface.type !== 'Irregular' && h(PropertyRow, { label: "Max Angle DMS", value: metrics.maxAngleDMS, editable: false, c }),
+                    selectedSurface.type !== 'Zernike' && selectedSurface.type !== 'Irregular' && h(PropertyRow, { label: "Max Asphericity", value: metrics.maxAsphericity, editable: false, c }),
+                    selectedSurface.type !== 'Zernike' && selectedSurface.type !== 'Irregular' && h(PropertyRow, { label: "Max Asph. Gradient", value: metrics.maxAsphGradient, editable: false, c }),
+                    selectedSurface.type !== 'Zernike' && selectedSurface.type !== 'Irregular' && h(PropertyRow, { label: "Best Fit Sphere", value: metrics.bestFitSphere, editable: false, c })
                 ),
 
                 // Quick Actions
@@ -917,6 +1051,11 @@ const OpticalSurfaceAnalyzer = () => {
             onClose: () => setShowConvertResults(false),
             c
         }),
+        // Input Dialog (for rename/new folder)
+        h(InputDialog, {
+            inputDialog,
+            c
+        }),
         // Context Menu
         contextMenu && h('div', {
             style: {
@@ -950,6 +1089,16 @@ const OpticalSurfaceAnalyzer = () => {
                         setInputDialog({
                             title: 'Rename Folder',
                             defaultValue: targetName,
+                            validate: (name) => {
+                                if (!name || !name.trim()) {
+                                    return 'Folder name cannot be empty';
+                                }
+                                // Allow same name (no change) but check for conflicts with other folders
+                                if (name.trim() !== targetName && folders.some(f => f.name === name.trim())) {
+                                    return 'A folder with this name already exists';
+                                }
+                                return '';
+                            },
                             onConfirm: (name) => {
                                 if (name && name.trim()) {
                                     renameFolder(targetId, name.trim());
@@ -999,102 +1148,6 @@ const OpticalSurfaceAnalyzer = () => {
                 }, 'Delete Surface')
             ]
         ),
-        // Input Dialog
-        inputDialog && h('div', {
-            style: {
-                position: 'fixed',
-                top: 0,
-                left: 0,
-                right: 0,
-                bottom: 0,
-                backgroundColor: 'rgba(0,0,0,0.5)',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                zIndex: 10001
-            },
-            onClick: () => inputDialog.onCancel()
-        },
-            h('div', {
-                style: {
-                    backgroundColor: c.panel,
-                    border: `1px solid ${c.border}`,
-                    borderRadius: '8px',
-                    padding: '20px',
-                    minWidth: '400px',
-                    boxShadow: '0 8px 24px rgba(0,0,0,0.4)'
-                },
-                onClick: (e) => e.stopPropagation()
-            },
-                h('h3', {
-                    style: {
-                        margin: '0 0 16px 0',
-                        color: c.text,
-                        fontSize: '16px',
-                        fontWeight: '500'
-                    }
-                }, inputDialog.title),
-                h('input', {
-                    type: 'text',
-                    defaultValue: inputDialog.defaultValue,
-                    autoFocus: true,
-                    onKeyDown: (e) => {
-                        if (e.key === 'Enter') {
-                            inputDialog.onConfirm(e.target.value);
-                        } else if (e.key === 'Escape') {
-                            inputDialog.onCancel();
-                        }
-                    },
-                    style: {
-                        width: '100%',
-                        padding: '8px 12px',
-                        backgroundColor: c.bg,
-                        color: c.text,
-                        border: `1px solid ${c.border}`,
-                        borderRadius: '4px',
-                        fontSize: '14px',
-                        outline: 'none',
-                        boxSizing: 'border-box'
-                    }
-                }),
-                h('div', {
-                    style: {
-                        display: 'flex',
-                        gap: '8px',
-                        marginTop: '16px',
-                        justifyContent: 'flex-end'
-                    }
-                },
-                    h('button', {
-                        onClick: () => inputDialog.onCancel(),
-                        style: {
-                            padding: '8px 16px',
-                            backgroundColor: c.panel,
-                            color: c.text,
-                            border: `1px solid ${c.border}`,
-                            borderRadius: '4px',
-                            cursor: 'pointer',
-                            fontSize: '13px'
-                        }
-                    }, 'Cancel'),
-                    h('button', {
-                        onClick: (e) => {
-                            const input = e.target.parentElement.parentElement.querySelector('input');
-                            inputDialog.onConfirm(input.value);
-                        },
-                        style: {
-                            padding: '8px 16px',
-                            backgroundColor: c.accent,
-                            color: '#fff',
-                            border: 'none',
-                            borderRadius: '4px',
-                            cursor: 'pointer',
-                            fontSize: '13px'
-                        }
-                    }, 'OK')
-                )
-            )
-        ),
         // Main Content Area
         h('div', { style: { display: 'flex', flex: 1, overflow: 'hidden' } },
             // Left Panel - Surfaces
@@ -1112,9 +1165,28 @@ const OpticalSurfaceAnalyzer = () => {
                         padding: '12px',
                         borderBottom: `1px solid ${c.border}`,
                         fontSize: '13px',
-                        fontWeight: 'bold'
+                        fontWeight: 'bold',
+                        display: 'flex',
+                        justifyContent: 'space-between',
+                        alignItems: 'center'
                     }
-                }, 'Surfaces'),
+                },
+                    h('span', null, 'Surfaces'),
+                    selectedSurfaces.length > 0 && h('button', {
+                        onClick: removeSelectedSurfaces,
+                        title: `Delete ${selectedSurfaces.length} surface(s)`,
+                        style: {
+                            padding: '4px 8px',
+                            backgroundColor: '#e94560',
+                            color: '#fff',
+                            border: 'none',
+                            borderRadius: '3px',
+                            cursor: 'pointer',
+                            fontSize: '11px',
+                            fontWeight: 'normal'
+                        }
+                    }, `Delete (${selectedSurfaces.length})`)
+                ),
                 h('div', { style: { flex: 1, overflow: 'auto', padding: '4px' } },
                     folders.map(folder =>
                         h('div', { key: folder.id, style: { marginBottom: '4px' } },
@@ -1156,14 +1228,14 @@ const OpticalSurfaceAnalyzer = () => {
                             ),
                             // Folder surfaces
                             folder.expanded && h('div', { style: { paddingLeft: '16px' } },
-                                folder.surfaces.map(surface =>
-                                    h('div', {
+                                folder.surfaces.map(surface => {
+                                    const isSelected = selectedSurface?.id === surface.id;
+                                    const isMultiSelected = selectedSurfaces.includes(surface.id);
+                                    const bgColor = isMultiSelected ? c.accent : (isSelected ? c.hover : 'transparent');
+
+                                    return h('div', {
                                         key: surface.id,
-                                        onClick: (e) => {
-                                            e.stopPropagation();
-                                            setSelectedSurface(surface);
-                                            setSelectedFolder(folder);
-                                        },
+                                        onClick: (e) => handleSurfaceClick(e, surface, folder),
                                         onContextMenu: (e) => {
                                             e.preventDefault();
                                             e.stopPropagation();
@@ -1180,21 +1252,22 @@ const OpticalSurfaceAnalyzer = () => {
                                         style: {
                                             padding: '8px',
                                             marginTop: '2px',
-                                            backgroundColor: selectedSurface?.id === surface.id ? c.hover : 'transparent',
+                                            backgroundColor: bgColor,
                                             borderRadius: '4px',
                                             cursor: 'pointer',
                                             display: 'flex',
                                             alignItems: 'center',
                                             gap: '8px',
-                                            transition: 'background-color 0.2s'
+                                            transition: 'background-color 0.2s',
+                                            border: isMultiSelected ? `2px solid ${c.accent}` : 'none'
                                         },
                                         onMouseEnter: (e) => {
-                                            if (selectedSurface?.id !== surface.id) {
+                                            if (!isSelected && !isMultiSelected) {
                                                 e.currentTarget.style.backgroundColor = c.border;
                                             }
                                         },
                                         onMouseLeave: (e) => {
-                                            if (selectedSurface?.id !== surface.id) {
+                                            if (!isSelected && !isMultiSelected) {
                                                 e.currentTarget.style.backgroundColor = 'transparent';
                                             }
                                         }
@@ -1216,8 +1289,8 @@ const OpticalSurfaceAnalyzer = () => {
                                                 style: { fontSize: '10px', color: c.textDim }
                                             }, surface.type)
                                         )
-                                    )
-                                )
+                                    );
+                                })
                             )
                         )
                     )
@@ -1238,6 +1311,15 @@ const OpticalSurfaceAnalyzer = () => {
                             setInputDialog({
                                 title: 'New Folder',
                                 defaultValue: 'New Folder',
+                                validate: (name) => {
+                                    if (!name || !name.trim()) {
+                                        return 'Folder name cannot be empty';
+                                    }
+                                    if (folders.some(f => f.name === name.trim())) {
+                                        return 'A folder with this name already exists';
+                                    }
+                                    return '';
+                                },
                                 onConfirm: (name) => {
                                     if (name && name.trim()) {
                                         addFolder(name.trim());
