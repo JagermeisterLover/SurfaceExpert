@@ -5,8 +5,13 @@ const { useState, useEffect, useRef } = React;
  * DebouncedInput - Input component that debounces onChange events
  * Prevents UI freezing when typing by maintaining local state and only
  * propagating changes after user stops typing or on blur
+ *
+ * Features:
+ * - Debounced updates to prevent UI freezing
+ * - Press Enter to move to next input (if onEnterKey provided)
+ * - Immediate save on blur
  */
-const DebouncedInput = ({ value, onChange, onBlur, debounceMs = 500, style, ...props }) => {
+const DebouncedInput = ({ value, onChange, onBlur, onEnterKey, debounceMs = 500, style, ...props }) => {
     const [localValue, setLocalValue] = useState(value);
     const timeoutRef = useRef(null);
 
@@ -49,6 +54,27 @@ const DebouncedInput = ({ value, onChange, onBlur, debounceMs = 500, style, ...p
         }
     };
 
+    const handleKeyDown = (e) => {
+        if (e.key === 'Enter') {
+            e.preventDefault();
+
+            // Clear any pending timeout
+            if (timeoutRef.current) {
+                clearTimeout(timeoutRef.current);
+            }
+
+            // Immediately propagate the change
+            if (onChange && localValue !== value) {
+                onChange(localValue);
+            }
+
+            // Call onEnterKey callback if provided
+            if (onEnterKey) {
+                onEnterKey(e);
+            }
+        }
+    };
+
     // Cleanup timeout on unmount
     useEffect(() => {
         return () => {
@@ -64,6 +90,7 @@ const DebouncedInput = ({ value, onChange, onBlur, debounceMs = 500, style, ...p
         value: localValue,
         onChange: handleChange,
         onBlur: handleBlur,
+        onKeyDown: handleKeyDown,
         style: style
     });
 };

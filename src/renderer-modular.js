@@ -69,6 +69,7 @@ const OpticalSurfaceAnalyzer = () => {
     const [contextMenu, setContextMenu] = useState(null);
     const [inputDialog, setInputDialog] = useState(null);
     const plotRef = useRef(null);
+    const propertiesPanelRef = useRef(null);
 
     // ============================================
     // DATA LOADING
@@ -78,6 +79,19 @@ const OpticalSurfaceAnalyzer = () => {
     useEffect(() => {
         loadFoldersFromDisk();
     }, []);
+
+    // Preserve scroll position in properties panel during updates
+    useEffect(() => {
+        if (propertiesPanelRef.current) {
+            const scrollTop = propertiesPanelRef.current.scrollTop;
+            // Restore scroll position after render
+            requestAnimationFrame(() => {
+                if (propertiesPanelRef.current) {
+                    propertiesPanelRef.current.scrollTop = scrollTop;
+                }
+            });
+        }
+    }, [selectedSurface, folders]);
 
     const loadFoldersFromDisk = async () => {
         if (window.electronAPI && window.electronAPI.loadFolders) {
@@ -294,6 +308,21 @@ const OpticalSurfaceAnalyzer = () => {
         }));
         setFolders(updated);
         setSelectedSurface(updatedSurface);
+    };
+
+    // Handle Enter key to navigate to next input field
+    const handleEnterKeyNavigation = (currentInputElement) => {
+        if (!propertiesPanelRef.current) return;
+
+        // Find all input elements in the properties panel
+        const inputs = Array.from(propertiesPanelRef.current.querySelectorAll('input[type="text"]'));
+        const currentIndex = inputs.indexOf(currentInputElement);
+
+        // Focus the next input if available
+        if (currentIndex >= 0 && currentIndex < inputs.length - 1) {
+            inputs[currentIndex + 1].focus();
+            inputs[currentIndex + 1].select(); // Select all text in the next input
+        }
     };
 
     const addSurface = async () => {
@@ -551,6 +580,7 @@ const OpticalSurfaceAnalyzer = () => {
         const metrics = calculateMetrics();
 
         return h('div', {
+            ref: propertiesPanelRef,
             style: {
                 width: '320px',
                 backgroundColor: c.panel,
@@ -647,6 +677,7 @@ const OpticalSurfaceAnalyzer = () => {
                                 h(DebouncedInput, {
                                     value: selectedSurface.parameters[param] || '0',
                                     onChange: (value) => updateParameter(param, value),
+                                    onEnterKey: (e) => handleEnterKeyNavigation(e.target),
                                     debounceMs: 300,
                                     style: {
                                         width: '100%',
@@ -693,6 +724,7 @@ const OpticalSurfaceAnalyzer = () => {
                                 h(DebouncedInput, {
                                     value: selectedSurface.parameters[param] || '0',
                                     onChange: (value) => updateParameter(param, value),
+                                    onEnterKey: (e) => handleEnterKeyNavigation(e.target),
                                     debounceMs: 300,
                                     style: {
                                         width: '100%',
@@ -732,6 +764,7 @@ const OpticalSurfaceAnalyzer = () => {
                             h(DebouncedInput, {
                                 value: selectedSurface.parameters[param] || '0',
                                 onChange: (value) => updateParameter(param, value),
+                                onEnterKey: (e) => handleEnterKeyNavigation(e.target),
                                 debounceMs: 300,
                                 style: {
                                     width: '100%',
