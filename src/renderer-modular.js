@@ -43,7 +43,7 @@ import { createCrossSection } from './components/plots/PlotCrossSection.js';
 // ============================================
 
 const { createElement: h } = React;
-const { useState, useEffect, useRef } = React;
+const { useState, useEffect, useLayoutEffect, useRef } = React;
 
 // ============================================
 // MAIN APPLICATION COMPONENT
@@ -70,6 +70,7 @@ const OpticalSurfaceAnalyzer = () => {
     const [inputDialog, setInputDialog] = useState(null);
     const plotRef = useRef(null);
     const propertiesPanelRef = useRef(null);
+    const scrollPositionRef = useRef(0);
 
     // ============================================
     // DATA LOADING
@@ -81,17 +82,19 @@ const OpticalSurfaceAnalyzer = () => {
     }, []);
 
     // Preserve scroll position in properties panel during updates
-    useEffect(() => {
+    // Use useLayoutEffect to restore scroll synchronously before paint
+    useLayoutEffect(() => {
         if (propertiesPanelRef.current) {
-            const scrollTop = propertiesPanelRef.current.scrollTop;
-            // Restore scroll position after render
-            requestAnimationFrame(() => {
-                if (propertiesPanelRef.current) {
-                    propertiesPanelRef.current.scrollTop = scrollTop;
-                }
-            });
+            propertiesPanelRef.current.scrollTop = scrollPositionRef.current;
         }
     }, [selectedSurface, folders]);
+
+    // Track scroll position continuously
+    const handlePropertiesPanelScroll = () => {
+        if (propertiesPanelRef.current) {
+            scrollPositionRef.current = propertiesPanelRef.current.scrollTop;
+        }
+    };
 
     const loadFoldersFromDisk = async () => {
         if (window.electronAPI && window.electronAPI.loadFolders) {
@@ -581,6 +584,7 @@ const OpticalSurfaceAnalyzer = () => {
 
         return h('div', {
             ref: propertiesPanelRef,
+            onScroll: handlePropertiesPanelScroll,
             style: {
                 width: '320px',
                 backgroundColor: c.panel,
