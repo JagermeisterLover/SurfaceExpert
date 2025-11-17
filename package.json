@@ -18,6 +18,7 @@
   "author": "",
   "license": "MIT",
   "devDependencies": {
+    "decimal.js": "^10.6.0",
     "electron": "^28.3.3",
     "electron-builder": "^24.9.1"
   },
