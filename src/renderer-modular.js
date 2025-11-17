@@ -315,7 +315,7 @@ const OpticalSurfaceAnalyzer = () => {
     };
 
     // Handle Enter key to navigate to next input field
-    const handleEnterKeyNavigation = (currentInputElement) => {
+    const handleEnterKeyNavigation = (currentParam) => {
         if (!propertiesPanelRef.current) return;
 
         // Defer focus to next frame to allow re-render from save to complete first
@@ -325,7 +325,18 @@ const OpticalSurfaceAnalyzer = () => {
 
             // Find all input elements in the properties panel
             const inputs = Array.from(propertiesPanelRef.current.querySelectorAll('input[type="text"]'));
-            const currentIndex = inputs.indexOf(currentInputElement);
+
+            // Find the input for the current parameter by matching label text
+            let currentIndex = -1;
+            for (let i = 0; i < inputs.length; i++) {
+                const input = inputs[i];
+                const container = input.parentElement;
+                const label = container?.querySelector('label');
+                if (label?.textContent?.trim() === currentParam) {
+                    currentIndex = i;
+                    break;
+                }
+            }
 
             // Focus the next input if available
             if (currentIndex >= 0 && currentIndex < inputs.length - 1) {
@@ -688,7 +699,7 @@ const OpticalSurfaceAnalyzer = () => {
                                 h(DebouncedInput, {
                                     value: selectedSurface.parameters[param] || '0',
                                     onChange: (value) => updateParameter(param, value),
-                                    onEnterKey: (e) => handleEnterKeyNavigation(e.target),
+                                    onEnterKey: () => handleEnterKeyNavigation(param),
                                     debounceMs: 300,
                                     style: {
                                         width: '100%',
@@ -735,7 +746,7 @@ const OpticalSurfaceAnalyzer = () => {
                                 h(DebouncedInput, {
                                     value: selectedSurface.parameters[param] || '0',
                                     onChange: (value) => updateParameter(param, value),
-                                    onEnterKey: (e) => handleEnterKeyNavigation(e.target),
+                                    onEnterKey: () => handleEnterKeyNavigation(param),
                                     debounceMs: 300,
                                     style: {
                                         width: '100%',
@@ -775,7 +786,7 @@ const OpticalSurfaceAnalyzer = () => {
                             h(DebouncedInput, {
                                 value: selectedSurface.parameters[param] || '0',
                                 onChange: (value) => updateParameter(param, value),
-                                onEnterKey: (e) => handleEnterKeyNavigation(e.target),
+                                onEnterKey: () => handleEnterKeyNavigation(param),
                                 debounceMs: 300,
                                 style: {
                                     width: '100%',
