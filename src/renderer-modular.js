@@ -19,6 +19,7 @@ import { calculateSurfaceValues, calculateSagOnly, getBestFitSphereParams } from
 // UI Components
 import { PropertySection } from './components/ui/PropertySection.js';
 import { PropertyRow } from './components/ui/PropertyRow.js';
+import { DebouncedInput } from './components/ui/DebouncedInput.js';
 
 // View Components
 import { SummaryView } from './components/views/SummaryView.js';
@@ -643,10 +644,10 @@ const OpticalSurfaceAnalyzer = () => {
                                 h('label', {
                                     style: { fontSize: '12px', color: c.textDim, display: 'block', marginBottom: '4px' }
                                 }, param),
-                                h('input', {
-                                    type: 'text',
+                                h(DebouncedInput, {
                                     value: selectedSurface.parameters[param] || '0',
-                                    onChange: (e) => updateParameter(param, e.target.value),
+                                    onChange: (value) => updateParameter(param, value),
+                                    debounceMs: 300,
                                     style: {
                                         width: '100%',
                                         padding: '6px 8px',
@@ -689,10 +690,10 @@ const OpticalSurfaceAnalyzer = () => {
                                 h('label', {
                                     style: { fontSize: '12px', color: c.textDim, display: 'block', marginBottom: '4px' }
                                 }, param),
-                                h('input', {
-                                    type: 'text',
+                                h(DebouncedInput, {
                                     value: selectedSurface.parameters[param] || '0',
-                                    onChange: (e) => updateParameter(param, e.target.value),
+                                    onChange: (value) => updateParameter(param, value),
+                                    debounceMs: 300,
                                     style: {
                                         width: '100%',
                                         padding: '6px 8px',
@@ -728,10 +729,10 @@ const OpticalSurfaceAnalyzer = () => {
                             h('label', {
                                 style: { fontSize: '12px', color: c.textDim, display: 'block', marginBottom: '4px' }
                             }, param),
-                            h('input', {
-                                type: 'text',
+                            h(DebouncedInput, {
                                 value: selectedSurface.parameters[param] || '0',
-                                onChange: (e) => updateParameter(param, e.target.value),
+                                onChange: (value) => updateParameter(param, value),
+                                debounceMs: 300,
                                 style: {
                                     width: '100%',
                                     padding: '6px 8px',
