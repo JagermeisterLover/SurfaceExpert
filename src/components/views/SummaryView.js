@@ -98,9 +98,17 @@ export const SummaryView = ({ selectedSurface, c }) => {
     }
 
     // Calculate F/# (paraxial and working)
+    // Paraxial F/# = EFFL / aperture_diameter = (R/2) / (2*maxHeight) = R / (4*maxHeight)
     const R = parseFloat(selectedSurface.parameters['Radius']) || 0;
-    const paraxialFNum = R !== 0 ? Math.abs(R / (2 * maxHeight)) : 0;
-    const workingFNum = maxSlope !== 0 ? 1 / (2 * maxSlope) : 0;
+    const paraxialFNum = R !== 0 ? Math.abs(R / (4 * maxHeight)) : 0;
+
+    // Working F/# based on marginal ray angle after reflection
+    // For a mirror: reflected ray angle = 2 * arctan(surface_slope)
+    // Working F/# = 1 / (2 * sin(reflected_angle))
+    const edgeSlope = Math.abs(parseFloat(dataTable[dataTable.length - 1].slope));
+    const surfaceNormalAngle = Math.atan(edgeSlope); // angle of surface normal
+    const reflectedRayAngle = 2 * surfaceNormalAngle; // law of reflection for collimated input
+    const workingFNum = reflectedRayAngle !== 0 ? 1 / (2 * Math.sin(reflectedRayAngle)) : 0;
 
     // Calculate single-point sag for non-rotationally symmetric surfaces
     const isNonRotSymmetric = selectedSurface.type === 'Zernike' || selectedSurface.type === 'Irregular';
