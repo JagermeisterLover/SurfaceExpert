@@ -13,12 +13,20 @@ const { useState, useEffect, useRef } = React;
  */
 const DebouncedInput = ({ value, onChange, onBlur, onEnterKey, debounceMs = 500, style, ...props }) => {
     const [localValue, setLocalValue] = useState(value);
+    const [isFocused, setIsFocused] = useState(false);
     const timeoutRef = useRef(null);
 
     // Update local value when prop value changes (external update)
+    // but only if the input is not currently focused (being edited by user)
     useEffect(() => {
-        setLocalValue(value);
-    }, [value]);
+        if (!isFocused) {
+            setLocalValue(value);
+        }
+    }, [value, isFocused]);
+
+    const handleFocus = (e) => {
+        setIsFocused(true);
+    };
 
     const handleChange = (e) => {
         const newValue = e.target.value;
@@ -38,6 +46,8 @@ const DebouncedInput = ({ value, onChange, onBlur, onEnterKey, debounceMs = 500,
     };
 
     const handleBlur = (e) => {
+        setIsFocused(false);
+
         // Clear any pending timeout
         if (timeoutRef.current) {
             clearTimeout(timeoutRef.current);
@@ -88,6 +98,7 @@ const DebouncedInput = ({ value, onChange, onBlur, onEnterKey, debounceMs = 500,
         ...props,
         type: 'text',
         value: localValue,
+        onFocus: handleFocus,
         onChange: handleChange,
         onBlur: handleBlur,
         onKeyDown: handleKeyDown,
