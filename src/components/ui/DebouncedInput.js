@@ -70,9 +70,9 @@ const DebouncedInput = ({ value, onChange, onBlur, onEnterKey, debounceMs = 500,
             // Mark as unfocused (we're leaving this input)
             setIsFocused(false);
 
-            // Call onEnterKey callback if provided
+            // Call onEnterKey callback if provided (after state updates)
             if (onEnterKey) {
-                onEnterKey(e);
+                onEnterKey();
             }
         }
     };
