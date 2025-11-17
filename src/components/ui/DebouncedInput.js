@@ -14,6 +14,7 @@ const { useState, useEffect, useRef } = React;
 const DebouncedInput = ({ value, onChange, onBlur, onEnterKey, debounceMs = 500, style, ...props }) => {
     const [localValue, setLocalValue] = useState(value);
     const [isFocused, setIsFocused] = useState(false);
+    const isNavigatingRef = useRef(false);
 
     // Update local value when prop value changes (external update)
     // but only if the input is not currently focused (being edited by user)
@@ -34,6 +35,13 @@ const DebouncedInput = ({ value, onChange, onBlur, onEnterKey, debounceMs = 500,
     };
 
     const handleBlur = (e) => {
+        // If we're navigating via Enter key, don't process blur
+        // The navigation will handle focus transition
+        if (isNavigatingRef.current) {
+            isNavigatingRef.current = false;
+            return;
+        }
+
         setIsFocused(false);
 
         // Immediately propagate the change on blur
@@ -51,10 +59,16 @@ const DebouncedInput = ({ value, onChange, onBlur, onEnterKey, debounceMs = 500,
         if (e.key === 'Enter') {
             e.preventDefault();
 
+            // Set flag to prevent blur from interfering
+            isNavigatingRef.current = true;
+
             // Immediately propagate the change
             if (onChange && localValue !== value) {
                 onChange(localValue);
             }
+
+            // Mark as unfocused (we're leaving this input)
+            setIsFocused(false);
 
             // Call onEnterKey callback if provided
             if (onEnterKey) {
