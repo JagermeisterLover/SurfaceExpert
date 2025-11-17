@@ -486,22 +486,24 @@ class SurfaceCalculations {
     static calculateOpalUnUSlope(r, R, e2, H, A2, A3, A4, A5, A6, A7, A8, A9, A10, A11, A12) {
         const z = this.calculateOpalUnUSag(r, R, e2, H, A2, A3, A4, A5, A6, A7, A8, A9, A10, A11, A12);
         const rSquared = r * r;
-        const invR2 = 1.0 / (2 * R);
         const w = rSquared / (H * H);
 
-        let dQdr = 0;
-        let wPower = w;
+        // Calculate dQ/dw where Q = A2*w² + A3*w³ + A4*w⁴ + ... + A12*w¹²
+        // dQ/dw = 2*A2*w + 3*A3*w² + 4*A4*w³ + ... + 12*A12*w¹¹
+        let dQdw = 0;
+        let wPower = w; // Start with w
         const coeffs = [A2, A3, A4, A5, A6, A7, A8, A9, A10, A11, A12];
-        for (let i = 1; i < coeffs.length; i++) {
-            dQdr += i * coeffs[i] * wPower;
+        for (let i = 0; i < coeffs.length; i++) {
+            dQdw += (i + 2) * coeffs[i] * wPower; // Derivative coefficient: 2,3,4,...,12
             wPower *= w;
         }
 
-        dQdr *= 2 * r / (H * H);
+        // Apply chain rule: dQ/dr = dQ/dw * dw/dr, where dw/dr = 2r/H²
+        const dQdr = dQdw * 2 * r / (H * H);
 
         const denominator = 1 - (1 - e2) * z / R;
         if (denominator === 0) return 0;
-        return (r * invR2 + dQdr) / denominator;
+        return (r / R + dQdr) / denominator;
     }
 
     static calculateOpalUnZSlope(r, R, e2, H, A3, A4, A5, A6, A7, A8, A9, A10, A11, A12, A13) {
