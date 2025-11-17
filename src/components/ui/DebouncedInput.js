@@ -2,19 +2,18 @@ const { createElement: h } = React;
 const { useState, useEffect, useRef } = React;
 
 /**
- * DebouncedInput - Input component that debounces onChange events
- * Prevents UI freezing when typing by maintaining local state and only
- * propagating changes after user stops typing or on blur
+ * DebouncedInput - Input component that prevents UI freezing during typing
+ * Maintains local state and only propagates changes on blur or Enter key
  *
  * Features:
- * - Debounced updates to prevent UI freezing
- * - Press Enter to move to next input (if onEnterKey provided)
+ * - Local state prevents re-renders from interrupting typing
+ * - Press Enter to save and move to next input (if onEnterKey provided)
  * - Immediate save on blur
+ * - No auto-save while typing - user stays in control
  */
 const DebouncedInput = ({ value, onChange, onBlur, onEnterKey, debounceMs = 500, style, ...props }) => {
     const [localValue, setLocalValue] = useState(value);
     const [isFocused, setIsFocused] = useState(false);
-    const timeoutRef = useRef(null);
 
     // Update local value when prop value changes (external update)
     // but only if the input is not currently focused (being edited by user)
@@ -31,27 +30,11 @@ const DebouncedInput = ({ value, onChange, onBlur, onEnterKey, debounceMs = 500,
     const handleChange = (e) => {
         const newValue = e.target.value;
         setLocalValue(newValue);
-
-        // Clear existing timeout
-        if (timeoutRef.current) {
-            clearTimeout(timeoutRef.current);
-        }
-
-        // Set new timeout to call onChange after debounce delay
-        timeoutRef.current = setTimeout(() => {
-            if (onChange) {
-                onChange(newValue);
-            }
-        }, debounceMs);
+        // No auto-save - only save on blur or Enter
     };
 
     const handleBlur = (e) => {
         setIsFocused(false);
-
-        // Clear any pending timeout
-        if (timeoutRef.current) {
-            clearTimeout(timeoutRef.current);
-        }
 
         // Immediately propagate the change on blur
         if (onChange && localValue !== value) {
@@ -68,11 +51,6 @@ const DebouncedInput = ({ value, onChange, onBlur, onEnterKey, debounceMs = 500,
         if (e.key === 'Enter') {
             e.preventDefault();
 
-            // Clear any pending timeout
-            if (timeoutRef.current) {
-                clearTimeout(timeoutRef.current);
-            }
-
             // Immediately propagate the change
             if (onChange && localValue !== value) {
                 onChange(localValue);
@@ -84,15 +62,6 @@ const DebouncedInput = ({ value, onChange, onBlur, onEnterKey, debounceMs = 500,
             }
         }
     };
-
-    // Cleanup timeout on unmount
-    useEffect(() => {
-        return () => {
-            if (timeoutRef.current) {
-                clearTimeout(timeoutRef.current);
-            }
-        };
-    }, []);
 
     return h('input', {
         ...props,
