@@ -35,7 +35,13 @@ export const SummaryView = ({ selectedSurface, c }) => {
                 angle: formatValue(values.angle),
                 angleDMS: degreesToDMS(values.angle),
                 asphericity: formatValue(values.asphericity),
-                aberration: formatValue(values.aberration)
+                aberration: formatValue(values.aberration),
+                // Store raw values for max calculations
+                rawSag: values.sag,
+                rawSlope: values.slope,
+                rawAngle: values.angle,
+                rawAsphericity: values.asphericity,
+                rawAberration: values.aberration
             });
         }
 
@@ -57,7 +63,13 @@ export const SummaryView = ({ selectedSurface, c }) => {
             angle: formatValue(values.angle),
             angleDMS: degreesToDMS(values.angle),
             asphericity: formatValue(values.asphericity),
-            aberration: formatValue(values.aberration)
+            aberration: formatValue(values.aberration),
+            // Store raw values for max calculations
+            rawSag: values.sag,
+            rawSlope: values.slope,
+            rawAngle: values.angle,
+            rawAsphericity: values.asphericity,
+            rawAberration: values.aberration
         });
 
         return data;
@@ -65,12 +77,12 @@ export const SummaryView = ({ selectedSurface, c }) => {
 
     const dataTable = generateDataTable();
 
-    // Calculate max values
-    const maxSag = Math.max(...dataTable.map(row => parseFloat(row.sag)));
-    const maxSlope = Math.max(...dataTable.map(row => Math.abs(parseFloat(row.slope))));
-    const maxAngle = Math.max(...dataTable.map(row => Math.abs(parseFloat(row.angle))));
-    const maxAsphericity = Math.max(...dataTable.map(row => Math.abs(parseFloat(row.asphericity))));
-    const maxAberration = Math.max(...dataTable.map(row => Math.abs(parseFloat(row.aberration))));
+    // Calculate max values from raw (unformatted) data
+    const maxSag = Math.max(...dataTable.map(row => row.rawSag));
+    const maxSlope = Math.max(...dataTable.map(row => Math.abs(row.rawSlope)));
+    const maxAngle = Math.max(...dataTable.map(row => Math.abs(row.rawAngle)));
+    const maxAsphericity = Math.max(...dataTable.map(row => Math.abs(row.rawAsphericity)));
+    const maxAberration = Math.max(...dataTable.map(row => Math.abs(row.rawAberration)));
 
     // Calculate best fit sphere
     const minHeight = parseFloat(selectedSurface.parameters['Min Height']) || 0;
@@ -99,7 +111,14 @@ export const SummaryView = ({ selectedSurface, c }) => {
 
     // Calculate F/# (paraxial and working)
     // Paraxial F/# = EFFL / aperture_diameter = (R/2) / (2*maxHeight) = R / (4*maxHeight)
-    const R = parseFloat(selectedSurface.parameters['Radius']) || 0;
+    // For Poly surface: R = A1 / 2
+    let R;
+    if (selectedSurface.type === 'Poly') {
+        const A1 = parseFloat(selectedSurface.parameters['A1']) || 0;
+        R = A1 / 2;
+    } else {
+        R = parseFloat(selectedSurface.parameters['Radius']) || 0;
+    }
     const paraxialFNum = R !== 0 ? Math.abs(R / (4 * maxHeight)) : 0;
 
     // Working F/# based on marginal ray angle after reflection

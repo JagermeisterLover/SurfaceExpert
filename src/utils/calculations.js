@@ -28,7 +28,14 @@ export const getBestFitSphereParams = (surface) => {
     let params;
     if (minHeight === 0) {
         const R3 = window.SurfaceCalculations.calculateBestFitSphereRadius3Points(maxHeight, zmax);
-        const R = surface.type !== 'Poly' ? parseParam('Radius') : 0;
+        // For Poly surface: R = A1 / 2
+        let R;
+        if (surface.type === 'Poly') {
+            const A1 = parseParam('A1');
+            R = A1 / 2;
+        } else {
+            R = parseParam('Radius');
+        }
         params = { method: 'R3', R3, R };
     } else {
         const result = window.SurfaceCalculations.calculateBestFitSphereRadius4Points(minHeight, maxHeight, zmin, zmax);
@@ -185,7 +192,14 @@ export const calculateSurfaceValues = (r, surface, x = null, y = null) => {
         }
 
         // Calculate aberration
-        const R = surface.type !== 'Poly' ? parseParam('Radius') : 0;
+        // For Poly surface: R = A1 / 2
+        let R;
+        if (surface.type === 'Poly') {
+            const A1 = parseParam('A1');
+            R = A1 / 2;
+        } else {
+            R = parseParam('Radius');
+        }
         aberration = window.SurfaceCalculations.calculateAberrationOfNormals(sag, r, slope, R);
 
     } catch (e) {
