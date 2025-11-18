@@ -513,19 +513,22 @@ export const generateMetricPlots = async (plotData) => {
 /**
  * Generate 3D surface plot for report
  */
-const generate3DPlotImage = async (plotData) => {
-    const { rValues, sagValues } = plotData;
-    const maxR = Math.max(...rValues);
+const generate3DPlotImage = async (surface, plotData) => {
+    const minHeight = parseFloat(surface.parameters['Min Height']) || 0;
+    const maxHeight = parseFloat(surface.parameters['Max Height']) || 25;
     const size = 60;
+
+    // Import calculateSurfaceValues dynamically
+    const { calculateSurfaceValues } = await import('./calculations.js');
 
     // Create coordinate arrays
     const x = [], y = [];
     for (let i = 0; i < size; i++) {
-        x.push(-maxR + (i * (2 * maxR)) / (size - 1));
-        y.push(-maxR + (i * (2 * maxR)) / (size - 1));
+        x.push(-maxHeight + (i * (2 * maxHeight)) / (size - 1));
+        y.push(-maxHeight + (i * (2 * maxHeight)) / (size - 1));
     }
 
-    // Generate 3D grid from plotData
+    // Generate 3D grid by calculating actual surface values
     const z = [];
     for (let i = 0; i < size; i++) {
         const row = [];
@@ -534,9 +537,15 @@ const generate3DPlotImage = async (plotData) => {
             const yj = y[j];
             const r = Math.sqrt(xi * xi + yj * yj);
 
-            // Find closest r value in rValues
-            const idx = rValues.findIndex((rv, i) => i === rValues.length - 1 || (rv <= r && rValues[i+1] > r));
-            row.push(idx >= 0 && idx < sagValues.length ? sagValues[idx] : null);
+            if (r >= minHeight && r <= maxHeight) {
+                // Calculate surface value for this point
+                const values = (surface.type === 'Irregular' || surface.type === 'Zernike')
+                    ? calculateSurfaceValues(r, surface, xi, yj)
+                    : calculateSurfaceValues(r, surface);
+                row.push(values.sag);
+            } else {
+                row.push(null);
+            }
         }
         z.push(row);
     }
@@ -552,12 +561,20 @@ const generate3DPlotImage = async (plotData) => {
         z: z,
         type: 'surface',
         colorscale: 'Viridis',
-        showscale: true
+        showscale: true,
+        contours: {
+            z: {
+                show: true,
+                usecolormap: true,
+                highlightcolor: "#42f462",
+                project: { z: true }
+            }
+        }
     }], {
         scene: {
             camera: { eye: { x: 1.5, y: 1.5, z: 1.5 } },
-            xaxis: { title: 'X (mm)' },
-            yaxis: { title: 'Y (mm)' },
+            xaxis: { title: 'X (mm)', range: [-maxHeight, maxHeight] },
+            yaxis: { title: 'Y (mm)', range: [-maxHeight, maxHeight] },
             zaxis: { title: 'Sag (mm)' }
         },
         margin: { l: 0, r: 0, t: 0, b: 0 }
@@ -571,19 +588,22 @@ const generate3DPlotImage = async (plotData) => {
 /**
  * Generate 2D contour plot for report
  */
-const generate2DContourImage = async (plotData) => {
-    const { rValues, sagValues } = plotData;
-    const maxR = Math.max(...rValues);
+const generate2DContourImage = async (surface, plotData) => {
+    const minHeight = parseFloat(surface.parameters['Min Height']) || 0;
+    const maxHeight = parseFloat(surface.parameters['Max Height']) || 25;
     const size = 100;
+
+    // Import calculateSurfaceValues dynamically
+    const { calculateSurfaceValues } = await import('./calculations.js');
 
     // Create coordinate arrays
     const x = [], y = [];
     for (let i = 0; i < size; i++) {
-        x.push(-maxR + (i * (2 * maxR)) / (size - 1));
-        y.push(-maxR + (i * (2 * maxR)) / (size - 1));
+        x.push(-maxHeight + (i * (2 * maxHeight)) / (size - 1));
+        y.push(-maxHeight + (i * (2 * maxHeight)) / (size - 1));
     }
 
-    // Generate 2D grid
+    // Generate 2D grid by calculating actual surface values
     const z = [];
     for (let i = 0; i < size; i++) {
         const row = [];
@@ -592,8 +612,15 @@ const generate2DContourImage = async (plotData) => {
             const yj = y[j];
             const r = Math.sqrt(xi * xi + yj * yj);
 
-            const idx = rValues.findIndex((rv, i) => i === rValues.length - 1 || (rv <= r && rValues[i+1] > r));
-            row.push(idx >= 0 && idx < sagValues.length ? sagValues[idx] : null);
+            if (r >= minHeight && r <= maxHeight) {
+                // Calculate surface value for this point
+                const values = (surface.type === 'Irregular' || surface.type === 'Zernike')
+                    ? calculateSurfaceValues(r, surface, xi, yj)
+                    : calculateSurfaceValues(r, surface);
+                row.push(values.sag);
+            } else {
+                row.push(null);
+            }
         }
         z.push(row);
     }
@@ -629,12 +656,18 @@ const generate2DContourImage = async (plotData) => {
  * Generate complete report data for current surface
  */
 export const generateReportData = async (surface, plotData, summaryMetrics) => {
+    console.log('Generating report plots...');
+
     // Generate 3D and 2D plots in temporary containers
-    const plot3D = await generate3DPlotImage(plotData);
-    const plot2D = await generate2DContourImage(plotData);
+    const plot3D = await generate3DPlotImage(surface, plotData);
+    console.log('3D plot generated:', plot3D ? 'Success' : 'Failed');
+
+    const plot2D = await generate2DContourImage(surface, plotData);
+    console.log('2D plot generated:', plot2D ? 'Success' : 'Failed');
 
     // Generate metric plots
     const metricPlots = await generateMetricPlots(plotData);
+    console.log('Metric plots generated:', metricPlots);
 
     const plotImages = {
         plot3D,
