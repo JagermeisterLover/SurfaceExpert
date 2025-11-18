@@ -77,12 +77,21 @@ export const SummaryView = ({ selectedSurface, c }) => {
 
     const dataTable = generateDataTable();
 
-    // Calculate max values from raw (unformatted) data
-    const maxSag = Math.max(...dataTable.map(row => row.rawSag));
-    const maxSlope = Math.max(...dataTable.map(row => Math.abs(row.rawSlope)));
-    const maxAngle = Math.max(...dataTable.map(row => Math.abs(row.rawAngle)));
-    const maxAsphericity = Math.max(...dataTable.map(row => Math.abs(row.rawAsphericity)));
-    const maxAberration = Math.max(...dataTable.map(row => Math.abs(row.rawAberration)));
+    // Calculate max values from raw (unformatted) data, filtering out NaN/Infinity
+    const sagValues = dataTable.map(row => row.rawSag).filter(v => isFinite(v));
+    const maxSag = sagValues.length > 0 ? Math.max(...sagValues) : 0;
+
+    const slopeValues = dataTable.map(row => Math.abs(row.rawSlope)).filter(v => isFinite(v));
+    const maxSlope = slopeValues.length > 0 ? Math.max(...slopeValues) : 0;
+
+    const angleValues = dataTable.map(row => Math.abs(row.rawAngle)).filter(v => isFinite(v));
+    const maxAngle = angleValues.length > 0 ? Math.max(...angleValues) : 0;
+
+    const asphericityValues = dataTable.map(row => Math.abs(row.rawAsphericity)).filter(v => isFinite(v));
+    const maxAsphericity = asphericityValues.length > 0 ? Math.max(...asphericityValues) : 0;
+
+    const aberrationValues = dataTable.map(row => Math.abs(row.rawAberration)).filter(v => isFinite(v));
+    const maxAberration = aberrationValues.length > 0 ? Math.max(...aberrationValues) : 0;
 
     // Calculate best fit sphere
     const minHeight = parseFloat(selectedSurface.parameters['Min Height']) || 0;
@@ -103,9 +112,11 @@ export const SummaryView = ({ selectedSurface, c }) => {
     if (dataTable.length > 1) {
         for (let i = 1; i < dataTable.length; i++) {
             const dr = parseFloat(dataTable[i].r) - parseFloat(dataTable[i-1].r);
-            const dAsph = Math.abs(parseFloat(dataTable[i].asphericity) - parseFloat(dataTable[i-1].asphericity));
+            const dAsph = Math.abs(dataTable[i].rawAsphericity - dataTable[i-1].rawAsphericity);
             const gradient = dAsph / dr;
-            if (gradient > maxAsphGradient) maxAsphGradient = gradient;
+            if (isFinite(gradient) && gradient > maxAsphGradient) {
+                maxAsphGradient = gradient;
+            }
         }
     }
 
@@ -124,7 +135,7 @@ export const SummaryView = ({ selectedSurface, c }) => {
     // Working F/# based on marginal ray angle after reflection
     // For a mirror: reflected ray angle = 2 * arctan(surface_slope)
     // Working F/# = 1 / (2 * sin(reflected_angle))
-    const edgeSlope = Math.abs(parseFloat(dataTable[dataTable.length - 1].slope));
+    const edgeSlope = Math.abs(dataTable[dataTable.length - 1].rawSlope);
     const surfaceNormalAngle = Math.atan(edgeSlope); // angle of surface normal
     const reflectedRayAngle = 2 * surfaceNormalAngle; // law of reflection for collimated input
     const workingFNum = reflectedRayAngle !== 0 ? 1 / (2 * Math.sin(reflectedRayAngle)) : 0;
