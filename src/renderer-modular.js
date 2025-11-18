@@ -13,7 +13,7 @@ console.log('📅 Build timestamp:', new Date().toISOString());
 // ============================================
 
 // Constants
-import { surfaceTypes, sampleSurfaces, colorscales, colors } from './constants/surfaceTypes.js';
+import { surfaceTypes, universalParameters, sampleSurfaces, colorscales, colors } from './constants/surfaceTypes.js';
 
 // Utilities
 import { formatValue, degreesToDMS } from './utils/formatters.js';
@@ -325,11 +325,16 @@ const OpticalSurfaceAnalyzer = () => {
         if (!selectedSurface || !selectedFolder) return;
 
         const newParams = {};
+
+        // Initialize universal parameters (preserving existing values)
+        universalParameters[newType].forEach(param => {
+            newParams[param] = selectedSurface.parameters[param] || '0';
+        });
+
+        // Initialize surface-specific parameters (preserving existing values where possible)
         surfaceTypes[newType].forEach(param => {
             newParams[param] = selectedSurface.parameters[param] || '0';
         });
-        // Preserve Step parameter
-        newParams['Step'] = selectedSurface.parameters['Step'] || '1';
 
         const updatedSurface = { ...selectedSurface, type: newType, parameters: newParams };
 
@@ -776,7 +781,7 @@ const OpticalSurfaceAnalyzer = () => {
                                 letterSpacing: '0.3px'
                             }
                         }, 'Universal'),
-                        ['Radius', 'Min Height', 'Max Height', 'Step'].map(param => (
+                        universalParameters[selectedSurface.type].map(param => (
                             selectedSurface.parameters[param] !== undefined &&
                             h('div', { key: param, style: { marginBottom: '8px' } },
                                 h('label', {
@@ -850,9 +855,6 @@ const OpticalSurfaceAnalyzer = () => {
                     ),
 
                     surfaceTypes[selectedSurface.type].filter(param => {
-                        // Filter out universal parameters
-                        if (['Radius', 'Min Height', 'Max Height', 'Step'].includes(param)) return false;
-
                         // Filter out scan & coordinate parameters (they have their own box)
                         if (['Scan Angle', 'X Coordinate', 'Y Coordinate'].includes(param)) return false;
 
