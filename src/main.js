@@ -1,4 +1,4 @@
-const { app, BrowserWindow, Menu, dialog, ipcMain } = require('electron');
+const { app, BrowserWindow, Menu, dialog, ipcMain, shell } = require('electron');
 const path = require('path');
 const fs = require('fs');
 
@@ -349,6 +349,10 @@ function setupIpcHandlers() {
       }
 
       fs.writeFileSync(result.filePath, htmlContent, 'utf-8');
+
+      // Open the folder containing the file
+      shell.showItemInFolder(result.filePath);
+
       return { success: true, filePath: result.filePath };
     } catch (error) {
       return { success: false, error: error.message };
@@ -403,6 +407,10 @@ function setupIpcHandlers() {
 
       // Save PDF
       fs.writeFileSync(result.filePath, pdfData);
+
+      // Open the folder containing the file
+      shell.showItemInFolder(result.filePath);
+
       return { success: true, filePath: result.filePath };
     } catch (error) {
       return { success: false, error: error.message };

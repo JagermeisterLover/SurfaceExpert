@@ -77,6 +77,12 @@ const OpticalSurfaceAnalyzer = () => {
     const plotRef = useRef(null);
     const propertiesPanelRef = useRef(null);
     const scrollPositionRef = useRef(0);
+    const selectedSurfaceRef = useRef(null);  // Ref to always access latest selectedSurface in closures
+
+    // Update ref whenever selectedSurface changes
+    useEffect(() => {
+        selectedSurfaceRef.current = selectedSurface;
+    }, [selectedSurface]);
 
     // ============================================
     // DATA LOADING
@@ -303,9 +309,11 @@ const OpticalSurfaceAnalyzer = () => {
     // ============================================
 
     const handleExportHTMLReport = async () => {
-        console.log('handleExportHTMLReport called, selectedSurface:', selectedSurface);
+        // Use ref to access latest value (important for menu actions)
+        const surface = selectedSurfaceRef.current;
+        console.log('handleExportHTMLReport called, surface:', surface);
 
-        if (!selectedSurface) {
+        if (!surface) {
             alert('Please select a surface from the list to generate a report.\n\nClick on a surface in the left sidebar to select it.');
             return;
         }
@@ -316,30 +324,29 @@ const OpticalSurfaceAnalyzer = () => {
         }
 
         try {
-            console.log('Generating report for surface:', selectedSurface.name);
+            console.log('Generating report for surface:', surface.name);
 
             // Generate plot data for the report
-            const plotData = generateReportPlotData(selectedSurface);
+            const plotData = generateReportPlotData(surface);
 
             // Calculate summary metrics
-            const summaryMetrics = calculateSurfaceMetrics(selectedSurface);
+            const summaryMetrics = calculateSurfaceMetrics(surface);
 
             // Generate report data with plot images
             const reportData = await generateReportData(
-                selectedSurface,
+                surface,
                 plotData,
                 summaryMetrics
             );
 
             // Sanitize surface name for filename
-            const sanitizedName = selectedSurface.name.replace(/[<>:"/\\|?*]/g, '_');
+            const sanitizedName = surface.name.replace(/[<>:"/\\|?*]/g, '_');
 
             // Save HTML report via Electron dialog
             const result = await window.electronAPI.saveHTMLReport(reportData.html, sanitizedName);
 
-            if (result.success) {
-                alert('✅ HTML report saved successfully!\n\nLocation: ' + result.filePath);
-            } else if (!result.canceled) {
+            // Only show error alerts, success opens folder automatically
+            if (!result.canceled && !result.success) {
                 alert('Error saving report: ' + (result.error || 'Unknown error'));
             }
         } catch (error) {
@@ -349,9 +356,11 @@ const OpticalSurfaceAnalyzer = () => {
     };
 
     const handleExportPDFReport = async () => {
-        console.log('handleExportPDFReport called, selectedSurface:', selectedSurface);
+        // Use ref to access latest value (important for menu actions)
+        const surface = selectedSurfaceRef.current;
+        console.log('handleExportPDFReport called, surface:', surface);
 
-        if (!selectedSurface) {
+        if (!surface) {
             alert('Please select a surface from the list to generate a report.\n\nClick on a surface in the left sidebar to select it.');
             return;
         }
@@ -362,30 +371,29 @@ const OpticalSurfaceAnalyzer = () => {
         }
 
         try {
-            console.log('Generating PDF report for surface:', selectedSurface.name);
+            console.log('Generating PDF report for surface:', surface.name);
 
             // Generate plot data for the report
-            const plotData = generateReportPlotData(selectedSurface);
+            const plotData = generateReportPlotData(surface);
 
             // Calculate summary metrics
-            const summaryMetrics = calculateSurfaceMetrics(selectedSurface);
+            const summaryMetrics = calculateSurfaceMetrics(surface);
 
             // Generate report data with plot images
             const reportData = await generateReportData(
-                selectedSurface,
+                surface,
                 plotData,
                 summaryMetrics
             );
 
             // Sanitize surface name for filename
-            const sanitizedName = selectedSurface.name.replace(/[<>:"/\\|?*]/g, '_');
+            const sanitizedName = surface.name.replace(/[<>:"/\\|?*]/g, '_');
 
             // Generate and save PDF report via Electron
             const result = await window.electronAPI.generatePDFReport(reportData.html, sanitizedName);
 
-            if (result.success) {
-                alert('✅ PDF report saved successfully!\n\nLocation: ' + result.filePath);
-            } else if (!result.canceled) {
+            // Only show error alerts, success opens folder automatically
+            if (!result.canceled && !result.success) {
                 alert('Error saving PDF: ' + (result.error || 'Unknown error'));
             }
         } catch (error) {
