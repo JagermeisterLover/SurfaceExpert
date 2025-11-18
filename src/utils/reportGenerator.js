@@ -479,7 +479,10 @@ export const generateMetricPlots = async (plotData) => {
     const createPlot = async (x, y, title, yaxis) => {
         const plotDiv = document.createElement('div');
         plotDiv.id = 'temp-plot-' + Date.now() + Math.random();
-        plotDiv.style.display = 'none';
+        plotDiv.style.position = 'absolute';
+        plotDiv.style.left = '-9999px';
+        plotDiv.style.width = '600px';
+        plotDiv.style.height = '400px';
         document.body.appendChild(plotDiv);
 
         await Plotly.newPlot(plotDiv, [{
@@ -552,7 +555,10 @@ const generate3DPlotImage = async (surface, plotData) => {
 
     const plotDiv = document.createElement('div');
     plotDiv.id = 'temp-plot3d-' + Date.now() + Math.random();
-    plotDiv.style.display = 'none';
+    plotDiv.style.position = 'absolute';
+    plotDiv.style.left = '-9999px';
+    plotDiv.style.width = '800px';
+    plotDiv.style.height = '500px';
     document.body.appendChild(plotDiv);
 
     await Plotly.newPlot(plotDiv, [{
@@ -627,7 +633,10 @@ const generate2DContourImage = async (surface, plotData) => {
 
     const plotDiv = document.createElement('div');
     plotDiv.id = 'temp-plot2d-' + Date.now() + Math.random();
-    plotDiv.style.display = 'none';
+    plotDiv.style.position = 'absolute';
+    plotDiv.style.left = '-9999px';
+    plotDiv.style.width = '800px';
+    plotDiv.style.height = '500px';
     document.body.appendChild(plotDiv);
 
     await Plotly.newPlot(plotDiv, [{
