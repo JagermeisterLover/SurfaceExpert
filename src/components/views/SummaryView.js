@@ -1,7 +1,7 @@
 // SummaryView component - Displays comprehensive surface summary with metrics and detailed data table
 // Shows summary statistics, F/#, best fit sphere, and full analysis table
 
-import { calculateSurfaceValues } from '../../utils/calculations.js';
+import { calculateSurfaceValues, calculateSurfaceMetrics } from '../../utils/calculations.js';
 import { formatValue, degreesToDMS } from '../../utils/formatters.js';
 
 const { createElement: h } = React;
@@ -77,74 +77,12 @@ export const SummaryView = ({ selectedSurface, c }) => {
 
     const dataTable = generateDataTable();
 
-    // Calculate max values from raw (unformatted) data, filtering out NaN/Infinity
-    // For sag: find the value with maximum absolute value (preserving sign)
-    const sagValues = dataTable.map(row => row.rawSag).filter(v => isFinite(v));
-    let maxSag = 0;
-    for (const sag of sagValues) {
-        if (Math.abs(sag) > Math.abs(maxSag)) {
-            maxSag = sag;
-        }
-    }
+    // Calculate all metrics using shared utility function
+    const metrics = calculateSurfaceMetrics(selectedSurface);
+    const { maxSag, maxSlope, maxAngle, maxAsphericity, maxAberration, maxAsphGradient, bestFitSphere, paraxialFNum, workingFNum } = metrics;
 
-    const slopeValues = dataTable.map(row => Math.abs(row.rawSlope)).filter(v => isFinite(v));
-    const maxSlope = slopeValues.length > 0 ? Math.max(...slopeValues) : 0;
-
-    const angleValues = dataTable.map(row => Math.abs(row.rawAngle)).filter(v => isFinite(v));
-    const maxAngle = angleValues.length > 0 ? Math.max(...angleValues) : 0;
-
-    const asphericityValues = dataTable.map(row => Math.abs(row.rawAsphericity)).filter(v => isFinite(v));
-    const maxAsphericity = asphericityValues.length > 0 ? Math.max(...asphericityValues) : 0;
-
-    const aberrationValues = dataTable.map(row => Math.abs(row.rawAberration)).filter(v => isFinite(v));
-    const maxAberration = aberrationValues.length > 0 ? Math.max(...aberrationValues) : 0;
-
-    // Calculate best fit sphere
     const minHeight = parseFloat(selectedSurface.parameters['Min Height']) || 0;
     const maxHeight = parseFloat(selectedSurface.parameters['Max Height']) || 25;
-    const sagAtMax = calculateSurfaceValues(maxHeight, selectedSurface).sag;
-    let bestFitSphere = 0;
-
-    if (minHeight === 0) {
-        bestFitSphere = window.SurfaceCalculations.calculateBestFitSphereRadius3Points(maxHeight, sagAtMax);
-    } else {
-        const sagAtMin = calculateSurfaceValues(minHeight, selectedSurface).sag;
-        const result = window.SurfaceCalculations.calculateBestFitSphereRadius4Points(minHeight, maxHeight, sagAtMin, sagAtMax);
-        bestFitSphere = result.R4;
-    }
-
-    // Calculate max asphericity gradient
-    let maxAsphGradient = 0;
-    if (dataTable.length > 1) {
-        for (let i = 1; i < dataTable.length; i++) {
-            const dr = parseFloat(dataTable[i].r) - parseFloat(dataTable[i-1].r);
-            const dAsph = Math.abs(dataTable[i].rawAsphericity - dataTable[i-1].rawAsphericity);
-            const gradient = dAsph / dr;
-            if (isFinite(gradient) && gradient > maxAsphGradient) {
-                maxAsphGradient = gradient;
-            }
-        }
-    }
-
-    // Calculate F/# (paraxial and working)
-    // Paraxial F/# = EFFL / aperture_diameter = (R/2) / (2*maxHeight) = R / (4*maxHeight)
-    // For Poly surface: R = A1 / 2
-    let R;
-    if (selectedSurface.type === 'Poly') {
-        const A1 = parseFloat(selectedSurface.parameters['A1']) || 0;
-        R = A1 / 2;
-    } else {
-        R = parseFloat(selectedSurface.parameters['Radius']) || 0;
-    }
-    const paraxialFNum = R !== 0 ? Math.abs(R / (4 * maxHeight)) : 0;
-
-    // Working F/# based on marginal ray angle after reflection
-    // For a mirror: reflected ray angle = 2 * arctan(surface_slope)
-    // Working F/# = 1 / (2 * sin(reflected_angle))
-    const edgeSlope = Math.abs(dataTable[dataTable.length - 1].rawSlope);
-    const surfaceNormalAngle = Math.atan(edgeSlope); // angle of surface normal
-    const reflectedRayAngle = 2 * surfaceNormalAngle; // law of reflection for collimated input
-    const workingFNum = reflectedRayAngle !== 0 ? 1 / (2 * Math.sin(reflectedRayAngle)) : 0;
 
     // Calculate single-point sag for non-rotationally symmetric surfaces
     const isNonRotSymmetric = selectedSurface.type === 'Zernike' || selectedSurface.type === 'Irregular';
