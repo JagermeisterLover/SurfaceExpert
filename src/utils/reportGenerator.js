@@ -419,13 +419,13 @@ const generatePlotsSection = (plotImages, showAsphericity, showAberration) => {
     html += '<div class="two-column">';
     if (plotImages.sagPlot) {
         html += `<div class="plot-container">
-            <div class="plot-title">Sag vs Radius</div>
+            <div class="plot-title">Sag vs Radial Coordinate</div>
             <img src="${plotImages.sagPlot}" alt="Sag Plot" />
         </div>`;
     }
     if (plotImages.slopePlot) {
         html += `<div class="plot-container">
-            <div class="plot-title">Slope vs Radius</div>
+            <div class="plot-title">Slope vs Radial Coordinate</div>
             <img src="${plotImages.slopePlot}" alt="Slope Plot" />
         </div>`;
     }
@@ -435,13 +435,13 @@ const generatePlotsSection = (plotImages, showAsphericity, showAberration) => {
         html += '<div class="two-column">';
         if (showAsphericity && plotImages.asphericityPlot) {
             html += `<div class="plot-container">
-                <div class="plot-title">Asphericity vs Radius</div>
+                <div class="plot-title">Asphericity vs Radial Coordinate</div>
                 <img src="${plotImages.asphericityPlot}" alt="Asphericity Plot" />
             </div>`;
         }
         if (showAberration && plotImages.aberrationPlot) {
             html += `<div class="plot-container">
-                <div class="plot-title">Aberration vs Radius</div>
+                <div class="plot-title">Aberration vs Radial Coordinate</div>
                 <img src="${plotImages.aberrationPlot}" alt="Aberration Plot" />
             </div>`;
         }
@@ -476,7 +476,7 @@ export const generateMetricPlots = async (plotData) => {
     const { rValues, sagValues, slopeValues, asphericityValues, aberrationValues } = plotData;
 
     // Helper to create a simple line plot
-    const createPlot = async (x, y, title, yaxis) => {
+    const createPlot = async (x, y, yaxis, equalAspect = false) => {
         const plotDiv = document.createElement('div');
         plotDiv.id = 'temp-plot-' + Date.now() + Math.random();
         plotDiv.style.position = 'absolute';
@@ -485,20 +485,27 @@ export const generateMetricPlots = async (plotData) => {
         plotDiv.style.height = '400px';
         document.body.appendChild(plotDiv);
 
+        const layout = {
+            xaxis: { title: 'Radial Coordinate (mm)', showgrid: true },
+            yaxis: { title: yaxis, showgrid: true },
+            margin: { l: 60, r: 30, t: 30, b: 50 },
+            paper_bgcolor: '#fff',
+            plot_bgcolor: '#f9f9f9'
+        };
+
+        // Add 1:1 aspect ratio for sag plot
+        if (equalAspect) {
+            layout.xaxis.scaleanchor = 'y';
+            layout.xaxis.scaleratio = 1;
+        }
+
         await Plotly.newPlot(plotDiv, [{
             x: x,
             y: y,
             type: 'scatter',
             mode: 'lines',
             line: { color: '#2563eb', width: 2 }
-        }], {
-            title: { text: title, font: { size: 14 } },
-            xaxis: { title: 'Radial Coordinate (mm)', showgrid: true },
-            yaxis: { title: yaxis, showgrid: true },
-            margin: { l: 60, r: 30, t: 40, b: 50 },
-            paper_bgcolor: '#fff',
-            plot_bgcolor: '#f9f9f9'
-        }, { displayModeBar: false });
+        }], layout, { displayModeBar: false });
 
         const imgData = await exportPlotToImage(plotDiv.id, 600, 400);
         document.body.removeChild(plotDiv);
@@ -506,10 +513,10 @@ export const generateMetricPlots = async (plotData) => {
     };
 
     return {
-        sagPlot: await createPlot(rValues, sagValues, 'Sag vs Radial Coordinate', 'Sag (mm)'),
-        slopePlot: await createPlot(rValues, slopeValues, 'Slope vs Radial Coordinate', 'Slope (rad)'),
-        asphericityPlot: asphericityValues ? await createPlot(rValues, asphericityValues, 'Asphericity vs Radial Coordinate', 'Asphericity (mm)') : null,
-        aberrationPlot: aberrationValues ? await createPlot(rValues, aberrationValues, 'Aberration vs Radial Coordinate', 'Aberration (mm)') : null
+        sagPlot: await createPlot(rValues, sagValues, 'Sag (mm)', true),
+        slopePlot: await createPlot(rValues, slopeValues, 'Slope (rad)', false),
+        asphericityPlot: asphericityValues ? await createPlot(rValues, asphericityValues, 'Asphericity (mm)', false) : null,
+        aberrationPlot: aberrationValues ? await createPlot(rValues, aberrationValues, 'Aberration (mm)', false) : null
     };
 };
 
@@ -684,10 +691,9 @@ const generate2DContourImage = async (surface, plotData) => {
         },
         showlegend: false
     }], {
-        title: 'Sag False Color Map',
         xaxis: { title: 'X (mm)', scaleanchor: 'y', scaleratio: 1 },
         yaxis: { title: 'Y (mm)', scaleanchor: 'x', scaleratio: 1 },
-        margin: { l: 60, r: 120, t: 60, b: 60 }
+        margin: { l: 60, r: 120, t: 30, b: 60 }
     }, { displayModeBar: false });
 
     const imgData = await exportPlotToImage(plotDiv.id, 800, 500);
