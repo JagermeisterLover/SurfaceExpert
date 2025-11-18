@@ -17,7 +17,7 @@ import { surfaceTypes, sampleSurfaces, colorscales, colors } from './constants/s
 
 // Utilities
 import { formatValue, degreesToDMS } from './utils/formatters.js';
-import { calculateSurfaceValues, calculateSagOnly, getBestFitSphereParams } from './utils/calculations.js';
+import { calculateSurfaceValues, calculateSagOnly, getBestFitSphereParams, calculateSurfaceMetrics } from './utils/calculations.js';
 
 // UI Components
 import { PropertySection } from './components/ui/PropertySection.js';
@@ -641,87 +641,19 @@ const OpticalSurfaceAnalyzer = () => {
             }, 'No surface selected');
         }
 
-        // Calculate metrics for display
-        const calculateMetrics = () => {
-            const minHeight = parseFloat(selectedSurface.parameters['Min Height']) || 0;
-            const maxHeight = parseFloat(selectedSurface.parameters['Max Height']) || 25;
-            const step = parseFloat(selectedSurface.parameters['Step']) || 1;
-            const R = parseFloat(selectedSurface.parameters['Radius']) || 0;
-
-            let maxSag = 0, maxSlope = 0, maxAngle = 0, maxAsphericity = 0, maxAberration = 0;
-            let maxAsphGradient = 0;
-            const values = [];
-
-            for (let r = minHeight; r < maxHeight; r += step) {
-                const v = calculateSurfaceValues(r, selectedSurface);
-                values.push({ r, ...v });
-                // For sag, track the value with maximum absolute value (preserving sign)
-                if (Math.abs(v.sag) > Math.abs(maxSag)) {
-                    maxSag = v.sag;
-                }
-                maxSlope = Math.max(maxSlope, Math.abs(v.slope));
-                maxAngle = Math.max(maxAngle, Math.abs(v.angle));
-                maxAsphericity = Math.max(maxAsphericity, Math.abs(v.asphericity));
-                maxAberration = Math.max(maxAberration, Math.abs(v.aberration));
-            }
-
-            // Always include maxHeight
-            const vMax = calculateSurfaceValues(maxHeight, selectedSurface);
-            values.push({ r: maxHeight, ...vMax });
-            // For sag, track the value with maximum absolute value (preserving sign)
-            if (Math.abs(vMax.sag) > Math.abs(maxSag)) {
-                maxSag = vMax.sag;
-            }
-            maxSlope = Math.max(maxSlope, Math.abs(vMax.slope));
-            maxAngle = Math.max(maxAngle, Math.abs(vMax.angle));
-            maxAsphericity = Math.max(maxAsphericity, Math.abs(vMax.asphericity));
-            maxAberration = Math.max(maxAberration, Math.abs(vMax.aberration));
-
-            // Calculate max asphericity gradient
-            for (let i = 1; i < values.length; i++) {
-                const dr = values[i].r - values[i - 1].r;
-                const dAsph = Math.abs(values[i].asphericity - values[i - 1].asphericity);
-                const gradient = dAsph / dr;
-                if (gradient > maxAsphGradient) maxAsphGradient = gradient;
-            }
-
-            // Calculate best fit sphere
-            const sagAtMax = calculateSurfaceValues(maxHeight, selectedSurface).sag;
-            let bestFitSphere = 0;
-            if (minHeight === 0) {
-                bestFitSphere = window.SurfaceCalculations.calculateBestFitSphereRadius3Points(maxHeight, sagAtMax);
-            } else {
-                const sagAtMin = calculateSurfaceValues(minHeight, selectedSurface).sag;
-                const result = window.SurfaceCalculations.calculateBestFitSphereRadius4Points(minHeight, maxHeight, sagAtMin, sagAtMax);
-                bestFitSphere = result.R4;
-            }
-
-            // Calculate F/# (paraxial and working)
-            // Paraxial F/# = EFFL / aperture_diameter = (R/2) / (2*maxHeight) = R / (4*maxHeight)
-            const paraxialFNum = R !== 0 ? Math.abs(R / (4 * maxHeight)) : 0;
-
-            // Working F/# based on marginal ray angle after reflection
-            // For a mirror: reflected ray angle = 2 * arctan(surface_slope)
-            // Working F/# = 1 / (2 * sin(reflected_angle))
-            const edgeSlope = Math.abs(vMax.slope);
-            const surfaceNormalAngle = Math.atan(edgeSlope); // angle of surface normal
-            const reflectedRayAngle = 2 * surfaceNormalAngle; // law of reflection for collimated input
-            const workingFNum = reflectedRayAngle !== 0 ? 1 / (2 * Math.sin(reflectedRayAngle)) : 0;
-
-            return {
-                paraxialFNum: formatValue(paraxialFNum),
-                workingFNum: formatValue(workingFNum),
-                maxSag: formatValue(maxSag) + ' mm',
-                maxSlope: formatValue(maxSlope) + ' rad',
-                maxAngle: formatValue(maxAngle) + ' °',
-                maxAngleDMS: degreesToDMS(maxAngle),
-                maxAsphericity: formatValue(maxAsphericity) + ' mm',
-                maxAsphGradient: formatValue(maxAsphGradient) + ' /mm',
-                bestFitSphere: formatValue(bestFitSphere) + ' mm'
-            };
+        // Calculate metrics for display using shared utility function
+        const rawMetrics = calculateSurfaceMetrics(selectedSurface);
+        const metrics = {
+            paraxialFNum: formatValue(rawMetrics.paraxialFNum),
+            workingFNum: formatValue(rawMetrics.workingFNum),
+            maxSag: formatValue(rawMetrics.maxSag) + ' mm',
+            maxSlope: formatValue(rawMetrics.maxSlope) + ' rad',
+            maxAngle: formatValue(rawMetrics.maxAngle) + ' °',
+            maxAngleDMS: degreesToDMS(rawMetrics.maxAngle),
+            maxAsphericity: formatValue(rawMetrics.maxAsphericity) + ' mm',
+            maxAsphGradient: formatValue(rawMetrics.maxAsphGradient) + ' /mm',
+            bestFitSphere: formatValue(rawMetrics.bestFitSphere) + ' mm'
         };
-
-        const metrics = calculateMetrics();
 
         return h('div', {
             ref: propertiesPanelRef,
