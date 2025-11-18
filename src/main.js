@@ -498,21 +498,6 @@ function createMenu() {
         },
         { type: 'separator' },
         {
-          label: 'Export HTML Report...',
-          accelerator: 'CmdOrCtrl+E',
-          click: () => {
-            mainWindow.webContents.send('menu-action', 'export-html-report');
-          }
-        },
-        {
-          label: 'Export PDF Report...',
-          accelerator: 'CmdOrCtrl+P',
-          click: () => {
-            mainWindow.webContents.send('menu-action', 'export-pdf-report');
-          }
-        },
-        { type: 'separator' },
-        {
           label: 'Exit',
           accelerator: 'Alt+F4',
           click: () => {
@@ -560,19 +545,20 @@ function createMenu() {
       ]
     },
     {
-      label: 'Calculate',
+      label: 'Reports',
       submenu: [
         {
-          label: 'Recalculate All',
-          accelerator: 'F5',
+          label: 'Export HTML Report...',
+          accelerator: 'CmdOrCtrl+E',
           click: () => {
-            mainWindow.webContents.send('menu-action', 'recalculate');
+            mainWindow.webContents.send('menu-action', 'export-html-report');
           }
         },
         {
-          label: 'Export Results...',
+          label: 'Export PDF Report...',
+          accelerator: 'CmdOrCtrl+P',
           click: () => {
-            mainWindow.webContents.send('menu-action', 'export-results');
+            mainWindow.webContents.send('menu-action', 'export-pdf-report');
           }
         }
       ]

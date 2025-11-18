@@ -303,17 +303,21 @@ const OpticalSurfaceAnalyzer = () => {
     // ============================================
 
     const handleExportHTMLReport = async () => {
+        console.log('handleExportHTMLReport called, selectedSurface:', selectedSurface);
+
         if (!selectedSurface) {
-            alert('Please select a surface to generate a report');
+            alert('Please select a surface from the list to generate a report.\n\nClick on a surface in the left sidebar to select it.');
             return;
         }
 
         if (!window.electronAPI || !window.electronAPI.saveHTMLReport) {
-            alert('Report export not available');
+            alert('Report export not available - please check Electron API');
             return;
         }
 
         try {
+            console.log('Generating report for surface:', selectedSurface.name);
+
             // Generate plot data for the report
             const plotData = generateReportPlotData(selectedSurface);
 
@@ -334,7 +338,7 @@ const OpticalSurfaceAnalyzer = () => {
             const result = await window.electronAPI.saveHTMLReport(reportData.html, sanitizedName);
 
             if (result.success) {
-                alert('HTML report saved successfully!');
+                alert('✅ HTML report saved successfully!\n\nLocation: ' + result.filePath);
             } else if (!result.canceled) {
                 alert('Error saving report: ' + (result.error || 'Unknown error'));
             }
@@ -345,17 +349,21 @@ const OpticalSurfaceAnalyzer = () => {
     };
 
     const handleExportPDFReport = async () => {
+        console.log('handleExportPDFReport called, selectedSurface:', selectedSurface);
+
         if (!selectedSurface) {
-            alert('Please select a surface to generate a report');
+            alert('Please select a surface from the list to generate a report.\n\nClick on a surface in the left sidebar to select it.');
             return;
         }
 
         if (!window.electronAPI || !window.electronAPI.generatePDFReport) {
-            alert('PDF export not available');
+            alert('PDF export not available - please check Electron API');
             return;
         }
 
         try {
+            console.log('Generating PDF report for surface:', selectedSurface.name);
+
             // Generate plot data for the report
             const plotData = generateReportPlotData(selectedSurface);
 
@@ -376,7 +384,7 @@ const OpticalSurfaceAnalyzer = () => {
             const result = await window.electronAPI.generatePDFReport(reportData.html, sanitizedName);
 
             if (result.success) {
-                alert('PDF report saved successfully!');
+                alert('✅ PDF report saved successfully!\n\nLocation: ' + result.filePath);
             } else if (!result.canceled) {
                 alert('Error saving PDF: ' + (result.error || 'Unknown error'));
             }
@@ -1061,30 +1069,34 @@ const OpticalSurfaceAnalyzer = () => {
                         }
                     }, 'Convert'),
                     h('button', {
+                        onClick: handleExportHTMLReport,
                         style: {
                             width: '100%',
                             padding: '8px',
                             marginBottom: '6px',
-                            backgroundColor: c.hover,
-                            color: c.text,
-                            border: `1px solid ${c.border}`,
+                            backgroundColor: c.accent,
+                            color: 'white',
+                            border: `1px solid ${c.accent}`,
                             borderRadius: '4px',
                             cursor: 'pointer',
-                            fontSize: '13px'
+                            fontSize: '13px',
+                            fontWeight: '500'
                         }
-                    }, 'Recalculate'),
+                    }, '📄 Generate HTML Report'),
                     h('button', {
+                        onClick: handleExportPDFReport,
                         style: {
                             width: '100%',
                             padding: '8px',
-                            backgroundColor: c.hover,
-                            color: c.text,
-                            border: `1px solid ${c.border}`,
+                            backgroundColor: c.accent,
+                            color: 'white',
+                            border: `1px solid ${c.accent}`,
                             borderRadius: '4px',
                             cursor: 'pointer',
-                            fontSize: '13px'
+                            fontSize: '13px',
+                            fontWeight: '500'
                         }
-                    }, 'Export Data')
+                    }, '📑 Generate PDF Report')
                 )
             )
         );
