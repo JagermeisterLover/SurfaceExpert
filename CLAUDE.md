@@ -60,9 +60,10 @@ SurfaceExpert/
     │       └── SummaryView.js
     ├── constants/                 # Application constants (1 file)
     │   └── surfaceTypes.js        # Surface type and parameter definitions
-    └── utils/                     # Utility functions (2 files)
+    └── utils/                     # Utility functions (3 files)
         ├── calculations.js        # Surface calculations with BFS caching
-        └── formatters.js          # Value formatting utilities
+        ├── formatters.js          # Value formatting utilities
+        └── reportGenerator.js     # HTML/PDF report generation
 ```
 
 ## Architecture Deep Dive
@@ -481,9 +482,10 @@ surfaces.push(newSurface);               // ✗ Bad
   - `Icons.js`: SVG icon library
 - **constants/**: Application configuration and data (1 file)
   - `surfaceTypes.js`: Universal and surface-specific parameter definitions
-- **utils/**: Pure utility functions (2 files)
+- **utils/**: Pure utility functions (3 files)
   - `calculations.js`: Surface calculations with BFS caching
   - `formatters.js`: Value formatting utilities
+  - `reportGenerator.js`: HTML/PDF report generation with embedded plots
 - **calculationsWrapper.js:** Pure mathematical functions for all surface types (~745 lines)
 - **zmxParser.js:** Zemax ZMX file parser and converter (~341 lines)
 - **calculations.py:** Python reference implementation for validation (~347 lines)
@@ -652,9 +654,18 @@ Current cache: Best-fit sphere parameters (Map with JSON key)
 
 ## Recent Development History
 
-### Latest Updates (2025-11-17/18)
+### Latest Updates (2025-11-18)
 
-1. **Parameter Architecture Refactoring:**
+1. **Report Generation System:**
+   - Added comprehensive HTML report export with embedded plots and data
+   - Added PDF report export using Electron's built-in printToPDF
+   - Reports include: surface parameters, summary metrics, 3D/2D/cross-section plots, calculated data table
+   - Professional styling with gradient metric cards and responsive layout
+   - Accessible via File → Export HTML Report (Ctrl+E) or Export PDF Report (Ctrl+P)
+   - Uses Plotly.toImage() to export plots as high-resolution PNG images
+   - Self-contained HTML files with base64-encoded images
+
+2. **Parameter Architecture Refactoring:**
    - Separated universal parameters (Radius, Min Height, Max Height, Step) from surface-specific parameters
    - Added Step parameter to all surface types for grid generation control
    - Improved UI organization with dedicated Universal parameters section
@@ -726,9 +737,9 @@ Current cache: Best-fit sphere parameters (Map with JSON key)
    - Ray tracing integration
 
 3. **UI Enhancements:**
-   - Plot export (PNG, SVG)
-   - Print/report generation
+   - ✅ ~~Plot export and report generation~~ **COMPLETED (Nov 2025)**
    - Keyboard navigation improvements
+   - Enhanced data export options (CSV, Excel)
 
 4. **Code Quality:**
    - ✅ ~~Split renderer.js into separate component files~~ **COMPLETED (Nov 2025)**
@@ -815,6 +826,7 @@ Current cache: Best-fit sphere parameters (Map with JSON key)
   - **Utilities:** `src/utils/calculations.js` (surface value calculator with BFS caching)
   - **Python Reference:** `src/calculations.py` (validation/testing)
 - **Formatting:** `src/utils/formatters.js` (formatValue, degreesToDMS)
+- **Report Generation:** `src/utils/reportGenerator.js` (HTML/PDF export with embedded plots)
 - **ZMX Import:** `src/zmxParser.js` + `src/components/dialogs/ZMXImportDialog.js`
 - **Surface Fitting:** `src/surfaceFitter.py` (requires `requirements.txt` dependencies)
 - **Menu/IPC:** `src/main.js` + `src/preload.js`
@@ -834,6 +846,8 @@ Current cache: Best-fit sphere parameters (Map with JSON key)
 | F5 | Recalculate All |
 | Ctrl+S | Save (not implemented) |
 | Ctrl+Shift+S | Save As (not implemented) |
+| Ctrl+E | Export HTML Report |
+| Ctrl+P | Export PDF Report |
 | Ctrl+, | Settings |
 | Ctrl+Shift+I | Toggle DevTools |
 

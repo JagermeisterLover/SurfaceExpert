@@ -18,6 +18,7 @@ import { surfaceTypes, universalParameters, sampleSurfaces, colorscales, colors 
 // Utilities
 import { formatValue, degreesToDMS } from './utils/formatters.js';
 import { calculateSurfaceValues, calculateSagOnly, getBestFitSphereParams, calculateSurfaceMetrics } from './utils/calculations.js';
+import { generateReportData } from './utils/reportGenerator.js';
 
 // UI Components
 import { PropertySection } from './components/ui/PropertySection.js';
@@ -76,6 +77,12 @@ const OpticalSurfaceAnalyzer = () => {
     const plotRef = useRef(null);
     const propertiesPanelRef = useRef(null);
     const scrollPositionRef = useRef(0);
+    const selectedSurfaceRef = useRef(null);  // Ref to always access latest selectedSurface in closures
+
+    // Update ref whenever selectedSurface changes
+    useEffect(() => {
+        selectedSurfaceRef.current = selectedSurface;
+    }, [selectedSurface]);
 
     // ============================================
     // DATA LOADING
@@ -201,6 +208,12 @@ const OpticalSurfaceAnalyzer = () => {
             case 'import-zmx':
                 await handleImportZMX();
                 break;
+            case 'export-html-report':
+                await handleExportHTMLReport();
+                break;
+            case 'export-pdf-report':
+                await handleExportPDFReport();
+                break;
             // Add more handlers as needed
         }
     };
@@ -289,6 +302,148 @@ const OpticalSurfaceAnalyzer = () => {
         if (newSurfaces.length > 0) {
             setSelectedSurface(newSurfaces[0]);
         }
+    };
+
+    // ============================================
+    // REPORT GENERATION
+    // ============================================
+
+    const handleExportHTMLReport = async () => {
+        // Use ref to access latest value (important for menu actions)
+        const surface = selectedSurfaceRef.current;
+        console.log('handleExportHTMLReport called, surface:', surface);
+
+        if (!surface) {
+            alert('Please select a surface from the list to generate a report.\n\nClick on a surface in the left sidebar to select it.');
+            return;
+        }
+
+        if (!window.electronAPI || !window.electronAPI.saveHTMLReport) {
+            alert('Report export not available - please check Electron API');
+            return;
+        }
+
+        try {
+            console.log('Generating report for surface:', surface.name);
+
+            // Generate plot data for the report
+            const plotData = generateReportPlotData(surface);
+
+            // Calculate summary metrics
+            const summaryMetrics = calculateSurfaceMetrics(surface);
+
+            // Generate report data with plot images
+            const reportData = await generateReportData(
+                surface,
+                plotData,
+                summaryMetrics
+            );
+
+            // Sanitize surface name for filename
+            const sanitizedName = surface.name.replace(/[<>:"/\\|?*]/g, '_');
+
+            // Save HTML report via Electron dialog
+            const result = await window.electronAPI.saveHTMLReport(reportData.html, sanitizedName);
+
+            // Only show error alerts, success opens folder automatically
+            if (!result.canceled && !result.success) {
+                alert('Error saving report: ' + (result.error || 'Unknown error'));
+            }
+        } catch (error) {
+            alert('Error generating report: ' + error.message);
+            console.error('Report generation error:', error);
+        }
+    };
+
+    const handleExportPDFReport = async () => {
+        // Use ref to access latest value (important for menu actions)
+        const surface = selectedSurfaceRef.current;
+        console.log('handleExportPDFReport called, surface:', surface);
+
+        if (!surface) {
+            alert('Please select a surface from the list to generate a report.\n\nClick on a surface in the left sidebar to select it.');
+            return;
+        }
+
+        if (!window.electronAPI || !window.electronAPI.generatePDFReport) {
+            alert('PDF export not available - please check Electron API');
+            return;
+        }
+
+        try {
+            console.log('Generating PDF report for surface:', surface.name);
+
+            // Generate plot data for the report
+            const plotData = generateReportPlotData(surface);
+
+            // Calculate summary metrics
+            const summaryMetrics = calculateSurfaceMetrics(surface);
+
+            // Generate report data with plot images
+            const reportData = await generateReportData(
+                surface,
+                plotData,
+                summaryMetrics
+            );
+
+            // Sanitize surface name for filename
+            const sanitizedName = surface.name.replace(/[<>:"/\\|?*]/g, '_');
+
+            // Generate and save PDF report via Electron
+            const result = await window.electronAPI.generatePDFReport(reportData.html, sanitizedName);
+
+            // Only show error alerts, success opens folder automatically
+            if (!result.canceled && !result.success) {
+                alert('Error saving PDF: ' + (result.error || 'Unknown error'));
+            }
+        } catch (error) {
+            alert('Error generating PDF: ' + error.message);
+            console.error('PDF generation error:', error);
+        }
+    };
+
+    // Helper function to generate plot data for reports
+    const generateReportPlotData = (surface) => {
+        const minHeight = parseFloat(surface.parameters['Min Height']) || 0;
+        const maxHeight = parseFloat(surface.parameters['Max Height']) || 25;
+        const step = parseFloat(surface.parameters['Step']) || 1;
+
+        const rValues = [];
+        const sagValues = [];
+        const slopeValues = [];
+        const asphericityValues = [];
+        const aberrationValues = [];
+        const angleValues = [];
+
+        for (let r = minHeight; r <= maxHeight; r += step) {
+            // For non-rotationally symmetric surfaces, use scan angle
+            let values;
+            if (surface.type === 'Irregular' || surface.type === 'Zernike') {
+                const scanAngle = parseFloat(surface.parameters['Scan Angle']) || 0;
+                const scanAngleRad = scanAngle * Math.PI / 180;
+                const x = r * Math.cos(scanAngleRad);
+                const y = r * Math.sin(scanAngleRad);
+                values = calculateSurfaceValues(r, surface, x, y);
+            } else {
+                values = calculateSurfaceValues(r, surface);
+            }
+
+            rValues.push(r);
+            sagValues.push(values.sag);
+            slopeValues.push(values.slope);
+            asphericityValues.push(values.asphericity);
+            aberrationValues.push(values.aberration);
+            angleValues.push(values.angle);
+        }
+
+        return {
+            rValues,
+            sagValues,
+            slopeValues,
+            asphericityValues,
+            aberrationValues,
+            angleValues
+        };
     };
 
     // ============================================
@@ -922,30 +1077,34 @@ const OpticalSurfaceAnalyzer = () => {
                         }
                     }, 'Convert'),
                     h('button', {
+                        onClick: handleExportHTMLReport,
                         style: {
                             width: '100%',
                             padding: '8px',
                             marginBottom: '6px',
-                            backgroundColor: c.hover,
-                            color: c.text,
-                            border: `1px solid ${c.border}`,
+                            backgroundColor: c.accent,
+                            color: 'white',
+                            border: `1px solid ${c.accent}`,
                             borderRadius: '4px',
                             cursor: 'pointer',
-                            fontSize: '13px'
+                            fontSize: '13px',
+                            fontWeight: '500'
                         }
-                    }, 'Recalculate'),
+                    }, '📄 Generate HTML Report'),
                     h('button', {
+                        onClick: handleExportPDFReport,
                         style: {
                             width: '100%',
                             padding: '8px',
-                            backgroundColor: c.hover,
-                            color: c.text,
-                            border: `1px solid ${c.border}`,
+                            backgroundColor: c.accent,
+                            color: 'white',
+                            border: `1px solid ${c.accent}`,
                             borderRadius: '4px',
                             cursor: 'pointer',
-                            fontSize: '13px'
+                            fontSize: '13px',
+                            fontWeight: '500'
                         }
-                    }, 'Export Data')
+                    }, '📑 Generate PDF Report')
                 )
             )
         );
