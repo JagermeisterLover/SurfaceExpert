@@ -78,8 +78,14 @@ export const SummaryView = ({ selectedSurface, c }) => {
     const dataTable = generateDataTable();
 
     // Calculate max values from raw (unformatted) data, filtering out NaN/Infinity
+    // For sag: find the value with maximum absolute value (preserving sign)
     const sagValues = dataTable.map(row => row.rawSag).filter(v => isFinite(v));
-    const maxSag = sagValues.length > 0 ? Math.max(...sagValues) : 0;
+    let maxSag = 0;
+    for (const sag of sagValues) {
+        if (Math.abs(sag) > Math.abs(maxSag)) {
+            maxSag = sag;
+        }
+    }
 
     const slopeValues = dataTable.map(row => Math.abs(row.rawSlope)).filter(v => isFinite(v));
     const maxSlope = slopeValues.length > 0 ? Math.max(...slopeValues) : 0;
