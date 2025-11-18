@@ -105,11 +105,22 @@ const OpticalSurfaceAnalyzer = () => {
         if (window.electronAPI && window.electronAPI.loadFolders) {
             const result = await window.electronAPI.loadFolders();
             if (result.success) {
-                setFolders(result.folders);
+                // Ensure all surfaces have Step parameter for backward compatibility
+                const foldersWithStep = result.folders.map(folder => ({
+                    ...folder,
+                    surfaces: folder.surfaces.map(surface => ({
+                        ...surface,
+                        parameters: {
+                            ...surface.parameters,
+                            'Step': surface.parameters['Step'] || '1'
+                        }
+                    }))
+                }));
+                setFolders(foldersWithStep);
                 // Select first surface if available
-                if (result.folders.length > 0 && result.folders[0].surfaces.length > 0) {
-                    setSelectedSurface(result.folders[0].surfaces[0]);
-                    setSelectedFolder(result.folders[0]);
+                if (foldersWithStep.length > 0 && foldersWithStep[0].surfaces.length > 0) {
+                    setSelectedSurface(foldersWithStep[0].surfaces[0]);
+                    setSelectedFolder(foldersWithStep[0]);
                 }
             }
         } else {
@@ -118,10 +129,16 @@ const OpticalSurfaceAnalyzer = () => {
                 id: 'default',
                 name: 'My Surfaces',
                 expanded: true,
-                surfaces: sampleSurfaces
+                surfaces: sampleSurfaces.map(surface => ({
+                    ...surface,
+                    parameters: {
+                        ...surface.parameters,
+                        'Step': surface.parameters['Step'] || '1'
+                    }
+                }))
             };
             setFolders([defaultFolder]);
-            setSelectedSurface(sampleSurfaces[0]);
+            setSelectedSurface(defaultFolder.surfaces[0]);
             setSelectedFolder(defaultFolder);
         }
     };
@@ -132,6 +149,10 @@ const OpticalSurfaceAnalyzer = () => {
         for (const folder of folders) {
             const updated = folder.surfaces.find(s => s.id === selectedSurface.id);
             if (updated) {
+                // Ensure Step parameter exists for backward compatibility
+                if (updated.parameters['Step'] === undefined) {
+                    updated.parameters['Step'] = '1';
+                }
                 setSelectedSurface(updated);
                 break;
             }
@@ -830,7 +851,7 @@ const OpticalSurfaceAnalyzer = () => {
 
                     surfaceTypes[selectedSurface.type].filter(param => {
                         // Filter out universal parameters
-                        if (['Radius', 'Min Height', 'Max Height'].includes(param)) return false;
+                        if (['Radius', 'Min Height', 'Max Height', 'Step'].includes(param)) return false;
 
                         // Filter out scan & coordinate parameters (they have their own box)
                         if (['Scan Angle', 'X Coordinate', 'Y Coordinate'].includes(param)) return false;
