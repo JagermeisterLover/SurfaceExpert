@@ -24,20 +24,21 @@ SurfaceExpert/
 ├── package-lock.json              # Locked dependency versions
 ├── requirements.txt               # Python dependencies for surface fitter
 ├── test_irregular.html            # Test suite for Irregular surface calculations
+├── test_precision.js              # Precision testing for surface calculations
+├── test_zemax_comparison.js       # Zemax comparison tests with exact parameters
 ├── various code for claude/
 │   └── SurfaceCalculations.cs     # C# reference implementation
 └── src/
     ├── main.js                    # Electron main process (~549 lines)
     ├── preload.js                 # Context isolation bridge (~14 lines)
-    ├── renderer.js                # React UI application - LEGACY (~3435 lines)
-    ├── renderer-modular.js        # Modular React application - CURRENT (~1358 lines)
-    ├── calculationsWrapper.js     # Surface calculation engine (~555 lines)
+    ├── renderer-modular.js        # Modular React application (~1477 lines)
+    ├── calculationsWrapper.js     # Surface calculation engine (~745 lines)
     ├── zmxParser.js               # Zemax ZMX file parser (~341 lines)
     ├── calculations.py            # Python reference implementation (~347 lines)
     ├── surfaceFitter.py           # Surface equation fitter using lmfit (~294 lines)
     ├── index.html                 # Entry point HTML template (loads renderer-modular.js)
     ├── styles.css                 # Global CSS styles (~49 lines)
-    ├── components/                # React component modules (14 files)
+    ├── components/                # React component modules (15 files)
     │   ├── Icons.js               # SVG icon components
     │   ├── dialogs/               # Dialog components (6 files)
     │   │   ├── ContextMenu.js
@@ -50,14 +51,15 @@ SurfaceExpert/
     │   │   ├── Plot2DContour.js
     │   │   ├── Plot3D.js
     │   │   └── PlotCrossSection.js
-    │   ├── ui/                    # Reusable UI components (2 files)
+    │   ├── ui/                    # Reusable UI components (3 files)
+    │   │   ├── DebouncedInput.js  # Debounced input to prevent freezing
     │   │   ├── PropertyRow.js
     │   │   └── PropertySection.js
     │   └── views/                 # View components (2 files)
     │       ├── DataView.js
     │       └── SummaryView.js
     ├── constants/                 # Application constants (1 file)
-    │   └── surfaceTypes.js
+    │   └── surfaceTypes.js        # Surface type and parameter definitions
     └── utils/                     # Utility functions (2 files)
         ├── calculations.js        # Surface calculations with BFS caching
         └── formatters.js          # Value formatting utilities
@@ -80,11 +82,10 @@ SurfaceExpert/
 
 3. **Renderer Process** (`src/renderer-modular.js`):
    - React application (no JSX, uses `React.createElement`)
-   - Modular ES6 architecture with 17 extracted modules
+   - Modular ES6 architecture with 18 extracted modules
    - State management via React hooks (`useState`, `useEffect`)
    - All UI components and business logic
    - Calculation orchestration
-   - Legacy monolithic version (`src/renderer.js`) kept for reference
 
 ### Data Flow
 
@@ -104,7 +105,7 @@ Plot Update (components/plots/*.js → Plotly.newPlot)
 
 ### Modular Architecture (Nov 2025 Refactoring)
 
-The application was refactored from a 3,435-line monolithic `renderer.js` into a modular ES6 architecture:
+The application was refactored from a 3,435-line monolithic `renderer.js` into a modular ES6 architecture. The legacy monolithic version has been removed.
 
 **Key Benefits:**
 - **Maintainability**: Each component has a single responsibility
@@ -114,9 +115,9 @@ The application was refactored from a 3,435-line monolithic `renderer.js` into a
 - **Performance**: ES6 modules enable better tree-shaking and code splitting
 
 **Module Organization:**
-1. **Constants** (`src/constants/`): Surface type definitions, sample data, colorscales
+1. **Constants** (`src/constants/`): Surface type and parameter definitions, sample data, colorscales
 2. **Utilities** (`src/utils/`): Pure functions for calculations and formatting
-3. **UI Components** (`src/components/ui/`): Reusable UI building blocks
+3. **UI Components** (`src/components/ui/`): Reusable UI building blocks (DebouncedInput, PropertyRow, PropertySection)
 4. **View Components** (`src/components/views/`): Data presentation components
 5. **Dialog Components** (`src/components/dialogs/`): Modal dialogs and context menus
 6. **Plot Components** (`src/components/plots/`): Plotly visualization generators
@@ -145,47 +146,71 @@ import { create3DPlot } from './components/plots/Plot3D.js';
 
 ## Surface Types & Mathematical Models
 
-The application supports 8 surface types, each with unique mathematical formulations:
+The application supports 8 surface types, each with unique mathematical formulations.
+
+### Parameter Organization
+
+Parameters are organized into two categories:
+
+1. **Universal Parameters** (common across surface types):
+   - **Radius**: Base radius of curvature (mm) - all types except Poly which uses A1
+   - **Min Height**: Inner radius of annular region (mm)
+   - **Max Height**: Outer radius (mm)
+   - **Step**: Calculation step size for grid generation
+
+2. **Surface-Specific Parameters**: Unique to each surface type (conic constant, polynomial coefficients, aberrations, etc.)
+
+This separation improves UI organization and makes parameter management more intuitive.
+
+### Surface Type Definitions
 
 1. **Sphere**
-   - Parameters: Radius, Min Height, Max Height
+   - Universal: Radius, Min Height, Max Height, Step
+   - Surface-Specific: (none)
    - Simple spherical surface (R > 0 = concave, R < 0 = convex)
    - Uses exact formula: z = R - sqrt(R² - r²)
 
 2. **Even Asphere**
-   - Parameters: Radius, Conic Constant (k), A4-A20 (even powers)
+   - Universal: Radius, Min Height, Max Height, Step
+   - Surface-Specific: Conic Constant (k), A4-A20 (even powers)
    - Standard aspheric surface with even polynomial terms
    - Classification: Sphere (k=0), Parabola (k=-1), Ellipsoid (-1<k<0), Hyperbola (k<-1), Oblate Ellipsoid (k>0)
 
 3. **Odd Asphere**
-   - Parameters: Radius, Conic Constant, A3-A20 (all powers)
+   - Universal: Radius, Min Height, Max Height, Step
+   - Surface-Specific: Conic Constant, A3-A20 (all powers)
    - Aspheric surface with both odd and even polynomial terms
 
 4. **Zernike**
-   - Parameters: Radius, Conic Constant, Extrapolate, Norm Radius, Number of Terms, A2-A16, Decenter X/Y, Z1-Z37, Scan Angle, X/Y Coordinate, Min/Max Height
+   - Universal: Radius, Min Height, Max Height, Step
+   - Surface-Specific: Conic Constant, Extrapolate, Norm Radius, Number of Terms, A2-A16, Decenter X/Y, Z1-Z37, Scan Angle, X/Y Coordinate
    - Zernike Standard Sag surface (FZERNSAG in Zemax)
    - Combines base aspheric surface with Zernike polynomial aberrations
    - Uses standard (non-normalized) Zernike polynomials
    - Supports up to 37 Zernike terms
 
 5. **Irregular**
-   - Parameters: Radius, Conic Constant, Decenter X/Y, Tilt X/Y, Spherical, Astigmatism, Coma, Angle, Scan Angle, X/Y Coordinate, Min/Max Height
+   - Universal: Radius, Min Height, Max Height, Step
+   - Surface-Specific: Conic Constant, Decenter X/Y, Tilt X/Y, Spherical, Astigmatism, Coma, Angle, Scan Angle, X/Y Coordinate
    - IRREGULA surface type from Zemax
    - Combines base conic surface with coordinate transformations and Zernike-like aberrations
    - Tilt convention matches Zemax (negative signs applied internally)
 
 6. **Opal Un U**
-   - Parameters: Radius, e2, H, A2-A12, Min Height, Max Height
+   - Universal: Radius, Min Height, Max Height, Step
+   - Surface-Specific: e2, H, A2-A12
    - Iterative solution for specialized optical surfaces
    - Uses convergence tolerance 1e-15, max 1M iterations
 
 7. **Opal Un Z**
-   - Parameters: Radius, e2, H, A3-A13, Min Height, Max Height
+   - Universal: Radius, Min Height, Max Height, Step
+   - Surface-Specific: e2, H, A3-A13
    - Newton-Raphson iterative solver
    - Uses convergence tolerance 1e-12, max 1K iterations
 
 8. **Poly**
-   - Parameters: A1-A13, Min Height, Max Height
+   - Universal: Min Height, Max Height, Step (Note: uses A1 instead of Radius)
+   - Surface-Specific: A1-A13
    - Pure polynomial surface (no base radius)
    - Newton-Raphson iterative solver
 
@@ -334,9 +359,16 @@ Electron Builder targets in `package.json`:
 
 1. **Define parameters** in `src/constants/surfaceTypes.js`:
    ```javascript
+   // Add universal parameters
+   export const universalParameters = {
+     ...
+     'New Surface': ['Radius', 'Min Height', 'Max Height', 'Step']
+   };
+
+   // Add surface-specific parameters
    export const surfaceTypes = {
      ...
-     'New Surface': ['Radius', 'Param1', 'Param2', 'Min Height', 'Max Height']
+     'New Surface': ['Param1', 'Param2', 'Param3']
    };
    ```
 
@@ -437,19 +469,22 @@ surfaces.push(newSurface);               // ✗ Bad
 
 - **main.js:** Electron-specific, window management, file I/O handlers (~549 lines)
 - **preload.js:** Minimal security bridge, no calculations (~14 lines)
-- **renderer-modular.js:** Main React application with ES6 imports (~1358 lines) - **CURRENT**
-- **renderer.js:** Legacy monolithic version (~3435 lines) - kept for reference
-- **components/**: Modular React components organized by type (17 files)
+- **renderer-modular.js:** Main React application with ES6 imports (~1477 lines)
+- **components/**: Modular React components organized by type (15 files)
   - `dialogs/`: Modal dialogs and context menus (6 files)
   - `plots/`: Plotly visualization generators (3 files)
-  - `ui/`: Reusable UI building blocks (2 files)
+  - `ui/`: Reusable UI building blocks (3 files)
+    - `DebouncedInput.js`: Input component that prevents UI freezing during typing
+    - `PropertyRow.js`: Single parameter row display
+    - `PropertySection.js`: Grouped parameter section
   - `views/`: Data presentation components (2 files)
   - `Icons.js`: SVG icon library
 - **constants/**: Application configuration and data (1 file)
+  - `surfaceTypes.js`: Universal and surface-specific parameter definitions
 - **utils/**: Pure utility functions (2 files)
   - `calculations.js`: Surface calculations with BFS caching
   - `formatters.js`: Value formatting utilities
-- **calculationsWrapper.js:** Pure mathematical functions for all surface types (~555 lines)
+- **calculationsWrapper.js:** Pure mathematical functions for all surface types (~745 lines)
 - **zmxParser.js:** Zemax ZMX file parser and converter (~341 lines)
 - **calculations.py:** Python reference implementation for validation (~347 lines)
 - **surfaceFitter.py:** Surface equation fitter using lmfit library (~294 lines)
@@ -617,6 +652,35 @@ Current cache: Best-fit sphere parameters (Map with JSON key)
 
 ## Recent Development History
 
+### Latest Updates (2025-11-17/18)
+
+1. **Parameter Architecture Refactoring:**
+   - Separated universal parameters (Radius, Min Height, Max Height, Step) from surface-specific parameters
+   - Added Step parameter to all surface types for grid generation control
+   - Improved UI organization with dedicated Universal parameters section
+
+2. **Input UX Improvements:**
+   - Created DebouncedInput component to prevent UI freezing during typing
+   - Added Enter key navigation to move between parameter inputs
+   - Implemented scroll position preservation when editing parameters
+   - Fixed input interruption issues with focused state management
+
+3. **Calculation Precision:**
+   - Enhanced numerical precision in asphere calculations
+   - Fixed max sag calculations to handle absolute values correctly
+   - Improved NaN/Infinity handling in summary statistics
+   - Created test suite for precision validation (`test_precision.js`)
+
+4. **Zemax Compatibility:**
+   - Fixed EVENASPH parameter mapping in ZMX parser
+   - Added Zemax comparison test with exact user parameters (`test_zemax_comparison.js`)
+   - Improved Opal Un U slope derivative calculations
+
+5. **Code Cleanup:**
+   - Removed legacy `renderer.js` (3435 lines)
+   - Extracted metrics calculation to shared utility function
+   - Improved code organization and maintainability
+
 ### Implemented Features (2025-11)
 
 1. **ZMX File Import:**
@@ -645,6 +709,7 @@ Current cache: Best-fit sphere parameters (Map with JSON key)
 5. **Bug Fixes:**
    - Fixed Irregular surface tilt sign convention to match Zemax
    - Fixed Zernike polynomial equations to use standard formulas
+   - Fixed F-number calculations and input validation
    - Removed shape classification feature (deprecated)
 
 ### Future Development Roadmap
@@ -675,10 +740,10 @@ Current cache: Best-fit sphere parameters (Map with JSON key)
 
 1. **✅ RESOLVED - Code organization (Nov 2025):**
    - ~~renderer.js 3435 lines - MUST SPLIT~~ → **COMPLETED!**
-   - Successfully refactored into 17 modular ES6 files
-   - New structure: `components/` (14 files), `utils/` (2 files), `constants/` (1 file)
-   - Main file reduced from 3435 → 1358 lines (60% reduction)
-   - Legacy `renderer.js` kept for reference
+   - Successfully refactored into 18 modular ES6 files
+   - New structure: `components/` (15 files), `utils/` (2 files), `constants/` (1 file)
+   - Main file reduced from 3435 → 1477 lines (57% reduction)
+   - Legacy `renderer.js` removed after successful migration
    - See "Modular Architecture" section above for details
 
 2. **Build modernization:**
@@ -900,12 +965,15 @@ Supported algorithms from lmfit:
 
 ---
 
-**Last Updated:** 2025-11-16
-**Version:** 2.1.0 (Modular Architecture Release)
+**Last Updated:** 2025-11-18
+**Version:** 2.2.0 (Parameter Architecture & UX Improvements)
 **Major Changes:**
-- Refactored from monolithic 3,435-line renderer.js to modular ES6 architecture
-- 17 extracted modules organized in components/, utils/, constants/
-- 60% reduction in main file size (3435 → 1358 lines)
-- Improved maintainability, testability, and code organization
+- Separated universal and surface-specific parameters for better organization
+- Added Step parameter to all surface types
+- Created DebouncedInput component to prevent UI freezing
+- Removed legacy renderer.js (3435 lines)
+- Enhanced calculation precision and Zemax compatibility
+- Added comprehensive test suites (test_precision.js, test_zemax_comparison.js)
+- 18 modular ES6 files (components/, utils/, constants/)
 
 **Maintained by:** AI Assistants working with this codebase
