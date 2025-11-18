@@ -13,7 +13,7 @@ const getSurfaceEquation = (surfaceType) => {
         'Sphere': 'z = R - \\sqrt{R^2 - r^2}',
         'Even Asphere': 'z = \\frac{cr^2}{1 + \\sqrt{1-(1+k)c^2r^2}} + \\sum_{i=2}^{10} A_{2i}r^{2i}',
         'Odd Asphere': 'z = \\frac{cr^2}{1 + \\sqrt{1-(1+k)c^2r^2}} + \\sum_{i=1}^{10} A_i r^i',
-        'Zernike': 'z = \\frac{cr^2}{1 + \\sqrt{1-(1+k)c^2r^2}} + \\sum_{i=1}^{8} \\alpha_i r^{2i} + \\sum_{i=1}^{N} A_i Z_i(\\rho, \\phi)',
+        'Zernike': 'z = \\frac{cr^2}{1 + \\sqrt{1-(1+k)c^2r^2}} + \\sum_{i=1}^{8} A_{2i} r^{2i} + \\sum_{i=1}^{N} Z_i \\psi_i(\\rho, \\phi)',
         'Irregular': 'z = \\frac{cr^2}{1+\\sqrt{1-(1+k)c^2r^2}} + Z_s\\rho^4 + Z_a\\rho_y\'^2 + Z_c\\rho^2\\rho_y\'',
         'Opal Un U': 'z = \\frac{y^2 + (1-e^2)z^2}{2R} + A_2\\left(\\frac{y^2}{H^2}\\right)^2 + A_3\\left(\\frac{y^2}{H^2}\\right)^3 + \\cdots',
         'Opal Un Z': 'z = \\frac{y^2 + (1-e^2)z^2}{2R} + A_3\\left(\\frac{z}{H}\\right)^3 + A_4\\left(\\frac{z}{H}\\right)^4 + A_5\\left(\\frac{z}{H}\\right)^5 + \\cdots',
@@ -67,7 +67,7 @@ const getZernikeTermsTable = () => {
     ];
 
     let html = '<div class="zernike-table" style="margin: 12px 0;"><div class="section-title" style="font-size: 11pt; margin-bottom: 8px;">Zernike Polynomial Terms</div>';
-    html += '<table class="params-table"><tr><th>Term</th><th>Z<sub>i</sub>(ρ, φ)</th></tr>';
+    html += '<table class="params-table"><tr><th>Term i</th><th>ψ<sub>i</sub>(ρ, φ)</th></tr>';
 
     for (const [num, formula] of terms) {
         html += `<tr><td style="text-align: center;">${num}</td><td>$${formula}$</td></tr>`;
