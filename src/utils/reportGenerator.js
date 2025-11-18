@@ -13,13 +13,82 @@ const getSurfaceEquation = (surfaceType) => {
         'Sphere': 'z = R - \\sqrt{R^2 - r^2}',
         'Even Asphere': 'z = \\frac{cr^2}{1 + \\sqrt{1-(1+k)c^2r^2}} + \\sum_{i=2}^{10} A_{2i}r^{2i}',
         'Odd Asphere': 'z = \\frac{cr^2}{1 + \\sqrt{1-(1+k)c^2r^2}} + \\sum_{i=1}^{10} A_i r^i',
-        'Zernike': 'z = z_{base} + \\sum_{j=1}^{37} Z_j \\cdot Zernike_j(\\rho, \\theta)',
-        'Irregular': 'z = z_{base} + Spherical + Astigmatism + Coma',
-        'Opal Un U': 'r^2 = 2z(R-z) + e_2 z^2 + \\sum_{i=2}^{12} A_i z^i',
-        'Opal Un Z': 'z = \\sum_{i=1}^{13} A_i r^i',
-        'Poly': 'z = \\sum_{i=1}^{13} A_i r^i'
+        'Zernike': 'z = \\frac{cr^2}{1 + \\sqrt{1-(1+k)c^2r^2}} + \\sum_{i=1}^{8} \\alpha_i r^{2i} + \\sum_{i=1}^{N} A_i Z_i(\\rho, \\phi)',
+        'Irregular': 'z = \\frac{cr^2}{1+\\sqrt{1-(1+k)c^2r^2}} + Z_s\\rho^4 + Z_a\\rho_y\'^2 + Z_c\\rho^2\\rho_y\'',
+        'Opal Un U': 'z = \\frac{y^2 + (1-e^2)z^2}{2R} + A_2\\left(\\frac{y^2}{H^2}\\right)^2 + A_3\\left(\\frac{y^2}{H^2}\\right)^3 + \\cdots',
+        'Opal Un Z': 'z = \\frac{y^2 + (1-e^2)z^2}{2R} + A_3\\left(\\frac{z}{H}\\right)^3 + A_4\\left(\\frac{z}{H}\\right)^4 + A_5\\left(\\frac{z}{H}\\right)^5 + \\cdots',
+        'Poly': 'y^2 = A_1z + A_2z^2 + A_3z^3 + A_4z^4 + \\cdots \\quad (A_1 = 2R,\\, A_2 = e^2 - 1)'
     };
     return equations[surfaceType] || '';
+};
+
+/**
+ * Get Zernike polynomial terms table
+ */
+const getZernikeTermsTable = () => {
+    const terms = [
+        ['1', '1'],
+        ['2', '\\rho\\cos\\phi'],
+        ['3', '\\rho\\sin\\phi'],
+        ['4', '2\\rho^2 - 1'],
+        ['5', '\\rho^2\\cos2\\phi'],
+        ['6', '\\rho^2\\sin2\\phi'],
+        ['7', '(3\\rho^2 - 2)\\rho\\cos\\phi'],
+        ['8', '(3\\rho^2 - 2)\\rho\\sin\\phi'],
+        ['9', '6\\rho^4 - 6\\rho^2 + 1'],
+        ['10', '\\rho^3\\cos3\\phi'],
+        ['11', '\\rho^3\\sin3\\phi'],
+        ['12', '(4\\rho^2 - 3)\\rho^2\\cos2\\phi'],
+        ['13', '(4\\rho^2 - 3)\\rho^2\\sin2\\phi'],
+        ['14', '(10\\rho^4 - 12\\rho^2 + 3)\\rho\\cos\\phi'],
+        ['15', '(10\\rho^4 - 12\\rho^2 + 3)\\rho\\sin\\phi'],
+        ['16', '20\\rho^6 - 30\\rho^4 + 12\\rho^2 - 1'],
+        ['17', '\\rho^4\\cos4\\phi'],
+        ['18', '\\rho^4\\sin4\\phi'],
+        ['19', '(5\\rho^2 - 4)\\rho^3\\cos3\\phi'],
+        ['20', '(5\\rho^2 - 4)\\rho^3\\sin3\\phi'],
+        ['21', '(15\\rho^4 - 20\\rho^2 + 6)\\rho^2\\cos2\\phi'],
+        ['22', '(15\\rho^4 - 20\\rho^2 + 6)\\rho^2\\sin2\\phi'],
+        ['23', '(35\\rho^6 - 60\\rho^4 + 30\\rho^2 - 4)\\rho\\cos\\phi'],
+        ['24', '(35\\rho^6 - 60\\rho^4 + 30\\rho^2 - 4)\\rho\\sin\\phi'],
+        ['25', '70\\rho^8 - 140\\rho^6 + 90\\rho^4 - 20\\rho^2 + 1'],
+        ['26', '\\rho^5\\cos5\\phi'],
+        ['27', '\\rho^5\\sin5\\phi'],
+        ['28', '(6\\rho^2 - 5)\\rho^4\\cos4\\phi'],
+        ['29', '(6\\rho^2 - 5)\\rho^4\\sin4\\phi'],
+        ['30', '(21\\rho^4 - 30\\rho^2 + 10)\\rho^3\\cos3\\phi'],
+        ['31', '(21\\rho^4 - 30\\rho^2 + 10)\\rho^3\\sin3\\phi'],
+        ['32', '(56\\rho^6 - 105\\rho^4 + 60\\rho^2 - 10)\\rho^2\\cos2\\phi'],
+        ['33', '(56\\rho^6 - 105\\rho^4 + 60\\rho^2 - 10)\\rho^2\\sin2\\phi'],
+        ['34', '(126\\rho^8 - 280\\rho^6 + 210\\rho^4 - 60\\rho^2 + 5)\\rho\\cos\\phi'],
+        ['35', '(126\\rho^8 - 280\\rho^6 + 210\\rho^4 - 60\\rho^2 + 5)\\rho\\sin\\phi'],
+        ['36', '252\\rho^{10} - 630\\rho^8 + 560\\rho^6 - 210\\rho^4 + 30\\rho^2 - 1'],
+        ['37', '924\\rho^{12} - 2772\\rho^{10} + 3150\\rho^8 - 1680\\rho^6 + 420\\rho^4 - 42\\rho^2 + 1']
+    ];
+
+    let html = '<div class="zernike-table" style="margin: 12px 0;"><div class="section-title" style="font-size: 11pt; margin-bottom: 8px;">Zernike Polynomial Terms</div>';
+    html += '<table class="params-table"><tr><th>Term</th><th>Z<sub>i</sub>(ρ, φ)</th></tr>';
+
+    for (const [num, formula] of terms) {
+        html += `<tr><td style="text-align: center;">${num}</td><td>$${formula}$</td></tr>`;
+    }
+
+    html += '</table></div>';
+    return html;
+};
+
+/**
+ * Get additional notes for specific surface types
+ */
+const getSurfaceNotes = (surfaceType) => {
+    const notes = {
+        'Irregular': `<div class="surface-notes" style="margin: 12px 0; padding: 8px; background: #f9f9f9; border-left: 3px solid #666; font-size: 9pt;">
+            <strong>Note:</strong> ρ<sub>x</sub> = x/r<sub>max</sub>, ρ<sub>y</sub> = y/r<sub>max</sub>, ρ = √(ρ<sub>x</sub>² + ρ<sub>y</sub>²), ρ'<sub>y</sub> = ρ<sub>y</sub>cosθ - ρ<sub>x</sub>sinθ<br>
+            Z<sub>s</sub>, Z<sub>a</sub>, Z<sub>c</sub> represent spherical aberration, astigmatism, and coma coefficients.
+            The surface is decentered, tilted about x then y, ray traced, then untilted and undecentered.
+        </div>`
+    };
+    return notes[surfaceType] || '';
 };
 
 /**
@@ -28,6 +97,8 @@ const getSurfaceEquation = (surfaceType) => {
 export const generateHTMLReport = (surface, plotData, summaryMetrics, plotImages) => {
     const timestamp = new Date().toLocaleString();
     const equation = getSurfaceEquation(surface.type);
+    const notes = getSurfaceNotes(surface.type);
+    const zernikeTable = surface.type === 'Zernike' ? getZernikeTermsTable() : '';
 
     // Determine which metrics to show based on surface type
     const showAsphericity = surface.type !== 'Sphere';
@@ -173,6 +244,9 @@ export const generateHTMLReport = (surface, plotData, summaryMetrics, plotImages
         <strong>Surface Equation:</strong> $${equation}$
     </div>
 
+    ${notes}
+    ${zernikeTable}
+
     <div class="section">
         <div class="section-title">Surface Parameters</div>
         ${generateParametersTable(surface)}
@@ -201,7 +275,7 @@ export const generateHTMLReport = (surface, plotData, summaryMetrics, plotImages
 };
 
 /**
- * Generate compact parameters table
+ * Generate simple 2-column parameters table
  */
 const generateParametersTable = (surface) => {
     const params = Object.entries(surface.parameters).filter(([name, value]) => {
@@ -210,26 +284,10 @@ const generateParametersTable = (surface) => {
         return true;
     });
 
-    // Split into two columns
-    const half = Math.ceil(params.length / 2);
-    const leftParams = params.slice(0, half);
-    const rightParams = params.slice(half);
+    let html = '<table class="params-table"><tr><th>Parameter</th><th>Value</th></tr>';
 
-    let html = '<table class="params-table"><tr><th>Parameter</th><th>Value</th><th>Parameter</th><th>Value</th></tr>';
-
-    for (let i = 0; i < Math.max(leftParams.length, rightParams.length); i++) {
-        html += '<tr>';
-        if (i < leftParams.length) {
-            html += `<td>${leftParams[i][0]}</td><td>${leftParams[i][1]}</td>`;
-        } else {
-            html += '<td></td><td></td>';
-        }
-        if (i < rightParams.length) {
-            html += `<td>${rightParams[i][0]}</td><td>${rightParams[i][1]}</td>`;
-        } else {
-            html += '<td></td><td></td>';
-        }
-        html += '</tr>';
+    for (const [name, value] of params) {
+        html += `<tr><td>${name}</td><td>${value}</td></tr>`;
     }
 
     html += '</table>';
