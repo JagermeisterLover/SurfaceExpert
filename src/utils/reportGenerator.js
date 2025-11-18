@@ -493,7 +493,7 @@ export const generateMetricPlots = async (plotData) => {
             line: { color: '#2563eb', width: 2 }
         }], {
             title: { text: title, font: { size: 14 } },
-            xaxis: { title: 'Radius (mm)', showgrid: true },
+            xaxis: { title: 'Radial Coordinate (mm)', showgrid: true },
             yaxis: { title: yaxis, showgrid: true },
             margin: { l: 60, r: 30, t: 40, b: 50 },
             paper_bgcolor: '#fff',
@@ -506,10 +506,10 @@ export const generateMetricPlots = async (plotData) => {
     };
 
     return {
-        sagPlot: await createPlot(rValues, sagValues, 'Sag vs Radius', 'Sag (mm)'),
-        slopePlot: await createPlot(rValues, slopeValues, 'Slope vs Radius', 'Slope (rad)'),
-        asphericityPlot: asphericityValues ? await createPlot(rValues, asphericityValues, 'Asphericity vs Radius', 'Asphericity (mm)') : null,
-        aberrationPlot: aberrationValues ? await createPlot(rValues, aberrationValues, 'Aberration vs Radius', 'Aberration (mm)') : null
+        sagPlot: await createPlot(rValues, sagValues, 'Sag vs Radial Coordinate', 'Sag (mm)'),
+        slopePlot: await createPlot(rValues, slopeValues, 'Slope vs Radial Coordinate', 'Slope (rad)'),
+        asphericityPlot: asphericityValues ? await createPlot(rValues, asphericityValues, 'Asphericity vs Radial Coordinate', 'Asphericity (mm)') : null,
+        aberrationPlot: aberrationValues ? await createPlot(rValues, aberrationValues, 'Aberration vs Radial Coordinate', 'Aberration (mm)') : null
     };
 };
 
@@ -561,6 +561,11 @@ const generate3DPlotImage = async (surface, plotData) => {
     plotDiv.style.height = '500px';
     document.body.appendChild(plotDiv);
 
+    // Calculate z range for aspect ratio
+    const validZ = z.flat().filter(v => v !== null);
+    const zMin = Math.min(...validZ);
+    const zMax = Math.max(...validZ);
+
     await Plotly.newPlot(plotDiv, [{
         x: x,
         y: y,
@@ -581,7 +586,10 @@ const generate3DPlotImage = async (surface, plotData) => {
             camera: { eye: { x: 1.5, y: 1.5, z: 1.5 } },
             xaxis: { title: 'X (mm)', range: [-maxHeight, maxHeight] },
             yaxis: { title: 'Y (mm)', range: [-maxHeight, maxHeight] },
-            zaxis: { title: 'Sag (mm)' }
+            zaxis: { title: 'Sag (mm)', range: [zMin, zMax] },
+            // Manual aspect ratio: 1:1 for X:Y, Z scaled to sag range
+            aspectmode: 'manual',
+            aspectratio: { x: 1, y: 1, z: (zMax - zMin) / (2 * maxHeight) }
         },
         margin: { l: 0, r: 0, t: 0, b: 0 }
     }, { displayModeBar: false });
