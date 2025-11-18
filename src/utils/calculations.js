@@ -28,7 +28,14 @@ export const getBestFitSphereParams = (surface) => {
     let params;
     if (minHeight === 0) {
         const R3 = window.SurfaceCalculations.calculateBestFitSphereRadius3Points(maxHeight, zmax);
-        const R = surface.type !== 'Poly' ? parseParam('Radius') : 0;
+        // For Poly surface: R = A1 / 2
+        let R;
+        if (surface.type === 'Poly') {
+            const A1 = parseParam('A1');
+            R = A1 / 2;
+        } else {
+            R = parseParam('Radius');
+        }
         params = { method: 'R3', R3, R };
     } else {
         const result = window.SurfaceCalculations.calculateBestFitSphereRadius4Points(minHeight, maxHeight, zmin, zmax);
@@ -185,7 +192,14 @@ export const calculateSurfaceValues = (r, surface, x = null, y = null) => {
         }
 
         // Calculate aberration
-        const R = surface.type !== 'Poly' ? parseParam('Radius') : 0;
+        // For Poly surface: R = A1 / 2
+        let R;
+        if (surface.type === 'Poly') {
+            const A1 = parseParam('A1');
+            R = A1 / 2;
+        } else {
+            R = parseParam('Radius');
+        }
         aberration = window.SurfaceCalculations.calculateAberrationOfNormals(sag, r, slope, R);
 
     } catch (e) {
@@ -203,4 +217,100 @@ export const calculateSurfaceValues = (r, surface, x = null, y = null) => {
  */
 export const clearBFSCache = () => {
     bfsCache.clear();
+};
+
+/**
+ * Calculate all surface metrics
+ * @param {Object} surface - Surface object with type and parameters
+ * @returns {Object} Metrics object with maxSag, maxSlope, maxAngle, etc.
+ */
+export const calculateSurfaceMetrics = (surface) => {
+    const parseParam = (name) => parseFloat(surface.parameters[name]) || 0;
+    const minHeight = parseParam('Min Height');
+    const maxHeight = parseParam('Max Height');
+    const step = parseParam('Step') || 1;
+
+    // For Poly surface: R = A1 / 2
+    let R;
+    if (surface.type === 'Poly') {
+        const A1 = parseParam('A1');
+        R = A1 / 2;
+    } else {
+        R = parseParam('Radius');
+    }
+
+    let maxSag = 0, maxSlope = 0, maxAngle = 0, maxAsphericity = 0, maxAberration = 0;
+    let maxAsphGradient = 0;
+    const values = [];
+
+    // Calculate values for all points
+    for (let r = minHeight; r < maxHeight; r += step) {
+        const v = calculateSurfaceValues(r, surface);
+        values.push({ r, ...v });
+        // For sag, track the value with maximum absolute value (preserving sign)
+        if (isFinite(v.sag) && Math.abs(v.sag) > Math.abs(maxSag)) {
+            maxSag = v.sag;
+        }
+        if (isFinite(v.slope)) maxSlope = Math.max(maxSlope, Math.abs(v.slope));
+        if (isFinite(v.angle)) maxAngle = Math.max(maxAngle, Math.abs(v.angle));
+        if (isFinite(v.asphericity)) maxAsphericity = Math.max(maxAsphericity, Math.abs(v.asphericity));
+        if (isFinite(v.aberration)) maxAberration = Math.max(maxAberration, Math.abs(v.aberration));
+    }
+
+    // Always include maxHeight
+    const vMax = calculateSurfaceValues(maxHeight, surface);
+    values.push({ r: maxHeight, ...vMax });
+    // For sag, track the value with maximum absolute value (preserving sign)
+    if (isFinite(vMax.sag) && Math.abs(vMax.sag) > Math.abs(maxSag)) {
+        maxSag = vMax.sag;
+    }
+    if (isFinite(vMax.slope)) maxSlope = Math.max(maxSlope, Math.abs(vMax.slope));
+    if (isFinite(vMax.angle)) maxAngle = Math.max(maxAngle, Math.abs(vMax.angle));
+    if (isFinite(vMax.asphericity)) maxAsphericity = Math.max(maxAsphericity, Math.abs(vMax.asphericity));
+    if (isFinite(vMax.aberration)) maxAberration = Math.max(maxAberration, Math.abs(vMax.aberration));
+
+    // Calculate max asphericity gradient
+    for (let i = 1; i < values.length; i++) {
+        const dr = values[i].r - values[i - 1].r;
+        const dAsph = Math.abs(values[i].asphericity - values[i - 1].asphericity);
+        const gradient = dAsph / dr;
+        if (isFinite(gradient) && gradient > maxAsphGradient) {
+            maxAsphGradient = gradient;
+        }
+    }
+
+    // Calculate best fit sphere
+    const sagAtMax = calculateSurfaceValues(maxHeight, surface).sag;
+    let bestFitSphere = 0;
+    if (minHeight === 0) {
+        bestFitSphere = window.SurfaceCalculations.calculateBestFitSphereRadius3Points(maxHeight, sagAtMax);
+    } else {
+        const sagAtMin = calculateSurfaceValues(minHeight, surface).sag;
+        const result = window.SurfaceCalculations.calculateBestFitSphereRadius4Points(minHeight, maxHeight, sagAtMin, sagAtMax);
+        bestFitSphere = result.R4;
+    }
+
+    // Calculate F/# (paraxial and working)
+    // Paraxial F/# = EFFL / aperture_diameter = (R/2) / (2*maxHeight) = R / (4*maxHeight)
+    const paraxialFNum = R !== 0 ? Math.abs(R / (4 * maxHeight)) : 0;
+
+    // Working F/# based on marginal ray angle after reflection
+    // For a mirror: reflected ray angle = 2 * arctan(surface_slope)
+    // Working F/# = 1 / (2 * sin(reflected_angle))
+    const edgeSlope = Math.abs(vMax.slope);
+    const surfaceNormalAngle = Math.atan(edgeSlope); // angle of surface normal
+    const reflectedRayAngle = 2 * surfaceNormalAngle; // law of reflection for collimated input
+    const workingFNum = reflectedRayAngle !== 0 ? 1 / (2 * Math.sin(reflectedRayAngle)) : 0;
+
+    return {
+        maxSag,
+        maxSlope,
+        maxAngle,
+        maxAsphericity,
+        maxAberration,
+        maxAsphGradient,
+        bestFitSphere,
+        paraxialFNum,
+        workingFNum
+    };
 };
