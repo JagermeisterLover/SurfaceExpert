@@ -610,7 +610,7 @@ const generate2DContourImage = async (surface, plotData) => {
     }
 
     // Generate 2D grid by calculating actual surface values
-    const z = [];
+    const gridData = [];
     for (let i = 0; i < size; i++) {
         const row = [];
         for (let j = 0; j < size; j++) {
@@ -628,8 +628,25 @@ const generate2DContourImage = async (surface, plotData) => {
                 row.push(null);
             }
         }
-        z.push(row);
+        gridData.push(row);
     }
+
+    // Convert grid to scatter points with color mapping (like Plot2DContour.js)
+    const xPoints = [], yPoints = [], color = [];
+    for (let i = 0; i < size; i++) {
+        for (let j = 0; j < size; j++) {
+            if (gridData[i][j] !== null) {
+                const xi = x[i];
+                const yj = x[j];
+                xPoints.push(xi);
+                yPoints.push(yj);
+                color.push(gridData[i][j]);
+            }
+        }
+    }
+
+    const zMin = Math.min(...color);
+    const zMax = Math.max(...color);
 
     const plotDiv = document.createElement('div');
     plotDiv.id = 'temp-plot2d-' + Date.now() + Math.random();
@@ -640,20 +657,29 @@ const generate2DContourImage = async (surface, plotData) => {
     document.body.appendChild(plotDiv);
 
     await Plotly.newPlot(plotDiv, [{
-        x: x,
-        y: y,
-        z: z,
-        type: 'contour',
-        colorscale: 'Viridis',
-        showscale: true,
-        contours: {
-            showlabels: true,
-            labelfont: { size: 8, color: 'white' }
-        }
+        x: xPoints,
+        y: yPoints,
+        mode: 'markers',
+        type: 'scatter',
+        marker: {
+            size: 6,
+            color: color,
+            colorscale: 'Viridis',
+            showscale: true,
+            cmin: zMin,
+            cmax: zMax,
+            colorbar: {
+                title: 'Sag (mm)',
+                thickness: 15,
+                len: 0.7
+            }
+        },
+        showlegend: false
     }], {
-        xaxis: { title: 'X (mm)', showgrid: true },
-        yaxis: { title: 'Y (mm)', showgrid: true, scaleanchor: 'x' },
-        margin: { l: 60, r: 30, t: 30, b: 50 }
+        title: 'Sag False Color Map',
+        xaxis: { title: 'X (mm)', scaleanchor: 'y', scaleratio: 1 },
+        yaxis: { title: 'Y (mm)', scaleanchor: 'x', scaleratio: 1 },
+        margin: { l: 60, r: 120, t: 60, b: 60 }
     }, { displayModeBar: false });
 
     const imgData = await exportPlotToImage(plotDiv.id, 800, 500);
