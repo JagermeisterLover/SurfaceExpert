@@ -10,5 +10,7 @@ contextBridge.exposeInMainWorld('electronAPI', {
   deleteSurface: (folderName, surfaceName) => ipcRenderer.invoke('delete-surface', folderName, surfaceName),
   createFolder: (folderName) => ipcRenderer.invoke('create-folder', folderName),
   renameFolder: (oldName, newName) => ipcRenderer.invoke('rename-folder', oldName, newName),
-  deleteFolder: (folderName) => ipcRenderer.invoke('delete-folder', folderName)
+  deleteFolder: (folderName) => ipcRenderer.invoke('delete-folder', folderName),
+  saveHTMLReport: (htmlContent, suggestedName) => ipcRenderer.invoke('save-html-report', htmlContent, suggestedName),
+  generatePDFReport: (htmlContent, suggestedName) => ipcRenderer.invoke('generate-pdf-report', htmlContent, suggestedName)
 });

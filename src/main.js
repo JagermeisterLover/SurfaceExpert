@@ -1,4 +1,4 @@
-const { app, BrowserWindow, Menu, dialog, ipcMain } = require('electron');
+const { app, BrowserWindow, Menu, dialog, ipcMain, shell } = require('electron');
 const path = require('path');
 const fs = require('fs');
 
@@ -331,6 +331,91 @@ function setupIpcHandlers() {
       return { success: false, error: error.message };
     }
   });
+
+  // Handler for saving HTML report
+  ipcMain.handle('save-html-report', async (event, htmlContent, suggestedName) => {
+    try {
+      const result = await dialog.showSaveDialog(mainWindow, {
+        title: 'Save HTML Report',
+        defaultPath: `${suggestedName}_Report.html`,
+        filters: [
+          { name: 'HTML Files', extensions: ['html'] },
+          { name: 'All Files', extensions: ['*'] }
+        ]
+      });
+
+      if (result.canceled) {
+        return { canceled: true };
+      }
+
+      fs.writeFileSync(result.filePath, htmlContent, 'utf-8');
+
+      // Open the folder containing the file
+      shell.showItemInFolder(result.filePath);
+
+      return { success: true, filePath: result.filePath };
+    } catch (error) {
+      return { success: false, error: error.message };
+    }
+  });
+
+  // Handler for generating PDF from HTML
+  ipcMain.handle('generate-pdf-report', async (event, htmlContent, suggestedName) => {
+    try {
+      const result = await dialog.showSaveDialog(mainWindow, {
+        title: 'Save PDF Report',
+        defaultPath: `${suggestedName}_Report.pdf`,
+        filters: [
+          { name: 'PDF Files', extensions: ['pdf'] },
+          { name: 'All Files', extensions: ['*'] }
+        ]
+      });
+
+      if (result.canceled) {
+        return { canceled: true };
+      }
+
+      // Create a hidden window to load HTML and print to PDF
+      const printWindow = new BrowserWindow({
+        show: false,
+        webPreferences: {
+          nodeIntegration: false,
+          contextIsolation: true
+        }
+      });
+
+      // Load HTML content
+      await printWindow.loadURL(`data:text/html;charset=utf-8,${encodeURIComponent(htmlContent)}`);
+
+      // Wait for content to load
+      await new Promise(resolve => setTimeout(resolve, 1000));
+
+      // Print to PDF
+      const pdfData = await printWindow.webContents.printToPDF({
+        printBackground: true,
+        pageSize: 'A4',
+        margins: {
+          top: 0.5,
+          bottom: 0.5,
+          left: 0.5,
+          right: 0.5
+        }
+      });
+
+      // Close the window
+      printWindow.close();
+
+      // Save PDF
+      fs.writeFileSync(result.filePath, pdfData);
+
+      // Open the folder containing the file
+      shell.showItemInFolder(result.filePath);
+
+      return { success: true, filePath: result.filePath };
+    } catch (error) {
+      return { success: false, error: error.message };
+    }
+  });
 }
 
 function parseFitReport(content) {
@@ -468,19 +553,20 @@ function createMenu() {
       ]
     },
     {
-      label: 'Calculate',
+      label: 'Reports',
       submenu: [
         {
-          label: 'Recalculate All',
-          accelerator: 'F5',
+          label: 'Export HTML Report...',
+          accelerator: 'CmdOrCtrl+E',
           click: () => {
-            mainWindow.webContents.send('menu-action', 'recalculate');
+            mainWindow.webContents.send('menu-action', 'export-html-report');
           }
         },
         {
-          label: 'Export Results...',
+          label: 'Export PDF Report...',
+          accelerator: 'CmdOrCtrl+P',
           click: () => {
-            mainWindow.webContents.send('menu-action', 'export-results');
+            mainWindow.webContents.send('menu-action', 'export-pdf-report');
           }
         }
       ]
