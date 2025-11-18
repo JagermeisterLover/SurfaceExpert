@@ -511,12 +511,127 @@ export const generateMetricPlots = async (plotData) => {
 };
 
 /**
+ * Generate 3D surface plot for report
+ */
+const generate3DPlotImage = async (plotData) => {
+    const { rValues, sagValues } = plotData;
+    const maxR = Math.max(...rValues);
+    const size = 60;
+
+    // Create coordinate arrays
+    const x = [], y = [];
+    for (let i = 0; i < size; i++) {
+        x.push(-maxR + (i * (2 * maxR)) / (size - 1));
+        y.push(-maxR + (i * (2 * maxR)) / (size - 1));
+    }
+
+    // Generate 3D grid from plotData
+    const z = [];
+    for (let i = 0; i < size; i++) {
+        const row = [];
+        for (let j = 0; j < size; j++) {
+            const xi = x[i];
+            const yj = y[j];
+            const r = Math.sqrt(xi * xi + yj * yj);
+
+            // Find closest r value in rValues
+            const idx = rValues.findIndex((rv, i) => i === rValues.length - 1 || (rv <= r && rValues[i+1] > r));
+            row.push(idx >= 0 && idx < sagValues.length ? sagValues[idx] : null);
+        }
+        z.push(row);
+    }
+
+    const plotDiv = document.createElement('div');
+    plotDiv.id = 'temp-plot3d-' + Date.now() + Math.random();
+    plotDiv.style.display = 'none';
+    document.body.appendChild(plotDiv);
+
+    await Plotly.newPlot(plotDiv, [{
+        x: x,
+        y: y,
+        z: z,
+        type: 'surface',
+        colorscale: 'Viridis',
+        showscale: true
+    }], {
+        scene: {
+            camera: { eye: { x: 1.5, y: 1.5, z: 1.5 } },
+            xaxis: { title: 'X (mm)' },
+            yaxis: { title: 'Y (mm)' },
+            zaxis: { title: 'Sag (mm)' }
+        },
+        margin: { l: 0, r: 0, t: 0, b: 0 }
+    }, { displayModeBar: false });
+
+    const imgData = await exportPlotToImage(plotDiv.id, 800, 500);
+    document.body.removeChild(plotDiv);
+    return imgData;
+};
+
+/**
+ * Generate 2D contour plot for report
+ */
+const generate2DContourImage = async (plotData) => {
+    const { rValues, sagValues } = plotData;
+    const maxR = Math.max(...rValues);
+    const size = 100;
+
+    // Create coordinate arrays
+    const x = [], y = [];
+    for (let i = 0; i < size; i++) {
+        x.push(-maxR + (i * (2 * maxR)) / (size - 1));
+        y.push(-maxR + (i * (2 * maxR)) / (size - 1));
+    }
+
+    // Generate 2D grid
+    const z = [];
+    for (let i = 0; i < size; i++) {
+        const row = [];
+        for (let j = 0; j < size; j++) {
+            const xi = x[i];
+            const yj = y[j];
+            const r = Math.sqrt(xi * xi + yj * yj);
+
+            const idx = rValues.findIndex((rv, i) => i === rValues.length - 1 || (rv <= r && rValues[i+1] > r));
+            row.push(idx >= 0 && idx < sagValues.length ? sagValues[idx] : null);
+        }
+        z.push(row);
+    }
+
+    const plotDiv = document.createElement('div');
+    plotDiv.id = 'temp-plot2d-' + Date.now() + Math.random();
+    plotDiv.style.display = 'none';
+    document.body.appendChild(plotDiv);
+
+    await Plotly.newPlot(plotDiv, [{
+        x: x,
+        y: y,
+        z: z,
+        type: 'contour',
+        colorscale: 'Viridis',
+        showscale: true,
+        contours: {
+            showlabels: true,
+            labelfont: { size: 8, color: 'white' }
+        }
+    }], {
+        xaxis: { title: 'X (mm)', showgrid: true },
+        yaxis: { title: 'Y (mm)', showgrid: true, scaleanchor: 'x' },
+        margin: { l: 60, r: 30, t: 30, b: 50 }
+    }, { displayModeBar: false });
+
+    const imgData = await exportPlotToImage(plotDiv.id, 800, 500);
+    document.body.removeChild(plotDiv);
+    return imgData;
+};
+
+/**
  * Generate complete report data for current surface
  */
 export const generateReportData = async (surface, plotData, summaryMetrics) => {
-    // Export main plots
-    const plot3D = await exportPlotToImage('plot3d', 800, 500);
-    const plot2D = await exportPlotToImage('plot2d', 800, 500);
+    // Generate 3D and 2D plots in temporary containers
+    const plot3D = await generate3DPlotImage(plotData);
+    const plot2D = await generate2DContourImage(plotData);
 
     // Generate metric plots
     const metricPlots = await generateMetricPlots(plotData);
