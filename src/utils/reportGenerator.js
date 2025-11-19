@@ -362,9 +362,9 @@ const generateDataTable = (plotData, showAsphericity, showAberration) => {
 
     const { rValues, sagValues, slopeValues, angleValues, asphericityValues, aberrationValues } = plotData;
 
-    // Sample every nth point to keep table manageable (max 20 rows)
-    const maxRows = 20;
-    const step = Math.max(1, Math.floor(rValues.length / maxRows));
+   
+    
+    const step = 1;
 
     let html = '<table class="data-table"><thead><tr>';
     html += '<th>Radius (mm)</th><th>Sag (mm)</th><th>Slope (rad)</th><th>Angle (°)</th><th>Angle (DMS)</th>';
@@ -386,7 +386,7 @@ const generateDataTable = (plotData, showAsphericity, showAberration) => {
     }
 
     html += '</tbody></table>';
-    html += `<p style="font-size: 8pt; color: #666; margin-top: 4px;">Showing ${Math.min(maxRows, Math.ceil(rValues.length / step))} of ${rValues.length} calculated points</p>`;
+    html += `<p style="font-size: 8pt; color: #666; margin-top: 4px;">Showing ${rValues.length} calculated points</p>`;
 
     return html;
 };

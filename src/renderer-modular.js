@@ -1090,7 +1090,7 @@ const OpticalSurfaceAnalyzer = () => {
                             fontSize: '13px',
                             fontWeight: '500'
                         }
-                    }, '📄 Generate HTML Report'),
+                    }, 'Generate HTML Report'),
                     h('button', {
                         onClick: handleExportPDFReport,
                         style: {
@@ -1104,7 +1104,7 @@ const OpticalSurfaceAnalyzer = () => {
                             fontSize: '13px',
                             fontWeight: '500'
                         }
-                    }, '📑 Generate PDF Report')
+                    }, 'Generate PDF Report')
                 )
             )
         );
