@@ -6,7 +6,7 @@ import { formatValue, degreesToDMS } from '../../utils/formatters.js';
 
 const { createElement: h } = React;
 
-export const SummaryView = ({ selectedSurface, c }) => {
+export const SummaryView = ({ selectedSurface, wavelength = 632.8, c }) => {
     if (!selectedSurface) return null;
 
     // Generate data table for summary
@@ -78,7 +78,7 @@ export const SummaryView = ({ selectedSurface, c }) => {
     const dataTable = generateDataTable();
 
     // Calculate all metrics using shared utility function
-    const metrics = calculateSurfaceMetrics(selectedSurface);
+    const metrics = calculateSurfaceMetrics(selectedSurface, wavelength);
     const { maxSag, maxSlope, maxAngle, maxAsphericity, maxAberration, maxAsphGradient, bestFitSphere, paraxialFNum, workingFNum } = metrics;
 
     const minHeight = parseFloat(selectedSurface.parameters['Min Height']) || 0;

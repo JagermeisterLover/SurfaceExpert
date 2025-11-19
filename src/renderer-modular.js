@@ -72,6 +72,7 @@ const OpticalSurfaceAnalyzer = () => {
     const [showConvertResults, setShowConvertResults] = useState(false);
     const [convertResults, setConvertResults] = useState(null);
     const [colorscale, setColorscale] = useState('Viridis');
+    const [wavelength, setWavelength] = useState(632.8); // Reference wavelength in nm for RMS/PV calculations
     const [contextMenu, setContextMenu] = useState(null);
     const [inputDialog, setInputDialog] = useState(null);
     const plotRef = useRef(null);
@@ -330,7 +331,7 @@ const OpticalSurfaceAnalyzer = () => {
             const plotData = generateReportPlotData(surface);
 
             // Calculate summary metrics
-            const summaryMetrics = calculateSurfaceMetrics(surface);
+            const summaryMetrics = calculateSurfaceMetrics(surface, wavelength);
 
             // Generate report data with plot images
             const reportData = await generateReportData(
@@ -377,7 +378,7 @@ const OpticalSurfaceAnalyzer = () => {
             const plotData = generateReportPlotData(surface);
 
             // Calculate summary metrics
-            const summaryMetrics = calculateSurfaceMetrics(surface);
+            const summaryMetrics = calculateSurfaceMetrics(surface, wavelength);
 
             // Generate report data with plot images
             const reportData = await generateReportData(
@@ -823,7 +824,7 @@ const OpticalSurfaceAnalyzer = () => {
         }
 
         // Calculate metrics for display using shared utility function
-        const rawMetrics = calculateSurfaceMetrics(selectedSurface);
+        const rawMetrics = calculateSurfaceMetrics(selectedSurface, wavelength);
         const metrics = {
             paraxialFNum: formatValue(rawMetrics.paraxialFNum),
             workingFNum: formatValue(rawMetrics.workingFNum),
@@ -833,7 +834,15 @@ const OpticalSurfaceAnalyzer = () => {
             maxAngleDMS: degreesToDMS(rawMetrics.maxAngle),
             maxAsphericity: formatValue(rawMetrics.maxAsphericity) + ' mm',
             maxAsphGradient: formatValue(rawMetrics.maxAsphGradient) + ' /mm',
-            bestFitSphere: formatValue(rawMetrics.bestFitSphere) + ' mm'
+            bestFitSphere: formatValue(rawMetrics.bestFitSphere) + ' mm',
+            rmsError: rawMetrics.rmsError !== null ? {
+                mm: formatValue(rawMetrics.rmsError.mm) + ' mm',
+                waves: formatValue(rawMetrics.rmsError.waves) + ' λ'
+            } : null,
+            pvError: rawMetrics.pvError !== null ? {
+                mm: formatValue(rawMetrics.pvError.mm) + ' mm',
+                waves: formatValue(rawMetrics.pvError.waves) + ' λ'
+            } : null
         };
 
         return h('div', {
@@ -1057,7 +1066,12 @@ const OpticalSurfaceAnalyzer = () => {
                     selectedSurface.type !== 'Zernike' && selectedSurface.type !== 'Irregular' && h(PropertyRow, { label: "Max Angle DMS", value: metrics.maxAngleDMS, editable: false, c }),
                     selectedSurface.type !== 'Zernike' && selectedSurface.type !== 'Irregular' && h(PropertyRow, { label: "Max Asphericity", value: metrics.maxAsphericity, editable: false, c }),
                     selectedSurface.type !== 'Zernike' && selectedSurface.type !== 'Irregular' && h(PropertyRow, { label: "Max Asph. Gradient", value: metrics.maxAsphGradient, editable: false, c }),
-                    selectedSurface.type !== 'Zernike' && selectedSurface.type !== 'Irregular' && h(PropertyRow, { label: "Best Fit Sphere", value: metrics.bestFitSphere, editable: false, c })
+                    selectedSurface.type !== 'Zernike' && selectedSurface.type !== 'Irregular' && h(PropertyRow, { label: "Best Fit Sphere", value: metrics.bestFitSphere, editable: false, c }),
+                    // RMS and P-V error for Zernike and Irregular surfaces
+                    (selectedSurface.type === 'Zernike' || selectedSurface.type === 'Irregular') && metrics.rmsError && h(PropertyRow, { label: "RMS Error (mm)", value: metrics.rmsError.mm, editable: false, c }),
+                    (selectedSurface.type === 'Zernike' || selectedSurface.type === 'Irregular') && metrics.rmsError && h(PropertyRow, { label: "RMS Error (waves)", value: metrics.rmsError.waves, editable: false, c }),
+                    (selectedSurface.type === 'Zernike' || selectedSurface.type === 'Irregular') && metrics.pvError && h(PropertyRow, { label: "P-V Error (mm)", value: metrics.pvError.mm, editable: false, c }),
+                    (selectedSurface.type === 'Zernike' || selectedSurface.type === 'Irregular') && metrics.pvError && h(PropertyRow, { label: "P-V Error (waves)", value: metrics.pvError.waves, editable: false, c })
                 ),
 
                 // Quick Actions
@@ -1133,6 +1147,8 @@ const OpticalSurfaceAnalyzer = () => {
         showSettings && h(SettingsModal, {
             colorscale,
             setColorscale,
+            wavelength,
+            setWavelength,
             onClose: () => setShowSettings(false),
             c
         }),
@@ -1581,7 +1597,7 @@ const OpticalSurfaceAnalyzer = () => {
                             h('div', null, 'Select a surface or create a new one')
                         ) :
                         activeTab === 'summary' ?
-                            h(SummaryView, { selectedSurface, c }) :
+                            h(SummaryView, { selectedSurface, wavelength, c }) :
                             activeSubTab === 'data' ?
                                 h(DataView, { activeTab, selectedSurface, c }) :
                                 h('div', { ref: plotRef, style: { width: '100%', height: '100%' } })

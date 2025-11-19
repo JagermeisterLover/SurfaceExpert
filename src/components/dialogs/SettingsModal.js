@@ -4,7 +4,7 @@ import { colorscales } from '../../constants/surfaceTypes.js';
 
 const { createElement: h } = React;
 
-export const SettingsModal = ({ colorscale, setColorscale, onClose, c }) => (
+export const SettingsModal = ({ colorscale, setColorscale, wavelength, setWavelength, onClose, c }) => (
     h('div', {
         style: {
             position: 'fixed',
@@ -69,6 +69,44 @@ export const SettingsModal = ({ colorscale, setColorscale, onClose, c }) => (
                         h('option', { key: scale, value: scale }, scale)
                     )
                 )
+            ),
+
+            h('div', { style: { marginBottom: '20px' } },
+                h('label', {
+                    style: {
+                        display: 'block',
+                        fontSize: '13px',
+                        fontWeight: '600',
+                        marginBottom: '8px',
+                        color: c.textDim,
+                        textTransform: 'uppercase',
+                        letterSpacing: '0.5px'
+                    }
+                }, 'Reference Wavelength (nm)'),
+                h('input', {
+                    type: 'number',
+                    value: wavelength,
+                    onChange: (e) => setWavelength(parseFloat(e.target.value) || 632.8),
+                    step: '0.1',
+                    min: '100',
+                    max: '10000',
+                    style: {
+                        width: '100%',
+                        padding: '10px',
+                        backgroundColor: c.bg,
+                        color: c.text,
+                        border: `1px solid ${c.border}`,
+                        borderRadius: '4px',
+                        fontSize: '13px'
+                    }
+                }),
+                h('div', {
+                    style: {
+                        fontSize: '11px',
+                        color: c.textDim,
+                        marginTop: '6px'
+                    }
+                }, 'Used for RMS/P-V error calculations (default: 632.8 nm HeNe laser)')
             ),
 
             h('div', {

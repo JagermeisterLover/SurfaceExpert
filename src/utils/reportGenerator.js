@@ -101,8 +101,9 @@ export const generateHTMLReport = (surface, plotData, summaryMetrics, plotImages
     const zernikeTable = surface.type === 'Zernike' ? getZernikeTermsTable() : '';
 
     // Determine which metrics to show based on surface type
-    const showAsphericity = surface.type !== 'Sphere';
+    const showAsphericity = surface.type !== 'Sphere' && surface.type !== 'Irregular' && surface.type !== 'Zernike';
     const showAberration = surface.type !== 'Sphere' && surface.type !== 'Irregular' && surface.type !== 'Zernike';
+    const showSlope = surface.type !== 'Irregular' && surface.type !== 'Zernike';
 
     return `<!DOCTYPE html>
 <html lang="en">
@@ -259,12 +260,12 @@ export const generateHTMLReport = (surface, plotData, summaryMetrics, plotImages
 
     <div class="section">
         <div class="section-title">Calculated Data</div>
-        ${generateDataTable(plotData, showAsphericity, showAberration)}
+        ${generateDataTable(plotData, showSlope, showAsphericity, showAberration)}
     </div>
 
     <div class="section">
         <div class="section-title">Visualizations</div>
-        ${generatePlotsSection(plotImages, showAsphericity, showAberration)}
+        ${generatePlotsSection(plotImages, showSlope, showAsphericity, showAberration)}
     </div>
 
     <div style="text-align: center; margin-top: 20px; padding-top: 10px; border-top: 1px solid #ccc; font-size: 8pt; color: #666;">
@@ -320,6 +321,22 @@ const generateMetricsTable = (metrics, surfaceType) => {
         metricsList.push({ label: 'Max Aberration', value: formatValue(metrics.maxAberration) + ' mm' });
     }
 
+    // Add RMS and P-V error for Zernike and Irregular surfaces
+    if (surfaceType === 'Zernike' || surfaceType === 'Irregular') {
+        if (metrics.rmsError) {
+            metricsList.push(
+                { label: 'RMS Error (mm)', value: formatValue(metrics.rmsError.mm) + ' mm' },
+                { label: 'RMS Error (waves)', value: formatValue(metrics.rmsError.waves) + ' λ' }
+            );
+        }
+        if (metrics.pvError) {
+            metricsList.push(
+                { label: 'P-V Error (mm)', value: formatValue(metrics.pvError.mm) + ' mm' },
+                { label: 'P-V Error (waves)', value: formatValue(metrics.pvError.waves) + ' λ' }
+            );
+        }
+    }
+
     metricsList.push(
         { label: 'Best Fit Sphere', value: formatValue(metrics.bestFitSphere) + ' mm' },
         { label: 'Paraxial F/#', value: formatValue(metrics.paraxialFNum) },
@@ -355,19 +372,20 @@ const generateMetricsTable = (metrics, surfaceType) => {
 /**
  * Generate compact data table
  */
-const generateDataTable = (plotData, showAsphericity, showAberration) => {
+const generateDataTable = (plotData, showSlope, showAsphericity, showAberration) => {
     if (!plotData || !plotData.rValues || plotData.rValues.length === 0) {
         return '<p>No calculated data available.</p>';
     }
 
     const { rValues, sagValues, slopeValues, angleValues, asphericityValues, aberrationValues } = plotData;
 
-   
-    
+
+
     const step = 1;
 
     let html = '<table class="data-table"><thead><tr>';
-    html += '<th>Radius (mm)</th><th>Sag (mm)</th><th>Slope (rad)</th><th>Angle (°)</th><th>Angle (DMS)</th>';
+    html += '<th>Radius (mm)</th><th>Sag (mm)</th>';
+    if (showSlope) html += '<th>Slope (rad)</th><th>Angle (°)</th><th>Angle (DMS)</th>';
     if (showAsphericity) html += '<th>Asphericity (mm)</th>';
     if (showAberration) html += '<th>Aberration (mm)</th>';
     html += '</tr></thead><tbody>';
@@ -377,9 +395,11 @@ const generateDataTable = (plotData, showAsphericity, showAberration) => {
         html += '<tr>';
         html += `<td>${formatValue(rValues[i])}</td>`;
         html += `<td>${formatValue(sagValues[i])}</td>`;
-        html += `<td>${formatValue(slopeValues[i])}</td>`;
-        html += `<td>${formatValue(angleValues[i])}</td>`;
-        html += `<td>${angleDMS}</td>`;
+        if (showSlope) {
+            html += `<td>${formatValue(slopeValues[i])}</td>`;
+            html += `<td>${formatValue(angleValues[i])}</td>`;
+            html += `<td>${angleDMS}</td>`;
+        }
         if (showAsphericity) html += `<td>${formatValue(asphericityValues[i])}</td>`;
         if (showAberration) html += `<td>${formatValue(aberrationValues[i])}</td>`;
         html += '</tr>';
@@ -394,7 +414,7 @@ const generateDataTable = (plotData, showAsphericity, showAberration) => {
 /**
  * Generate plots section
  */
-const generatePlotsSection = (plotImages, showAsphericity, showAberration) => {
+const generatePlotsSection = (plotImages, showSlope, showAsphericity, showAberration) => {
     if (!plotImages) return '<p>No plots available.</p>';
 
     let html = '';
@@ -415,22 +435,25 @@ const generatePlotsSection = (plotImages, showAsphericity, showAberration) => {
     }
     html += '</div>';
 
-    // Metric plots in two columns
-    html += '<div class="two-column">';
-    if (plotImages.sagPlot) {
-        html += `<div class="plot-container">
-            <div class="plot-title">Sag vs Radial Coordinate</div>
-            <img src="${plotImages.sagPlot}" alt="Sag Plot" />
-        </div>`;
+    // Sag plot (always shown) and slope plot (conditional)
+    if (plotImages.sagPlot || (showSlope && plotImages.slopePlot)) {
+        html += '<div class="two-column">';
+        if (plotImages.sagPlot) {
+            html += `<div class="plot-container">
+                <div class="plot-title">Sag vs Radial Coordinate</div>
+                <img src="${plotImages.sagPlot}" alt="Sag Plot" />
+            </div>`;
+        }
+        if (showSlope && plotImages.slopePlot) {
+            html += `<div class="plot-container">
+                <div class="plot-title">Slope vs Radial Coordinate</div>
+                <img src="${plotImages.slopePlot}" alt="Slope Plot" />
+            </div>`;
+        }
+        html += '</div>';
     }
-    if (plotImages.slopePlot) {
-        html += `<div class="plot-container">
-            <div class="plot-title">Slope vs Radial Coordinate</div>
-            <img src="${plotImages.slopePlot}" alt="Slope Plot" />
-        </div>`;
-    }
-    html += '</div>';
 
+    // Asphericity and aberration plots (conditional)
     if (showAsphericity || showAberration) {
         html += '<div class="two-column">';
         if (showAsphericity && plotImages.asphericityPlot) {

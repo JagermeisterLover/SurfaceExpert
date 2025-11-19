@@ -664,8 +664,8 @@ class SurfaceCalculations {
             case 27: return rho5 * Math.sin(5 * theta);
             case 28: return (6 * rho2 - 5) * rho4 * Math.cos(4 * theta);
             case 29: return (6 * rho2 - 5) * rho4 * Math.sin(4 * theta);
-            case 30: return (21 * rho4 - 30 * rho4 + 10) * rho3 * Math.cos(3 * theta);
-            case 31: return (21 * rho4 - 30 * rho4 + 10) * rho3 * Math.sin(3 * theta);
+            case 30: return (21 * rho4 - 30 * rho2 + 10) * rho3 * Math.cos(3 * theta);
+            case 31: return (21 * rho4 - 30 * rho2 + 10) * rho3 * Math.sin(3 * theta);
             case 32: return (56 * rho6 - 105 * rho4 + 60 * rho2 - 10) * rho2 * Math.cos(2 * theta);
             case 33: return (56 * rho6 - 105 * rho4 + 60 * rho2 - 10) * rho2 * Math.sin(2 * theta);
             case 34: return (126 * rho8 - 280 * rho6 + 210 * rho4 - 60 * rho2 + 5) * rho * Math.cos(theta);
@@ -699,12 +699,59 @@ class SurfaceCalculations {
      */
     static calculateZernikeSag(x, y, R, k, normRadius, dx, dy, A2, A4, A6, A8, A10, A12, A14, A16, coeffs) {
         try {
-            // Apply decenter
-            const x_local = x - dx;
-            const y_local = y - dy;
+            // Calculate radial distance for base surface (conic + aspheric)
+            // These use the ORIGINAL (non-decentered) coordinates
+            const r = Math.sqrt(x * x + y * y);
 
-            // Calculate radial distance
-            const r = Math.sqrt(x_local * x_local + y_local * y_local);
+            // Base conic surface sag
+            let baseSag = 0;
+            if (R !== 0) {
+                const c = 1 / R;
+                const r2 = r * r;
+                const discriminant = 1 - (1 + k) * c * c * r2;
+                if (discriminant >= 0) {
+                    baseSag = (c * r2) / (1 + Math.sqrt(discriminant));
+                }
+            }
+
+            // Aspheric terms (also use original coordinates)
+            const asphericSag = A2 * r**2 + A4 * r**4 + A6 * r**6 + A8 * r**8 +
+                               A10 * r**10 + A12 * r**12 + A14 * r**14 + A16 * r**16;
+
+            // Zernike aberration terms - ONLY THESE use decentered coordinates
+            if (normRadius === 0) return baseSag + asphericSag;
+
+            // Apply decenter ONLY for Zernike terms
+            const x_zernike = x - dx;
+            const y_zernike = y - dy;
+            const r_zernike = Math.sqrt(x_zernike * x_zernike + y_zernike * y_zernike);
+
+            // Normalized coordinates for Zernike (using decentered position)
+            const rho = Math.min(r_zernike / normRadius, 1);
+            const theta = Math.atan2(y_zernike, x_zernike);
+
+            // Sum Zernike terms
+            let zernikeSag = 0;
+            for (let i = 1; i <= 37; i++) {
+                const coeff = coeffs[`Z${i}`] || 0;
+                if (coeff !== 0) {
+                    zernikeSag += coeff * this.calculateZernikePolynomial(i, rho, theta);
+                }
+            }
+
+            return baseSag + asphericSag + zernikeSag;
+        } catch {
+            return 0;
+        }
+    }
+
+    /**
+     * Calculate base sag for Zernike surface (conic + aspheric only, no Zernike terms)
+     * Used for RMS/P-V error calculations
+     */
+    static calculateZernikeBaseSag(x, y, R, k, A2, A4, A6, A8, A10, A12, A14, A16) {
+        try {
+            const r = Math.sqrt(x * x + y * y);
 
             // Base conic surface sag
             let baseSag = 0;
@@ -721,23 +768,32 @@ class SurfaceCalculations {
             const asphericSag = A2 * r**2 + A4 * r**4 + A6 * r**6 + A8 * r**8 +
                                A10 * r**10 + A12 * r**12 + A14 * r**14 + A16 * r**16;
 
-            // Zernike aberration terms
-            if (normRadius === 0) return baseSag + asphericSag;
+            return baseSag + asphericSag;
+        } catch {
+            return 0;
+        }
+    }
 
-            // Normalized coordinates
-            const rho = Math.min(r / normRadius, 1);
-            const theta = Math.atan2(y_local, x_local);
+    /**
+     * Calculate base sag for Irregular surface (conic only, no aberrations/tilts/decenters)
+     * Used for RMS/P-V error calculations
+     */
+    static calculateIrregularBaseSag(x, y, R, k) {
+        try {
+            const r = Math.sqrt(x * x + y * y);
 
-            // Sum Zernike terms
-            let zernikeSag = 0;
-            for (let i = 1; i <= 37; i++) {
-                const coeff = coeffs[`Z${i}`] || 0;
-                if (coeff !== 0) {
-                    zernikeSag += coeff * this.calculateZernikePolynomial(i, rho, theta);
+            // Base conic surface sag only
+            let baseSag = 0;
+            if (R !== 0) {
+                const c = 1 / R;
+                const r2 = r * r;
+                const discriminant = 1 - (1 + k) * c * c * r2;
+                if (discriminant >= 0) {
+                    baseSag = (c * r2) / (1 + Math.sqrt(discriminant));
                 }
             }
 
-            return baseSag + asphericSag + zernikeSag;
+            return baseSag;
         } catch {
             return 0;
         }
