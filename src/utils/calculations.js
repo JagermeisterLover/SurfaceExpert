@@ -224,7 +224,7 @@ export const clearBFSCache = () => {
  * @param {Object} surface - Surface object with type and parameters
  * @returns {Object} Metrics object with maxSag, maxSlope, maxAngle, etc.
  */
-export const calculateSurfaceMetrics = (surface) => {
+export const calculateSurfaceMetrics = (surface, wavelengthNm = 632.8) => {
     const parseParam = (name) => parseFloat(surface.parameters[name]) || 0;
     const minHeight = parseParam('Min Height');
     const maxHeight = parseParam('Max Height');
@@ -241,7 +241,9 @@ export const calculateSurfaceMetrics = (surface) => {
 
     let maxSag = 0, maxSlope = 0, maxAngle = 0, maxAsphericity = 0, maxAberration = 0;
     let maxAsphGradient = 0;
+    let rmsError = null, pvError = null;
     const values = [];
+    const errorValues = []; // For RMS/PV calculation
 
     // Calculate values for all points
     for (let r = minHeight; r < maxHeight; r += step) {
@@ -257,6 +259,43 @@ export const calculateSurfaceMetrics = (surface) => {
         if (isFinite(v.aberration)) maxAberration = Math.max(maxAberration, Math.abs(v.aberration));
     }
 
+    // Calculate RMS/P-V error for Zernike and Irregular surfaces over 2D grid
+    if (surface.type === 'Zernike' || surface.type === 'Irregular') {
+        const gridSize = 64; // Match Zemax typical grid size
+        const gridStep = (2 * maxHeight) / (gridSize - 1);
+
+        for (let i = 0; i < gridSize; i++) {
+            for (let j = 0; j < gridSize; j++) {
+                const x = -maxHeight + i * gridStep;
+                const y = -maxHeight + j * gridStep;
+                const r = Math.sqrt(x * x + y * y);
+
+                // Only calculate within the aperture
+                if (r >= minHeight && r <= maxHeight) {
+                    // Get full surface sag
+                    const v = calculateSurfaceValues(r, surface, x, y);
+
+                    // Get base sag (without aberrations)
+                    let baseSag = 0;
+                    if (surface.type === 'Zernike') {
+                        const R = parseParam('Radius'), k = parseParam('Conic Constant');
+                        const A2 = parseParam('A2'), A4 = parseParam('A4'), A6 = parseParam('A6'), A8 = parseParam('A8');
+                        const A10 = parseParam('A10'), A12 = parseParam('A12'), A14 = parseParam('A14'), A16 = parseParam('A16');
+                        baseSag = window.SurfaceCalculations.calculateZernikeBaseSag(x, y, R, k, A2, A4, A6, A8, A10, A12, A14, A16);
+                    } else if (surface.type === 'Irregular') {
+                        const R = parseParam('Radius'), k = parseParam('Conic Constant');
+                        baseSag = window.SurfaceCalculations.calculateIrregularBaseSag(x, y, R, k);
+                    }
+
+                    const error = v.sag - baseSag;
+                    if (isFinite(error)) {
+                        errorValues.push(error);
+                    }
+                }
+            }
+        }
+    }
+
     // Always include maxHeight
     const vMax = calculateSurfaceValues(maxHeight, surface);
     values.push({ r: maxHeight, ...vMax });
@@ -268,6 +307,35 @@ export const calculateSurfaceMetrics = (surface) => {
     if (isFinite(vMax.angle)) maxAngle = Math.max(maxAngle, Math.abs(vMax.angle));
     if (isFinite(vMax.asphericity)) maxAsphericity = Math.max(maxAsphericity, Math.abs(vMax.asphericity));
     if (isFinite(vMax.aberration)) maxAberration = Math.max(maxAberration, Math.abs(vMax.aberration));
+
+    // Calculate RMS and P-V error for Zernike and Irregular (already computed 2D grid above)
+    if ((surface.type === 'Zernike' || surface.type === 'Irregular') && errorValues.length > 0) {
+        // Calculate RMS with piston removal (standard practice)
+        const meanError = errorValues.reduce((sum, err) => sum + err, 0) / errorValues.length;
+        const errorValuesNoPiston = errorValues.map(err => err - meanError);
+        const sumSquares = errorValuesNoPiston.reduce((sum, err) => sum + err * err, 0);
+        const rmsErrorMm = Math.sqrt(sumSquares / errorValuesNoPiston.length);
+
+        // Calculate P-V without piston removal (matches Zemax "no removal" option)
+        // P-V is the peak-to-valley range of the raw aberration values
+        const maxErr = Math.max(...errorValues);
+        const minErr = Math.min(...errorValues);
+        const pvErrorMm = maxErr - minErr;
+
+        // Convert to waves using provided wavelength (nm)
+        const wavelengthMm = wavelengthNm / 1e6; // Convert nm to mm
+        const rmsErrorWaves = rmsErrorMm / wavelengthMm;
+        const pvErrorWaves = pvErrorMm / wavelengthMm;
+
+        rmsError = {
+            mm: rmsErrorMm,
+            waves: rmsErrorWaves
+        };
+        pvError = {
+            mm: pvErrorMm,
+            waves: pvErrorWaves
+        };
+    }
 
     // Calculate max asphericity gradient
     for (let i = 1; i < values.length; i++) {
@@ -311,6 +379,8 @@ export const calculateSurfaceMetrics = (surface) => {
         maxAsphGradient,
         bestFitSphere,
         paraxialFNum,
-        workingFNum
+        workingFNum,
+        rmsError,
+        pvError
     };
 };
