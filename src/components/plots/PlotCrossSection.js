@@ -8,8 +8,16 @@ import { calculateSurfaceValues } from '../../utils/calculations.js';
  * @param {Object} plotRef - React ref to plot container
  * @param {Object} selectedSurface - Surface object with type and parameters
  * @param {string} activeTab - Current metric tab (sag, slope, asphericity, aberration)
+ * @param {Object} c - Color palette object
  */
-export const createCrossSection = (plotRef, selectedSurface, activeTab) => {
+export const createCrossSection = (plotRef, selectedSurface, activeTab, c = null) => {
+    // Default colors if palette not provided
+    const colors = c || {
+        bg: '#2b2b2b',
+        panel: '#353535',
+        text: '#e0e0e0',
+        accent: '#4a90e2'
+    };
     const minHeight = parseFloat(selectedSurface.parameters['Min Height']) || 0;
     const maxHeight = parseFloat(selectedSurface.parameters['Max Height']) || 25;
     const step = parseFloat(selectedSurface.parameters['Step']) || 1;
@@ -59,7 +67,7 @@ export const createCrossSection = (plotRef, selectedSurface, activeTab) => {
         y: y,
         type: 'scatter',
         mode: 'lines',
-        line: { color: '#4a90e2', width: 2 }
+        line: { color: colors.accent, width: 2 }
     }];
 
     const layout = {
@@ -70,9 +78,9 @@ export const createCrossSection = (plotRef, selectedSurface, activeTab) => {
             scaleanchor: activeTab === 'sag' ? 'x' : undefined,
             scaleratio: activeTab === 'sag' ? 1 : undefined
         },
-        paper_bgcolor: '#353535',
-        plot_bgcolor: '#2b2b2b',
-        font: { color: '#e0e0e0' },
+        paper_bgcolor: colors.panel,
+        plot_bgcolor: colors.bg,
+        font: { color: colors.text },
         margin: { l: 60, r: 20, t: 20, b: 60 }
     };
 
