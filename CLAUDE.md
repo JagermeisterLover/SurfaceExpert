@@ -227,6 +227,12 @@ For each surface, the application calculates:
 - **Best Fit Sphere**: Radius of optimal fitting sphere using 3-point or 4-point method
 - **Paraxial F/#**: R / (2 × maxHeight)
 - **Working F/#**: 1 / (2 × maxSlope)
+- **RMS Error**: Root Mean Square wavefront error for Zernike/Irregular surfaces (mm and waves)
+  - Calculated with piston removal over 64×64 grid (standard practice)
+  - Matches Zemax calculation methodology
+- **P-V Error**: Peak-to-Valley wavefront error for Zernike/Irregular surfaces (mm and waves)
+  - Calculated without piston removal (matches Zemax "no removal" option)
+  - Peak-to-valley range of raw aberration values
 
 ## Key Components & Code Patterns
 
@@ -470,23 +476,25 @@ surfaces.push(newSurface);               // ✗ Bad
 
 - **main.js:** Electron-specific, window management, file I/O handlers (~549 lines)
 - **preload.js:** Minimal security bridge, no calculations (~14 lines)
-- **renderer-modular.js:** Main React application with ES6 imports (~1477 lines)
+- **renderer-modular.js:** Main React application with ES6 imports (~1652 lines)
 - **components/**: Modular React components organized by type (15 files)
   - `dialogs/`: Modal dialogs and context menus (6 files)
   - `plots/`: Plotly visualization generators (3 files)
   - `ui/`: Reusable UI building blocks (3 files)
-    - `DebouncedInput.js`: Input component that prevents UI freezing during typing
-    - `PropertyRow.js`: Single parameter row display
-    - `PropertySection.js`: Grouped parameter section
+    - `DebouncedInput.js`: Input component that prevents UI freezing during typing (~92 lines)
+    - `PropertyRow.js`: Single parameter row display (~33 lines)
+    - `PropertySection.js`: Grouped parameter section (~19 lines)
   - `views/`: Data presentation components (2 files)
+    - `DataView.js`: Tabular data display (~98 lines)
+    - `SummaryView.js`: Summary metrics and detailed analysis (~251 lines)
   - `Icons.js`: SVG icon library
 - **constants/**: Application configuration and data (1 file)
   - `surfaceTypes.js`: Universal and surface-specific parameter definitions
 - **utils/**: Pure utility functions (3 files)
-  - `calculations.js`: Surface calculations with BFS caching
+  - `calculations.js`: Surface calculations with BFS caching, RMS/P-V error calculations (~386 lines)
   - `formatters.js`: Value formatting utilities
   - `reportGenerator.js`: HTML/PDF report generation with embedded plots
-- **calculationsWrapper.js:** Pure mathematical functions for all surface types (~745 lines)
+- **calculationsWrapper.js:** Pure mathematical functions for all surface types (~801 lines)
 - **zmxParser.js:** Zemax ZMX file parser and converter (~341 lines)
 - **calculations.py:** Python reference implementation for validation (~347 lines)
 - **surfaceFitter.py:** Surface equation fitter using lmfit library (~294 lines)
@@ -654,7 +662,38 @@ Current cache: Best-fit sphere parameters (Map with JSON key)
 
 ## Recent Development History
 
-### Latest Updates (2025-11-18)
+### Latest Updates (2025-11-19 to 2025-11-20)
+
+1. **Zernike RMS and P-V Error Calculations (Major Feature):**
+   - Added comprehensive RMS (Root Mean Square) and P-V (Peak-to-Valley) wavefront error calculations for Zernike and Irregular surfaces
+   - Calculations performed over 64×64 2D grid matching Zemax methodology
+   - RMS calculated with piston removal (standard optical practice)
+   - P-V calculated without piston removal (matches Zemax "no removal" option)
+   - Results displayed in both millimeters and wave units (λ)
+   - Added wavelength setting to Settings modal (Ctrl+,) with default 632.8 nm (HeNe laser)
+   - Integrated into HTML/PDF report generation
+   - New helper functions in `calculationsWrapper.js`:
+     - `calculateZernikeBaseSag()`: Calculate base conic+aspheric surface for error calculation
+     - `calculateIrregularBaseSag()`: Calculate base conic surface for error calculation
+   - File changes: 252 additions across 6 files
+     - `calculationsWrapper.js`: 801 lines (+82)
+     - `calculations.js`: 386 lines (+74)
+     - `SettingsModal.js`: Added wavelength input field (+40)
+     - `reportGenerator.js`: Display RMS/P-V in reports (+73)
+     - `renderer-modular.js`: 1652 lines (+28)
+
+2. **Report Visualization Improvements:**
+   - Modified step size and maximum rows in data tables for better readability
+   - Removed plot titles from embedded images for cleaner presentation
+   - Added 1:1 aspect ratio to Sag plots for accurate visualization
+   - Changed axis labels from 'Radius' to 'Radial Coordinate' for technical accuracy
+   - Matched 2D plot style to Sag tab: switched from contour to false color map
+   - Fixed Content Security Policy to allow base64-encoded plot images
+   - Fixed Plotly.toImage() errors with off-screen positioning
+   - Fixed plot generation to calculate 2D grids directly instead of interpolating
+   - Fixed Zernike equation notation to match program parameter names
+
+### Previous Updates (2025-11-18)
 
 1. **Report Generation System:**
    - Added comprehensive HTML report export with embedded plots and data
@@ -670,24 +709,24 @@ Current cache: Best-fit sphere parameters (Map with JSON key)
    - Added Step parameter to all surface types for grid generation control
    - Improved UI organization with dedicated Universal parameters section
 
-2. **Input UX Improvements:**
+3. **Input UX Improvements:**
    - Created DebouncedInput component to prevent UI freezing during typing
    - Added Enter key navigation to move between parameter inputs
    - Implemented scroll position preservation when editing parameters
    - Fixed input interruption issues with focused state management
 
-3. **Calculation Precision:**
+4. **Calculation Precision:**
    - Enhanced numerical precision in asphere calculations
    - Fixed max sag calculations to handle absolute values correctly
    - Improved NaN/Infinity handling in summary statistics
    - Created test suite for precision validation (`test_precision.js`)
 
-4. **Zemax Compatibility:**
+5. **Zemax Compatibility:**
    - Fixed EVENASPH parameter mapping in ZMX parser
    - Added Zemax comparison test with exact user parameters (`test_zemax_comparison.js`)
    - Improved Opal Un U slope derivative calculations
 
-5. **Code Cleanup:**
+6. **Code Cleanup:**
    - Removed legacy `renderer.js` (3435 lines)
    - Extracted metrics calculation to shared utility function
    - Improved code organization and maintainability
@@ -822,11 +861,11 @@ Current cache: Best-fit sphere parameters (Map with JSON key)
   - **Styles:** `src/styles.css` - Global styles only
   - **Constants:** `src/constants/surfaceTypes.js` - Surface type definitions
 - **Calculations:**
-  - **JavaScript:** `src/calculationsWrapper.js` (SurfaceCalculations class)
-  - **Utilities:** `src/utils/calculations.js` (surface value calculator with BFS caching)
+  - **JavaScript:** `src/calculationsWrapper.js` (SurfaceCalculations class, RMS/P-V base calculations)
+  - **Utilities:** `src/utils/calculations.js` (surface value calculator with BFS caching, RMS/P-V error calculations)
   - **Python Reference:** `src/calculations.py` (validation/testing)
 - **Formatting:** `src/utils/formatters.js` (formatValue, degreesToDMS)
-- **Report Generation:** `src/utils/reportGenerator.js` (HTML/PDF export with embedded plots)
+- **Report Generation:** `src/utils/reportGenerator.js` (HTML/PDF export with embedded plots, RMS/P-V metrics)
 - **ZMX Import:** `src/zmxParser.js` + `src/components/dialogs/ZMXImportDialog.js`
 - **Surface Fitting:** `src/surfaceFitter.py` (requires `requirements.txt` dependencies)
 - **Menu/IPC:** `src/main.js` + `src/preload.js`
@@ -848,8 +887,19 @@ Current cache: Best-fit sphere parameters (Map with JSON key)
 | Ctrl+Shift+S | Save As (not implemented) |
 | Ctrl+E | Export HTML Report |
 | Ctrl+P | Export PDF Report |
-| Ctrl+, | Settings |
+| Ctrl+, | Settings (Colorscale & Wavelength) |
 | Ctrl+Shift+I | Toggle DevTools |
+
+### Application Settings
+
+Access via Ctrl+, or View → Settings:
+
+- **Plot Colorscale**: Choose from multiple color maps for plot visualization
+  - Options: Viridis, Jet, Hot, Cool, Rainbow, Portland, Picnic, Electric, Earth, Blackbody, YlOrRd, YlGnBu
+- **Reference Wavelength**: Set wavelength for RMS/P-V error calculations
+  - Default: 632.8 nm (HeNe laser)
+  - Range: 100-10000 nm
+  - Used for converting mm to wave units (λ) in Zernike and Irregular surface error calculations
 
 ### Color Scheme
 
@@ -979,15 +1029,21 @@ Supported algorithms from lmfit:
 
 ---
 
-**Last Updated:** 2025-11-18
-**Version:** 2.2.0 (Parameter Architecture & UX Improvements)
+**Last Updated:** 2025-11-20
+**Version:** 2.3.0 (RMS/P-V Error Calculations & Report Enhancements)
 **Major Changes:**
-- Separated universal and surface-specific parameters for better organization
+- **NEW:** Added RMS and P-V wavefront error calculations for Zernike and Irregular surfaces
+- **NEW:** Wavelength setting in Settings modal for error calculations (default: 632.8 nm)
+- Enhanced report visualization with improved plots and axis labels
+- Added helper functions for Zernike and Irregular base surface calculations
+- Updated line counts: calculationsWrapper.js (801), calculations.js (386), renderer-modular.js (1652)
+- Comprehensive test coverage for Zemax compatibility
+
+**Previous Version (2.2.0 - 2025-11-18):**
+- Separated universal and surface-specific parameters
 - Added Step parameter to all surface types
 - Created DebouncedInput component to prevent UI freezing
 - Removed legacy renderer.js (3435 lines)
-- Enhanced calculation precision and Zemax compatibility
-- Added comprehensive test suites (test_precision.js, test_zemax_comparison.js)
 - 18 modular ES6 files (components/, utils/, constants/)
 
 **Maintained by:** AI Assistants working with this codebase
