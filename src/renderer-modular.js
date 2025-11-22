@@ -1867,10 +1867,10 @@ const OpticalSurfaceAnalyzer = () => {
                                 flexDirection: 'column',
                                 gap: '12px',
                                 color: c.textDim,
-                                fontSize: '14px'
+                                fontSize: '16px'
                             }
                         },
-                            h('div', { style: { fontSize: '48px' } }, '📊'),
+                           
                             h('div', null, 'Select a surface or create a new one')
                         ) :
                         activeTab === 'summary' ?

@@ -19,7 +19,12 @@
       "Bash(node --check:*)",
       "Bash(start http://localhost:8080/index-modular.html)",
       "Bash(node:*)",
-      "Bash(taskkill:*)"
+      "Bash(taskkill:*)",
+      "Bash(git checkout:*)",
+      "Bash(dir /s /b d:Kalovaya_massaSE4*.png d:Kalovaya_massaSE4*.ico 2)",
+      "Bash(nul)",
+      "Bash(findstr:*)",
+      "Bash(find:*)"
     ],
     "deny": [],
     "ask": []
