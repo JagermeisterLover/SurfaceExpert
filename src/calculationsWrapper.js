@@ -4,21 +4,26 @@
 class SurfaceCalculations {
     static calculateSphereSag(r, R) {
         if (R === 0) return 0;
+        const c = 1.0 / R;
         const r2 = r * r;
-        const R2 = R * R;
-        // Exact formula: z = R - sqrt(R^2 - r^2)
-        const sqrtTerm = Math.sqrt(R2 - r2);
-        return R - sqrtTerm;
+        const c2r2 = c * c * r2;
+
+        // Formula: z = cr²/(1 + √(1 - c²r²))
+        // This works correctly for both positive and negative radii
+        const sqrtTerm = Math.sqrt(1.0 - c2r2);
+        return (c * r2) / (1.0 + sqrtTerm);
     }
 
     static calculateSphereSlope(r, R) {
         if (R === 0) return 0;
+        const c = 1.0 / R;
         const r2 = r * r;
-        const R2 = R * R;
-        // Exact derivative: dz/dr = r / sqrt(R^2 - r^2)
-        const sqrtTerm = Math.sqrt(R2 - r2);
+        const c2r2 = c * c * r2;
+
+        // Derivative: dz/dr = cr / √(1 - c²r²)
+        const sqrtTerm = Math.sqrt(1.0 - c2r2);
         if (sqrtTerm === 0) return 0;
-        return r / sqrtTerm;
+        return (c * r) / sqrtTerm;
     }
 
     static calculateEvenAsphereSag(r, R, k, A4, A6, A8, A10, A12, A14, A16, A18, A20) {
