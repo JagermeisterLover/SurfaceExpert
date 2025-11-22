@@ -16,7 +16,8 @@ function createWindow() {
       preload: path.join(__dirname, 'preload.js')
     },
     backgroundColor: '#2b2b2b',
-    show: false
+    show: false,
+    icon: path.join(__dirname, '..', 'icons', 'IconInvertedNoBGGlow.png')
   });
 
   mainWindow.loadFile(path.join(__dirname, 'index.html'));

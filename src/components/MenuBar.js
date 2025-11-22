@@ -77,16 +77,48 @@ export function MenuBar({ c, onMenuAction }) {
     style: {
       display: 'flex',
       alignItems: 'center',
-      height: '32px',
+      height: '56px',
       backgroundColor: c.panel,
       borderBottom: `1px solid ${c.border}`,
-      padding: '0 8px',
+      padding: '0 12px',
       gap: '4px',
       position: 'relative',
       userSelect: 'none',
       WebkitAppRegion: 'drag' // Make draggable on Windows
     }
   },
+    // App icon and name
+    React.createElement('div', {
+      style: {
+        display: 'flex',
+        alignItems: 'center',
+        gap: '8px',
+        marginRight: '12px',
+        WebkitAppRegion: 'no-drag'
+      }
+    },
+      // Icon
+      React.createElement('img', {
+        src: '../icons/IconInvertedNoBGGlow.png',
+        alt: 'SurfaceExpert',
+        style: {
+          width: '48px',
+          height: '48px',
+          objectFit: 'contain'
+        }
+      }),
+      // Program name
+      React.createElement('span', {
+        style: {
+          fontSize: '13px',
+          fontWeight: '600',
+          color: c.text,
+          fontFamily: 'system-ui, -apple-system, sans-serif',
+          letterSpacing: '0.3px'
+        }
+      }, 'SurfaceExpert')
+    ),
+
     // Menu items
     Object.keys(menus).map(menuName =>
       React.createElement('div', {
