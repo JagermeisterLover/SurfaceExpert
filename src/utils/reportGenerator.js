@@ -546,7 +546,7 @@ export const generateMetricPlots = async (plotData) => {
 /**
  * Generate 3D surface plot for report
  */
-const generate3DPlotImage = async (surface, plotData) => {
+const generate3DPlotImage = async (surface, plotData, colorscale = 'Jet') => {
     const minHeight = parseFloat(surface.parameters['Min Height']) || 0;
     const maxHeight = parseFloat(surface.parameters['Max Height']) || 25;
     const size = 60;
@@ -601,7 +601,7 @@ const generate3DPlotImage = async (surface, plotData) => {
         y: y,
         z: z,
         type: 'surface',
-        colorscale: 'Viridis',
+        colorscale: colorscale,
         showscale: true,
         contours: {
             z: {
@@ -632,7 +632,7 @@ const generate3DPlotImage = async (surface, plotData) => {
 /**
  * Generate 2D contour plot for report
  */
-const generate2DContourImage = async (surface, plotData) => {
+const generate2DContourImage = async (surface, plotData, colorscale = 'Jet') => {
     const minHeight = parseFloat(surface.parameters['Min Height']) || 0;
     const maxHeight = parseFloat(surface.parameters['Max Height']) || 25;
     const size = 100;
@@ -702,7 +702,7 @@ const generate2DContourImage = async (surface, plotData) => {
         marker: {
             size: 6,
             color: color,
-            colorscale: 'Viridis',
+            colorscale: colorscale,
             showscale: true,
             cmin: zMin,
             cmax: zMax,
@@ -727,14 +727,14 @@ const generate2DContourImage = async (surface, plotData) => {
 /**
  * Generate complete report data for current surface
  */
-export const generateReportData = async (surface, plotData, summaryMetrics) => {
+export const generateReportData = async (surface, plotData, summaryMetrics, colorscale = 'Jet') => {
     console.log('Generating report plots...');
 
     // Generate 3D and 2D plots in temporary containers
-    const plot3D = await generate3DPlotImage(surface, plotData);
+    const plot3D = await generate3DPlotImage(surface, plotData, colorscale);
     console.log('3D plot generated:', plot3D ? 'Success' : 'Failed');
 
-    const plot2D = await generate2DContourImage(surface, plotData);
+    const plot2D = await generate2DContourImage(surface, plotData, colorscale);
     console.log('2D plot generated:', plot2D ? 'Success' : 'Failed');
 
     // Generate metric plots

@@ -9,11 +9,12 @@ import { calculateSurfaceValues } from '../../utils/calculations.js';
  * @param {Object} selectedSurface - Surface object with type and parameters
  * @param {string} activeTab - Current metric tab (sag, slope, asphericity, aberration)
  * @param {string} colorscale - Plotly colorscale name
+ * @param {number} gridSize - Grid size (odd number to ensure point at 0)
  */
-export const create3DPlot = (plotRef, selectedSurface, activeTab, colorscale) => {
+export const create3DPlot = (plotRef, selectedSurface, activeTab, colorscale, gridSize = 61) => {
     const minHeight = parseFloat(selectedSurface.parameters['Min Height']) || 0;
     const maxHeight = parseFloat(selectedSurface.parameters['Max Height']) || 25;
-    const size = 60;
+    const size = gridSize;
     const unit = activeTab === 'slope' ? 'rad' : 'mm';
 
     // Create coordinate arrays
