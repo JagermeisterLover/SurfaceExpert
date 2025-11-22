@@ -10,11 +10,12 @@ import { calculateSurfaceValues } from '../../utils/calculations.js';
  * @param {string} activeTab - Current metric tab (sag, slope, asphericity, aberration)
  * @param {string} colorscale - Plotly colorscale name
  * @param {Object} c - Color scheme object
+ * @param {number} gridSize - Grid size (odd number to ensure point at 0)
  */
-export const create2DContour = (plotRef, selectedSurface, activeTab, colorscale, c) => {
+export const create2DContour = (plotRef, selectedSurface, activeTab, colorscale, c, gridSize = 101) => {
     const minHeight = parseFloat(selectedSurface.parameters['Min Height']) || 0;
     const maxHeight = parseFloat(selectedSurface.parameters['Max Height']) || 25;
-    const size = 100;
+    const size = gridSize;
 
     // Generate grid data
     const gridData = [];

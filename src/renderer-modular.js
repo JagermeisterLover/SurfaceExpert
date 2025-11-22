@@ -19,11 +19,13 @@ import { surfaceTypes, universalParameters, sampleSurfaces, colorscales, colors 
 import { formatValue, degreesToDMS } from './utils/formatters.js';
 import { calculateSurfaceValues, calculateSagOnly, getBestFitSphereParams, calculateSurfaceMetrics } from './utils/calculations.js';
 import { generateReportData } from './utils/reportGenerator.js';
+import { normalizeUnZ, convertPolyToUnZ, convertUnZToPoly, invertSurface } from './utils/surfaceTransformations.js';
 
 // UI Components
 import { PropertySection } from './components/ui/PropertySection.js';
 import { PropertyRow } from './components/ui/PropertyRow.js';
 import { DebouncedInput } from './components/ui/DebouncedInput.js';
+import { SurfaceActionButtons } from './components/ui/SurfaceActionButtons.js';
 
 // View Components
 import { SummaryView } from './components/views/SummaryView.js';
@@ -36,6 +38,7 @@ import { InputDialog } from './components/dialogs/InputDialog.js';
 import { ZMXImportDialog } from './components/dialogs/ZMXImportDialog.js';
 import { ConversionDialog } from './components/dialogs/ConversionDialog.js';
 import { ConversionResultsDialog } from './components/dialogs/ConversionResultsDialog.js';
+import { NormalizeUnZDialog } from './components/dialogs/NormalizeUnZDialog.js';
 
 // Plot Components
 import { create3DPlot } from './components/plots/Plot3D.js';
@@ -71,10 +74,13 @@ const OpticalSurfaceAnalyzer = () => {
     const [showConvert, setShowConvert] = useState(false);
     const [showConvertResults, setShowConvertResults] = useState(false);
     const [convertResults, setConvertResults] = useState(null);
-    const [colorscale, setColorscale] = useState('Viridis');
+    const [colorscale, setColorscale] = useState('Jet');
     const [wavelength, setWavelength] = useState(632.8); // Reference wavelength in nm for RMS/PV calculations
+    const [gridSize3D, setGridSize3D] = useState(129); // Grid size for 3D plots (odd number, max 257)
+    const [gridSize2D, setGridSize2D] = useState(129); // Grid size for 2D plots (odd number, max 257)
     const [contextMenu, setContextMenu] = useState(null);
     const [inputDialog, setInputDialog] = useState(null);
+    const [showNormalizeUnZ, setShowNormalizeUnZ] = useState(false);
     const plotRef = useRef(null);
     const propertiesPanelRef = useRef(null);
     const scrollPositionRef = useRef(0);
@@ -89,9 +95,10 @@ const OpticalSurfaceAnalyzer = () => {
     // DATA LOADING
     // ============================================
 
-    // Load folders on mount
+    // Load folders and settings on mount
     useEffect(() => {
         loadFoldersFromDisk();
+        loadSettingsFromDisk();
     }, []);
 
     // Preserve scroll position in properties panel during updates
@@ -151,6 +158,35 @@ const OpticalSurfaceAnalyzer = () => {
         }
     };
 
+    const loadSettingsFromDisk = async () => {
+        if (window.electronAPI && window.electronAPI.loadSettings) {
+            const result = await window.electronAPI.loadSettings();
+            if (result.success && result.settings) {
+                setColorscale(result.settings.colorscale || 'Jet');
+                setWavelength(result.settings.wavelength || 632.8);
+                setGridSize3D(result.settings.gridSize3D || 129);
+                setGridSize2D(result.settings.gridSize2D || 129);
+            }
+        }
+    };
+
+    const saveSettingsToDisk = async () => {
+        if (window.electronAPI && window.electronAPI.saveSettings) {
+            const settings = {
+                colorscale,
+                wavelength,
+                gridSize3D,
+                gridSize2D
+            };
+            await window.electronAPI.saveSettings(settings);
+        }
+    };
+
+    // Auto-save settings when they change
+    useEffect(() => {
+        saveSettingsToDisk();
+    }, [colorscale, wavelength, gridSize3D, gridSize2D]);
+
     // Update selected surface when it changes in the folders
     useEffect(() => {
         if (!selectedSurface) return;
@@ -174,13 +210,13 @@ const OpticalSurfaceAnalyzer = () => {
     useEffect(() => {
         if (!selectedSurface) return;
         if (plotRef.current && activeTab !== 'summary' && activeSubTab === '3d') {
-            create3DPlot(plotRef, selectedSurface, activeTab, colorscale);
+            create3DPlot(plotRef, selectedSurface, activeTab, colorscale, gridSize3D);
         } else if (plotRef.current && activeTab !== 'summary' && activeSubTab === '2d') {
-            create2DContour(plotRef, selectedSurface, activeTab, colorscale, colors);
+            create2DContour(plotRef, selectedSurface, activeTab, colorscale, colors, gridSize2D);
         } else if (plotRef.current && activeTab !== 'summary' && activeSubTab === 'cross') {
             createCrossSection(plotRef, selectedSurface, activeTab);
         }
-    }, [selectedSurface, activeTab, activeSubTab, colorscale]);
+    }, [selectedSurface, activeTab, activeSubTab, colorscale, gridSize3D, gridSize2D]);
 
     // ============================================
     // MENU ACTIONS
@@ -337,7 +373,8 @@ const OpticalSurfaceAnalyzer = () => {
             const reportData = await generateReportData(
                 surface,
                 plotData,
-                summaryMetrics
+                summaryMetrics,
+                colorscale
             );
 
             // Sanitize surface name for filename
@@ -384,7 +421,8 @@ const OpticalSurfaceAnalyzer = () => {
             const reportData = await generateReportData(
                 surface,
                 plotData,
-                summaryMetrics
+                summaryMetrics,
+                colorscale
             );
 
             // Sanitize surface name for filename
@@ -400,6 +438,185 @@ const OpticalSurfaceAnalyzer = () => {
         } catch (error) {
             alert('Error generating PDF: ' + error.message);
             console.error('PDF generation error:', error);
+        }
+    };
+
+    // ============================================
+    // SURFACE TRANSFORMATION HANDLERS
+    // ============================================
+
+    const handleInvertSurface = () => {
+        if (!selectedSurface || !selectedFolder) return;
+
+        try {
+            const invertedParams = invertSurface(selectedSurface.type, selectedSurface.parameters);
+
+            // Update the surface with inverted parameters
+            const updatedFolders = folders.map(folder => {
+                if (folder.id === selectedFolder.id) {
+                    return {
+                        ...folder,
+                        surfaces: folder.surfaces.map(s =>
+                            s.id === selectedSurface.id
+                                ? { ...s, parameters: invertedParams }
+                                : s
+                        )
+                    };
+                }
+                return folder;
+            });
+
+            setFolders(updatedFolders);
+
+            // Save to disk
+            const updatedSurface = { ...selectedSurface, parameters: invertedParams };
+            if (window.electronAPI && window.electronAPI.saveSurface) {
+                window.electronAPI.saveSurface(selectedFolder.name, updatedSurface);
+            }
+        } catch (error) {
+            alert(`Error inverting surface: ${error.message}`);
+            console.error('Invert error:', error);
+        }
+    };
+
+    const handleNormalizeUnZ = () => {
+        if (!selectedSurface || selectedSurface.type !== 'Opal Un Z') return;
+        setShowNormalizeUnZ(true);
+    };
+
+    const handleNormalizeUnZConfirm = (newH) => {
+        if (!selectedSurface || !selectedFolder) return;
+
+        try {
+            const currentH = parseFloat(selectedSurface.parameters.H) || 1;
+            const currentCoeffs = {};
+            for (let n = 3; n <= 13; n++) {
+                currentCoeffs[`A${n}`] = selectedSurface.parameters[`A${n}`];
+            }
+
+            const result = normalizeUnZ(newH, currentH, currentCoeffs);
+
+            // Update parameters with normalized coefficients and new H
+            const updatedParams = {
+                ...selectedSurface.parameters,
+                H: result.H.toString(),
+                ...result.coefficients
+            };
+
+            // Update folders
+            const updatedFolders = folders.map(folder => {
+                if (folder.id === selectedFolder.id) {
+                    return {
+                        ...folder,
+                        surfaces: folder.surfaces.map(s =>
+                            s.id === selectedSurface.id
+                                ? { ...s, parameters: updatedParams }
+                                : s
+                        )
+                    };
+                }
+                return folder;
+            });
+
+            setFolders(updatedFolders);
+            setShowNormalizeUnZ(false);
+
+            // Save to disk
+            const updatedSurface = { ...selectedSurface, parameters: updatedParams };
+            if (window.electronAPI && window.electronAPI.saveSurface) {
+                window.electronAPI.saveSurface(selectedFolder.name, updatedSurface);
+            }
+        } catch (error) {
+            alert(`Error normalizing surface: ${error.message}`);
+            console.error('Normalize error:', error);
+        }
+    };
+
+    const handleConvertToUnZ = () => {
+        if (!selectedSurface || selectedSurface.type !== 'Poly' || !selectedFolder) return;
+
+        try {
+            const unzParams = convertPolyToUnZ(selectedSurface.parameters);
+
+            // Create new surface with UnZ type
+            const newSurface = {
+                id: Date.now(),
+                name: `${selectedSurface.name} (UnZ)`,
+                type: 'Opal Un Z',
+                color: selectedSurface.color,
+                parameters: {
+                    'Min Height': selectedSurface.parameters['Min Height'],
+                    'Max Height': selectedSurface.parameters['Max Height'],
+                    'Step': selectedSurface.parameters['Step'],
+                    ...unzParams
+                }
+            };
+
+            // Add new surface to folder
+            const updatedFolders = folders.map(folder => {
+                if (folder.id === selectedFolder.id) {
+                    return {
+                        ...folder,
+                        surfaces: [...folder.surfaces, newSurface]
+                    };
+                }
+                return folder;
+            });
+
+            setFolders(updatedFolders);
+            setSelectedSurface(newSurface);
+
+            // Save to disk
+            if (window.electronAPI && window.electronAPI.saveSurface) {
+                window.electronAPI.saveSurface(selectedFolder.name, newSurface);
+            }
+        } catch (error) {
+            alert(`Error converting to UnZ: ${error.message}`);
+            console.error('Convert to UnZ error:', error);
+        }
+    };
+
+    const handleConvertToPoly = () => {
+        if (!selectedSurface || selectedSurface.type !== 'Opal Un Z' || !selectedFolder) return;
+
+        try {
+            const polyParams = convertUnZToPoly(selectedSurface.parameters);
+
+            // Create new surface with Poly type
+            const newSurface = {
+                id: Date.now(),
+                name: `${selectedSurface.name} (Poly)`,
+                type: 'Poly',
+                color: selectedSurface.color,
+                parameters: {
+                    'Min Height': selectedSurface.parameters['Min Height'],
+                    'Max Height': selectedSurface.parameters['Max Height'],
+                    'Step': selectedSurface.parameters['Step'],
+                    ...polyParams
+                }
+            };
+
+            // Add new surface to folder
+            const updatedFolders = folders.map(folder => {
+                if (folder.id === selectedFolder.id) {
+                    return {
+                        ...folder,
+                        surfaces: [...folder.surfaces, newSurface]
+                    };
+                }
+                return folder;
+            });
+
+            setFolders(updatedFolders);
+            setSelectedSurface(newSurface);
+
+            // Save to disk
+            if (window.electronAPI && window.electronAPI.saveSurface) {
+                window.electronAPI.saveSurface(selectedFolder.name, newSurface);
+            }
+        } catch (error) {
+            alert(`Error converting to Poly: ${error.message}`);
+            console.error('Convert to Poly error:', error);
         }
     };
 
@@ -1074,6 +1291,16 @@ const OpticalSurfaceAnalyzer = () => {
                     (selectedSurface.type === 'Zernike' || selectedSurface.type === 'Irregular') && metrics.pvError && h(PropertyRow, { label: "P-V Error (waves)", value: metrics.pvError.waves, editable: false, c })
                 ),
 
+                // Surface Transformation Actions
+                h(SurfaceActionButtons, {
+                    surface: selectedSurface,
+                    onInvert: handleInvertSurface,
+                    onNormalizeUnZ: handleNormalizeUnZ,
+                    onConvertToUnZ: handleConvertToUnZ,
+                    onConvertToPoly: handleConvertToPoly,
+                    c
+                }),
+
                 // Quick Actions
                 h(PropertySection, { title: "Quick Actions", c },
                     h('button', {
@@ -1149,6 +1376,10 @@ const OpticalSurfaceAnalyzer = () => {
             setColorscale,
             wavelength,
             setWavelength,
+            gridSize3D,
+            setGridSize3D,
+            gridSize2D,
+            setGridSize2D,
             onClose: () => setShowSettings(false),
             c
         }),
@@ -1179,6 +1410,13 @@ const OpticalSurfaceAnalyzer = () => {
             setFolders,
             setSelectedSurface,
             onClose: () => setShowConvertResults(false),
+            c
+        }),
+        // Normalize UnZ Dialog
+        showNormalizeUnZ && selectedSurface && h(NormalizeUnZDialog, {
+            currentH: parseFloat(selectedSurface.parameters.H) || 1,
+            onConfirm: handleNormalizeUnZConfirm,
+            onCancel: () => setShowNormalizeUnZ(false),
             c
         }),
         // Input Dialog (for rename/new folder)
