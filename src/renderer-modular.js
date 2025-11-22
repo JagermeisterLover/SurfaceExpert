@@ -26,6 +26,7 @@ import { PropertySection } from './components/ui/PropertySection.js';
 import { PropertyRow } from './components/ui/PropertyRow.js';
 import { DebouncedInput } from './components/ui/DebouncedInput.js';
 import { SurfaceActionButtons } from './components/ui/SurfaceActionButtons.js';
+import { MenuBar } from './components/MenuBar.js';
 
 // View Components
 import { SummaryView } from './components/views/SummaryView.js';
@@ -250,6 +251,19 @@ const OpticalSurfaceAnalyzer = () => {
                 break;
             case 'export-pdf-report':
                 await handleExportPDFReport();
+                break;
+            case 'toggle-devtools':
+                // DevTools can only be toggled from main process
+                // This is a placeholder - needs IPC handler
+                console.log('DevTools toggle requested');
+                break;
+            case 'documentation':
+                console.log('Documentation requested');
+                // TODO: Open documentation
+                break;
+            case 'about':
+                console.log('About requested');
+                // TODO: Show about dialog
                 break;
             // Add more handlers as needed
         }
@@ -954,7 +968,7 @@ const OpticalSurfaceAnalyzer = () => {
         if (window.electronAPI) {
             const result = await window.electronAPI.deleteFolder(folder.name);
             if (!result.success) {
-                alert(result.error || 'Failed to delete folder');
+                console.error('Failed to delete folder:', result.error);
                 return;
             }
         }
@@ -1370,6 +1384,11 @@ const OpticalSurfaceAnalyzer = () => {
         },
         onClick: () => setContextMenu(null)
     },
+        // Custom Menu Bar
+        h(MenuBar, {
+            c,
+            onMenuAction: handleMenuAction
+        }),
         // Settings Modal
         showSettings && h(SettingsModal, {
             colorscale,
