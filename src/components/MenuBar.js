@@ -102,19 +102,21 @@ export function MenuBar({ c, onMenuAction }) {
         src: '../icons/IconInvertedNoBGGlow.png',
         alt: 'SurfaceExpert',
         style: {
-          width: '48px',
-          height: '48px',
+          width: '36px',
+          height: '36px',
           objectFit: 'contain'
         }
       }),
       // Program name
       React.createElement('span', {
         style: {
-          fontSize: '13px',
-          fontWeight: '600',
+          fontSize: '16px',           // Slightly larger for hierarchy
+          fontWeight: '600',          // Bolder
           color: c.text,
+          // Prioritize Inter, then nice system fonts
           fontFamily: 'system-ui, -apple-system, sans-serif',
-          letterSpacing: '0.3px'
+          letterSpacing: '-0.5px',    // Tighter tracking looks more professional
+          textShadow: '0 1px 2px rgba(0,0,0,0.2)' // Subtle depth
         }
       }, 'SurfaceExpert')
     ),
