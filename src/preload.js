@@ -14,5 +14,8 @@ contextBridge.exposeInMainWorld('electronAPI', {
   saveHTMLReport: (htmlContent, suggestedName) => ipcRenderer.invoke('save-html-report', htmlContent, suggestedName),
   generatePDFReport: (htmlContent, suggestedName) => ipcRenderer.invoke('generate-pdf-report', htmlContent, suggestedName),
   loadSettings: () => ipcRenderer.invoke('load-settings'),
-  saveSettings: (settings) => ipcRenderer.invoke('save-settings', settings)
+  saveSettings: (settings) => ipcRenderer.invoke('save-settings', settings),
+  windowControl: (action) => ipcRenderer.send('window-control', action),
+  onWindowMaximized: (callback) => ipcRenderer.on('window-maximized', callback),
+  onWindowUnmaximized: (callback) => ipcRenderer.on('window-unmaximized', callback)
 });

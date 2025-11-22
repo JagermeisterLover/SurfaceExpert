@@ -17,7 +17,9 @@ function createWindow() {
     },
     backgroundColor: '#2b2b2b',
     show: false,
-    icon: path.join(__dirname, '..', 'icons', 'IconInvertedNoBGGlow.png')
+    icon: path.join(__dirname, '..', 'icons', 'IconInvertedNoBGGlow.png'),
+    frame: false,
+    titleBarStyle: 'hidden'
   });
 
   mainWindow.loadFile(path.join(__dirname, 'index.html'));
@@ -34,6 +36,15 @@ function createWindow() {
     mainWindow = null;
   });
 
+  // Listen for maximize/unmaximize events and notify renderer
+  mainWindow.on('maximize', () => {
+    mainWindow.webContents.send('window-maximized');
+  });
+
+  mainWindow.on('unmaximize', () => {
+    mainWindow.webContents.send('window-unmaximized');
+  });
+
   createMenu();
   setupIpcHandlers();
 }
@@ -42,6 +53,25 @@ function setupIpcHandlers() {
   // Get app directory path for storing surfaces and settings
   const surfacesDir = path.join(__dirname, '..', 'surfaces');
   const settingsPath = path.join(__dirname, '..', 'settings.json');
+
+  // Window control handlers
+  ipcMain.on('window-control', (event, action) => {
+    switch (action) {
+      case 'minimize':
+        mainWindow.minimize();
+        break;
+      case 'maximize':
+        if (mainWindow.isMaximized()) {
+          mainWindow.unmaximize();
+        } else {
+          mainWindow.maximize();
+        }
+        break;
+      case 'close':
+        mainWindow.close();
+        break;
+    }
+  });
 
   // Ensure surfaces directory exists
   if (!fs.existsSync(surfacesDir)) {
@@ -65,7 +95,8 @@ function setupIpcHandlers() {
             colorscale: 'Jet',
             wavelength: 632.8,
             gridSize3D: 129,
-            gridSize2D: 129
+            gridSize2D: 129,
+            theme: 'Dark Gray (Default)'
           }
         };
       }
@@ -78,7 +109,8 @@ function setupIpcHandlers() {
           colorscale: 'Jet',
           wavelength: 632.8,
           gridSize3D: 129,
-          gridSize2D: 129
+          gridSize2D: 129,
+          theme: 'Dark Gray (Default)'
         }
       };
     }

@@ -14,6 +14,7 @@ console.log('📅 Build timestamp:', new Date().toISOString());
 
 // Constants
 import { surfaceTypes, universalParameters, sampleSurfaces, colorscales, colors } from './constants/surfaceTypes.js';
+import { getPalette } from './constants/colorPalettes.js';
 
 // Utilities
 import { formatValue, degreesToDMS } from './utils/formatters.js';
@@ -26,6 +27,7 @@ import { PropertySection } from './components/ui/PropertySection.js';
 import { PropertyRow } from './components/ui/PropertyRow.js';
 import { DebouncedInput } from './components/ui/DebouncedInput.js';
 import { SurfaceActionButtons } from './components/ui/SurfaceActionButtons.js';
+import { TitleBar } from './components/TitleBar.js';
 import { MenuBar } from './components/MenuBar.js';
 
 // View Components
@@ -79,6 +81,7 @@ const OpticalSurfaceAnalyzer = () => {
     const [wavelength, setWavelength] = useState(632.8); // Reference wavelength in nm for RMS/PV calculations
     const [gridSize3D, setGridSize3D] = useState(129); // Grid size for 3D plots (odd number, max 257)
     const [gridSize2D, setGridSize2D] = useState(129); // Grid size for 2D plots (odd number, max 257)
+    const [theme, setTheme] = useState('Dark Gray (Default)'); // Color theme
     const [contextMenu, setContextMenu] = useState(null);
     const [inputDialog, setInputDialog] = useState(null);
     const [showNormalizeUnZ, setShowNormalizeUnZ] = useState(false);
@@ -167,6 +170,7 @@ const OpticalSurfaceAnalyzer = () => {
                 setWavelength(result.settings.wavelength || 632.8);
                 setGridSize3D(result.settings.gridSize3D || 129);
                 setGridSize2D(result.settings.gridSize2D || 129);
+                setTheme(result.settings.theme || 'Dark Gray (Default)');
             }
         }
     };
@@ -177,7 +181,8 @@ const OpticalSurfaceAnalyzer = () => {
                 colorscale,
                 wavelength,
                 gridSize3D,
-                gridSize2D
+                gridSize2D,
+                theme
             };
             await window.electronAPI.saveSettings(settings);
         }
@@ -186,7 +191,7 @@ const OpticalSurfaceAnalyzer = () => {
     // Auto-save settings when they change
     useEffect(() => {
         saveSettingsToDisk();
-    }, [colorscale, wavelength, gridSize3D, gridSize2D]);
+    }, [colorscale, wavelength, gridSize3D, gridSize2D, theme]);
 
     // Update selected surface when it changes in the folders
     useEffect(() => {
@@ -210,14 +215,15 @@ const OpticalSurfaceAnalyzer = () => {
 
     useEffect(() => {
         if (!selectedSurface) return;
+        const c = getPalette(theme);
         if (plotRef.current && activeTab !== 'summary' && activeSubTab === '3d') {
-            create3DPlot(plotRef, selectedSurface, activeTab, colorscale, gridSize3D);
+            create3DPlot(plotRef, selectedSurface, activeTab, colorscale, gridSize3D, c);
         } else if (plotRef.current && activeTab !== 'summary' && activeSubTab === '2d') {
-            create2DContour(plotRef, selectedSurface, activeTab, colorscale, colors, gridSize2D);
+            create2DContour(plotRef, selectedSurface, activeTab, colorscale, c, gridSize2D);
         } else if (plotRef.current && activeTab !== 'summary' && activeSubTab === 'cross') {
-            createCrossSection(plotRef, selectedSurface, activeTab);
+            createCrossSection(plotRef, selectedSurface, activeTab, c);
         }
-    }, [selectedSurface, activeTab, activeSubTab, colorscale, gridSize3D, gridSize2D]);
+    }, [selectedSurface, activeTab, activeSubTab, colorscale, gridSize3D, gridSize2D, theme]);
 
     // ============================================
     // MENU ACTIONS
@@ -231,6 +237,13 @@ const OpticalSurfaceAnalyzer = () => {
             });
         }
     }, []);
+
+    // Window control handler
+    const handleWindowControl = (action) => {
+        if (window.electronAPI && window.electronAPI.windowControl) {
+            window.electronAPI.windowControl(action);
+        }
+    };
 
     const handleMenuAction = async (action) => {
         switch (action) {
@@ -1369,7 +1382,7 @@ const OpticalSurfaceAnalyzer = () => {
     // RENDER
     // ============================================
 
-    const c = colors;
+    const c = getPalette(theme);
 
     return h('div', {
         style: {
@@ -1384,6 +1397,11 @@ const OpticalSurfaceAnalyzer = () => {
         },
         onClick: () => setContextMenu(null)
     },
+        // Custom Title Bar
+        h(TitleBar, {
+            c,
+            onWindowControl: handleWindowControl
+        }),
         // Custom Menu Bar
         h(MenuBar, {
             c,
@@ -1399,6 +1417,8 @@ const OpticalSurfaceAnalyzer = () => {
             setGridSize3D,
             gridSize2D,
             setGridSize2D,
+            theme,
+            setTheme,
             onClose: () => setShowSettings(false),
             c
         }),

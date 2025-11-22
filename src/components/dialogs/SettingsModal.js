@@ -1,10 +1,11 @@
 // SettingsModal component - Settings dialog for plot colorscale selection
 
 import { colorscales } from '../../constants/surfaceTypes.js';
+import { getPaletteNames } from '../../constants/colorPalettes.js';
 
 const { createElement: h } = React;
 
-export const SettingsModal = ({ colorscale, setColorscale, wavelength, setWavelength, gridSize3D, setGridSize3D, gridSize2D, setGridSize2D, onClose, c }) => {
+export const SettingsModal = ({ colorscale, setColorscale, wavelength, setWavelength, gridSize3D, setGridSize3D, gridSize2D, setGridSize2D, theme, setTheme, onClose, c }) => {
     // Grid size options (odd numbers only to ensure point at 0)
     // Capped at 257 to prevent application freezing
     const gridSizeOptions = [33, 65, 129, 257];
@@ -42,6 +43,38 @@ export const SettingsModal = ({ colorscale, setColorscale, wavelength, setWavele
                     color: c.text
                 }
             }, 'Settings'),
+
+            h('div', { style: { marginBottom: '20px' } },
+                h('label', {
+                    style: {
+                        display: 'block',
+                        fontSize: '13px',
+                        fontWeight: '600',
+                        marginBottom: '8px',
+                        color: c.textDim,
+                        textTransform: 'uppercase',
+                        letterSpacing: '0.5px'
+                    }
+                }, 'Color Theme'),
+                h('select', {
+                    value: theme,
+                    onChange: (e) => setTheme(e.target.value),
+                    style: {
+                        width: '100%',
+                        padding: '10px',
+                        backgroundColor: c.bg,
+                        color: c.text,
+                        border: `1px solid ${c.border}`,
+                        borderRadius: '4px',
+                        fontSize: '13px',
+                        cursor: 'pointer'
+                    }
+                },
+                    getPaletteNames().map(name =>
+                        h('option', { key: name, value: name }, name)
+                    )
+                )
+            ),
 
             h('div', { style: { marginBottom: '20px' } },
                 h('label', {

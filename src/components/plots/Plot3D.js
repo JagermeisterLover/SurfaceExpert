@@ -10,8 +10,15 @@ import { calculateSurfaceValues } from '../../utils/calculations.js';
  * @param {string} activeTab - Current metric tab (sag, slope, asphericity, aberration)
  * @param {string} colorscale - Plotly colorscale name
  * @param {number} gridSize - Grid size (odd number to ensure point at 0)
+ * @param {Object} c - Color palette object
  */
-export const create3DPlot = (plotRef, selectedSurface, activeTab, colorscale, gridSize = 61) => {
+export const create3DPlot = (plotRef, selectedSurface, activeTab, colorscale, gridSize = 61, c = null) => {
+    // Default colors if palette not provided
+    const colors = c || {
+        bg: '#2b2b2b',
+        panel: '#353535',
+        text: '#e0e0e0'
+    };
     const minHeight = parseFloat(selectedSurface.parameters['Min Height']) || 0;
     const maxHeight = parseFloat(selectedSurface.parameters['Max Height']) || 25;
     const size = gridSize;
@@ -82,15 +89,15 @@ export const create3DPlot = (plotRef, selectedSurface, activeTab, colorscale, gr
             xaxis: { title: 'X (mm)', range: [-maxHeight, maxHeight] },
             yaxis: { title: 'Y (mm)', range: [-maxHeight, maxHeight] },
             zaxis: { title: `${activeTab.charAt(0).toUpperCase() + activeTab.slice(1)} (${unit})`, range: [zMin, zMax] },
-            bgcolor: '#2b2b2b',
+            bgcolor: colors.bg,
             // For sag tab, use manual aspect ratio to maintain 1:1 scale for X:Y
             // For other tabs, use cube mode for uniform scaling
             aspectmode: activeTab === 'sag' ? 'manual' : 'cube',
             aspectratio: activeTab === 'sag' ? { x: 1, y: 1, z: (zMax - zMin) / (2 * maxHeight) } : undefined
         },
-        paper_bgcolor: '#353535',
-        plot_bgcolor: '#353535',
-        font: { color: '#e0e0e0' },
+        paper_bgcolor: colors.panel,
+        plot_bgcolor: colors.panel,
+        font: { color: colors.text },
         margin: { l: 0, r: 0, t: 0, b: 0 }
     };
 
