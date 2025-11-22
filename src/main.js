@@ -38,13 +38,64 @@ function createWindow() {
 }
 
 function setupIpcHandlers() {
-  // Get app directory path for storing surfaces
+  // Get app directory path for storing surfaces and settings
   const surfacesDir = path.join(__dirname, '..', 'surfaces');
+  const settingsPath = path.join(__dirname, '..', 'settings.json');
 
   // Ensure surfaces directory exists
   if (!fs.existsSync(surfacesDir)) {
     fs.mkdirSync(surfacesDir, { recursive: true });
   }
+
+  // Handler for loading settings from disk
+  ipcMain.handle('load-settings', async () => {
+    try {
+      if (fs.existsSync(settingsPath)) {
+        const content = fs.readFileSync(settingsPath, 'utf-8');
+        return {
+          success: true,
+          settings: JSON.parse(content)
+        };
+      } else {
+        // Return default settings if file doesn't exist
+        return {
+          success: true,
+          settings: {
+            colorscale: 'Jet',
+            wavelength: 632.8,
+            gridSize3D: 129,
+            gridSize2D: 129
+          }
+        };
+      }
+    } catch (err) {
+      console.error('Error loading settings:', err);
+      return {
+        success: false,
+        error: err.message,
+        settings: {
+          colorscale: 'Jet',
+          wavelength: 632.8,
+          gridSize3D: 129,
+          gridSize2D: 129
+        }
+      };
+    }
+  });
+
+  // Handler for saving settings to disk
+  ipcMain.handle('save-settings', async (event, settings) => {
+    try {
+      fs.writeFileSync(settingsPath, JSON.stringify(settings, null, 2), 'utf-8');
+      return { success: true };
+    } catch (err) {
+      console.error('Error saving settings:', err);
+      return {
+        success: false,
+        error: err.message
+      };
+    }
+  });
 
   // Handler for loading folder structure from disk
   ipcMain.handle('load-folders', async () => {
