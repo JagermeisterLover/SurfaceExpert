@@ -323,13 +323,13 @@ const OpticalSurfaceAnalyzer = () => {
     const handleExportHTMLReport = async () => {
         // Use ref to access latest value (important for menu actions)
         const surface = selectedSurfaceRef.current;
-        await exportHTMLReport(surface, wavelength, colorscale);
+        await exportHTMLReport(surface, wavelength, colorscale, gridSize3D, gridSize2D);
     };
 
     const handleExportPDFReport = async () => {
         // Use ref to access latest value (important for menu actions)
         const surface = selectedSurfaceRef.current;
-        await exportPDFReport(surface, wavelength, colorscale);
+        await exportPDFReport(surface, wavelength, colorscale, gridSize3D, gridSize2D);
     };
 
     // ============================================
