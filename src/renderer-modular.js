@@ -650,7 +650,7 @@ const OpticalSurfaceAnalyzer = () => {
         const folder = folders.find(f => f.id === folderId);
         if (!folder) return;
 
-        // Close any open dialogs first
+        // Close any open dialogs first to prevent event conflicts
         setContextMenu(null);
         setInputDialog(null);
 
@@ -677,13 +677,27 @@ const OpticalSurfaceAnalyzer = () => {
             }
         }
 
-        // Force focus back to document body after state updates
-        setTimeout(() => {
-            if (document.activeElement && document.activeElement.blur) {
+        // Critical: Force complete focus reset to prevent input lock
+        // This must happen after React finishes updating the DOM
+        requestAnimationFrame(() => {
+            // Blur any active element
+            if (document.activeElement && document.activeElement !== document.body) {
                 document.activeElement.blur();
             }
+
+            // Remove any lingering focus from inputs
+            const inputs = document.querySelectorAll('input, textarea, select, button');
+            inputs.forEach(input => {
+                if (input === document.activeElement) {
+                    input.blur();
+                }
+            });
+
+            // Reset focus to body
+            document.body.tabIndex = -1;
             document.body.focus();
-        }, 0);
+            document.body.removeAttribute('tabindex');
+        });
     };
 
     const renameFolder = async (folderId, newName) => {
@@ -715,17 +729,6 @@ const OpticalSurfaceAnalyzer = () => {
         if (selectedFolder && selectedFolder.id === folderId) {
             setSelectedFolder({ ...selectedFolder, id: newName, name: newName });
         }
-    };
-
-    const handleFolderClick = (folder) => {
-        // Select the folder
-        setSelectedFolder(folder);
-
-        // Toggle expansion
-        const updated = folders.map(f =>
-            f.id === folder.id ? { ...f, expanded: !f.expanded } : f
-        );
-        setFolders(updated);
     };
 
     const toggleFolderExpanded = (folderId) => {
@@ -893,7 +896,7 @@ const OpticalSurfaceAnalyzer = () => {
                         color: folders.length > 1 ? '#e94560' : c.textDim
                     },
                     onClick: () => {
-                        if (folders.length > 1 && confirm(`Delete folder "${contextMenu.target.name}"?`)) {
+                        if (folders.length > 1) {
                             removeFolder(contextMenu.target.id);
                         }
                         setContextMenu(null);
@@ -930,7 +933,7 @@ const OpticalSurfaceAnalyzer = () => {
                 selectedSurface,
                 selectedSurfaces,
                 handleSurfaceClick,
-                handleFolderClick,
+                setSelectedFolder,
                 toggleFolderExpanded,
                 addSurface,
                 removeSelectedSurfaces,
