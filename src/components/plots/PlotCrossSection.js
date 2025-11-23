@@ -3,6 +3,7 @@
 
 import { calculateSurfaceValues } from '../../utils/calculations.js';
 import { sanitizeValue, sanitizeArray1D, safePlotlyNewPlot } from '../../utils/dataSanitization.js';
+import { getGridColor } from '../../constants/colorPalettes.js';
 
 /**
  * Create cross-section line plot
@@ -77,13 +78,22 @@ export const createCrossSection = (plotRef, selectedSurface, activeTab, c = null
         line: { color: colors.accent, width: 2 }
     }];
 
+    const gridColor = getGridColor(colors);
+
     const layout = {
-        xaxis: { title: 'Radial Distance (mm)', zeroline: true },
+        xaxis: {
+            title: 'Radial Distance (mm)',
+            zeroline: true,
+            gridcolor: gridColor,
+            zerolinecolor: gridColor
+        },
         yaxis: {
             title: `${activeTab.charAt(0).toUpperCase() + activeTab.slice(1)} (${unit})`,
             // For sag tab, maintain 1:1 aspect ratio with radial distance
             scaleanchor: activeTab === 'sag' ? 'x' : undefined,
-            scaleratio: activeTab === 'sag' ? 1 : undefined
+            scaleratio: activeTab === 'sag' ? 1 : undefined,
+            gridcolor: gridColor,
+            zerolinecolor: gridColor
         },
         paper_bgcolor: colors.panel,
         plot_bgcolor: colors.bg,
