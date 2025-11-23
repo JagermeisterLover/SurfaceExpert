@@ -51,8 +51,22 @@ function createWindow() {
 
 function setupIpcHandlers() {
   // Get app directory path for storing surfaces and settings
-  const surfacesDir = path.join(__dirname, '..', 'surfaces');
-  const settingsPath = path.join(__dirname, '..', 'settings.json');
+  // For portable build: store data next to the executable
+  // For dev mode: store in project root
+  const isPortable = !app.isPackaged || process.env.PORTABLE === 'true';
+  const appPath = app.isPackaged
+    ? path.dirname(app.getPath('exe'))  // Next to the exe for portable
+    : app.getAppPath();                  // Project root for dev
+
+  const surfacesDir = path.join(appPath, 'surfaces');
+  const settingsPath = path.join(appPath, 'settings.json');
+
+  console.log('=== Storage Paths ===');
+  console.log('App packaged:', app.isPackaged);
+  console.log('App path:', appPath);
+  console.log('Surfaces directory:', surfacesDir);
+  console.log('Settings path:', settingsPath);
+  console.log('====================');
 
   // Window control handlers
   ipcMain.on('window-control', (event, action) => {
