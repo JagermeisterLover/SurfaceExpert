@@ -545,11 +545,16 @@ export const generateMetricPlots = async (plotData) => {
 
 /**
  * Generate 3D surface plot for report
+ * @param {Object} surface - Surface object
+ * @param {Object} plotData - Plot data arrays
+ * @param {string} colorscale - Plotly colorscale name
+ * @param {number} gridSize - Grid size for 3D plot (default: 65)
+ * @returns {Promise<string>} Base64 encoded image data
  */
-const generate3DPlotImage = async (surface, plotData, colorscale = 'Jet') => {
+const generate3DPlotImage = async (surface, plotData, colorscale = 'Jet', gridSize = 65) => {
     const minHeight = parseFloat(surface.parameters['Min Height']) || 0;
     const maxHeight = parseFloat(surface.parameters['Max Height']) || 25;
-    const size = 60;
+    const size = gridSize;
 
     // Import calculateSurfaceValues dynamically
     const { calculateSurfaceValues } = await import('./calculations.js');
@@ -636,11 +641,16 @@ const generate3DPlotImage = async (surface, plotData, colorscale = 'Jet') => {
 
 /**
  * Generate 2D contour plot for report
+ * @param {Object} surface - Surface object
+ * @param {Object} plotData - Plot data arrays
+ * @param {string} colorscale - Plotly colorscale name
+ * @param {number} gridSize - Grid size for 2D plot (default: 129)
+ * @returns {Promise<string>} Base64 encoded image data
  */
-const generate2DContourImage = async (surface, plotData, colorscale = 'Jet') => {
+const generate2DContourImage = async (surface, plotData, colorscale = 'Jet', gridSize = 129) => {
     const minHeight = parseFloat(surface.parameters['Min Height']) || 0;
     const maxHeight = parseFloat(surface.parameters['Max Height']) || 25;
-    const size = 100;
+    const size = gridSize;
 
     // Import calculateSurfaceValues dynamically
     const { calculateSurfaceValues } = await import('./calculations.js');
@@ -707,15 +717,22 @@ const generate2DContourImage = async (surface, plotData, colorscale = 'Jet') => 
 
 /**
  * Generate complete report data for current surface
+ * @param {Object} surface - Surface object
+ * @param {Object} plotData - Plot data arrays
+ * @param {Object} summaryMetrics - Summary metrics
+ * @param {string} colorscale - Plotly colorscale name
+ * @param {number} gridSize3D - Grid size for 3D plots (default: 65)
+ * @param {number} gridSize2D - Grid size for 2D plots (default: 129)
+ * @returns {Promise<Object>} Report data with HTML and plot images
  */
-export const generateReportData = async (surface, plotData, summaryMetrics, colorscale = 'Jet') => {
+export const generateReportData = async (surface, plotData, summaryMetrics, colorscale = 'Jet', gridSize3D = 65, gridSize2D = 129) => {
     console.log('Generating report plots...');
 
     // Generate 3D and 2D plots in temporary containers
-    const plot3D = await generate3DPlotImage(surface, plotData, colorscale);
+    const plot3D = await generate3DPlotImage(surface, plotData, colorscale, gridSize3D);
     console.log('3D plot generated:', plot3D ? 'Success' : 'Failed');
 
-    const plot2D = await generate2DContourImage(surface, plotData, colorscale);
+    const plot2D = await generate2DContourImage(surface, plotData, colorscale, gridSize2D);
     console.log('2D plot generated:', plot2D ? 'Success' : 'Failed');
 
     // Generate metric plots
