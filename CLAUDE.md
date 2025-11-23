@@ -31,14 +31,14 @@ SurfaceExpert/
 └── src/
     ├── main.js                    # Electron main process (~567 lines)
     ├── preload.js                 # Context isolation bridge (~14 lines)
-    ├── renderer-modular.js        # Modular React application (~1929 lines)
+    ├── renderer-modular.js        # Modular React application (~984 lines) ⚡ 49% reduction!
     ├── calculationsWrapper.js     # Surface calculation engine (~806 lines)
     ├── zmxParser.js               # Zemax ZMX file parser (~341 lines)
     ├── calculations.py            # Python reference implementation (~347 lines)
     ├── surfaceFitter.py           # Surface equation fitter using lmfit (~294 lines)
     ├── index.html                 # Entry point HTML template (loads renderer-modular.js)
     ├── styles.css                 # Global CSS styles (~49 lines)
-    ├── components/                # React component modules (19 files)
+    ├── components/                # React component modules (22 files)
     │   ├── Icons.js               # SVG icon components
     │   ├── TitleBar.js            # Custom window title bar with controls (~172 lines)
     │   ├── MenuBar.js             # Modern custom menu bar (~234 lines)
@@ -50,6 +50,10 @@ SurfaceExpert/
     │   │   ├── NormalizeUnZDialog.js  # Normalize Opal Un Z surfaces
     │   │   ├── SettingsModal.js
     │   │   └── ZMXImportDialog.js
+    │   ├── panels/                # Major layout panels (3 files) 🆕
+    │   │   ├── PropertiesPanel.js    # Right sidebar - properties/metrics (~370 lines)
+    │   │   ├── SurfacesPanel.js      # Left sidebar - folder tree (~225 lines)
+    │   │   └── VisualizationPanel.js # Center - tabs/plots/data (~133 lines)
     │   ├── plots/                 # Plot generation components (3 files)
     │   │   ├── Plot2DContour.js
     │   │   ├── Plot3D.js
@@ -66,10 +70,14 @@ SurfaceExpert/
     │   ├── colorscales.js         # Plotly.js colorscale names
     │   ├── colorPalettes.js       # UI color theme definitions
     │   └── surfaceTypes.js        # Surface type and parameter definitions
-    └── utils/                     # Utility functions (3 files)
-        ├── calculations.js        # Surface calculations with BFS caching
+    └── utils/                     # Utility functions (7 files)
+        ├── calculations.js        # Surface calculations with BFS caching, RMS/P-V (~386 lines)
         ├── formatters.js          # Value formatting utilities
-        └── reportGenerator.js     # HTML/PDF report generation
+        ├── reportGenerator.js     # HTML/PDF report generation with embedded plots
+        ├── reportHandlers.js      # Report generation business logic (~157 lines) 🆕
+        ├── surfaceOperationHandlers.js  # Surface transformation handlers (~227 lines) 🆕
+        ├── surfaceTransformations.js    # Pure transformation functions
+        └── zmxImportHandlers.js   # ZMX import business logic (~117 lines) 🆕
 ```
 
 ## Architecture Deep Dive
@@ -89,10 +97,10 @@ SurfaceExpert/
 
 3. **Renderer Process** (`src/renderer-modular.js`):
    - React application (no JSX, uses `React.createElement`)
-   - Modular ES6 architecture with 18 extracted modules
+   - **Highly modular ES6 architecture** - Refactored from 1935 → 984 lines (49% reduction)
    - State management via React hooks (`useState`, `useEffect`)
-   - All UI components and business logic
-   - Calculation orchestration
+   - UI orchestration layer - delegates to specialized components and utilities
+   - Imports 22 component modules + 7 utility modules
 
 ### Data Flow
 
@@ -110,35 +118,64 @@ Recalculation (utils/calculations.js)
 Plot Update (components/plots/*.js → Plotly.newPlot)
 ```
 
-### Modular Architecture (Nov 2025 Refactoring)
+### Modular Architecture (Nov 2025 Refactoring - Phase 1 & 2)
 
-The application was refactored from a 3,435-line monolithic `renderer.js` into a modular ES6 architecture. The legacy monolithic version has been removed.
+The application underwent comprehensive refactoring in two phases to improve maintainability and organization.
+
+**Refactoring History:**
+- **Original:** Monolithic `renderer.js` (3,435 lines) - All code in one file
+- **Phase 1 (Nov 2025):** Extract major UI panels → `renderer-modular.js` (1,316 lines)
+  - Created 3 panel components (PropertiesPanel, SurfacesPanel, VisualizationPanel)
+  - Reduced by 619 lines (32%)
+- **Phase 2 (Nov 2025):** Extract business logic handlers → `renderer-modular.js` (984 lines)
+  - Created 3 utility handler modules (reportHandlers, zmxImportHandlers, surfaceOperationHandlers)
+  - Reduced by 332 lines (25%)
+- **Total Reduction:** 1,935 → 984 lines (**49% reduction, -951 lines**)
 
 **Key Benefits:**
-- **Maintainability**: Each component has a single responsibility
-- **Reusability**: Components can be easily reused across the application
+- **Maintainability**: Each module has a single, focused responsibility
+- **Reusability**: Components and utilities can be easily reused
 - **Testability**: Isolated modules are easier to unit test
-- **Readability**: Smaller, focused files are easier to understand
+- **Readability**: Smaller files (< 400 lines each) are easier to understand
+- **Scalability**: Clear patterns for adding new features
 - **Performance**: ES6 modules enable better tree-shaking and code splitting
 
 **Module Organization:**
-1. **Constants** (`src/constants/`): Surface type and parameter definitions, sample data, colorscales, color palettes
-2. **Utilities** (`src/utils/`): Pure functions for calculations and formatting
-3. **Layout Components** (`src/components/`): TitleBar, MenuBar - application chrome components
-4. **UI Components** (`src/components/ui/`): Reusable UI building blocks (DebouncedInput, PropertyRow, PropertySection, SurfaceActionButtons)
-5. **View Components** (`src/components/views/`): Data presentation components
-6. **Dialog Components** (`src/components/dialogs/`): Modal dialogs and context menus (7 dialogs)
-7. **Plot Components** (`src/components/plots/`): Plotly visualization generators
-8. **Icons** (`src/components/Icons.js`): SVG icon library
+1. **Constants** (`src/constants/`): Surface types, colorscales, color palettes (3 files)
+2. **Utilities** (`src/utils/`): Business logic and pure functions (7 files)
+   - Core utilities: calculations, formatters, reportGenerator, surfaceTransformations
+   - Handler utilities (Phase 2): reportHandlers, zmxImportHandlers, surfaceOperationHandlers
+3. **Panel Components** (`src/components/panels/`): Major layout panels (3 files) **🆕 Phase 1**
+   - PropertiesPanel: Right sidebar with parameters and metrics
+   - SurfacesPanel: Left sidebar with folder tree and surface list
+   - VisualizationPanel: Center panel with tabs, plots, and data views
+4. **Layout Components** (`src/components/`): TitleBar, MenuBar - application chrome
+5. **UI Components** (`src/components/ui/`): Reusable building blocks (4 files)
+6. **View Components** (`src/components/views/`): Data presentation (2 files)
+7. **Dialog Components** (`src/components/dialogs/`): Modal dialogs (7 files)
+8. **Plot Components** (`src/components/plots/`): Plotly visualization generators (3 files)
+9. **Icons** (`src/components/Icons.js`): SVG icon library
 
 **Import Pattern:**
 ```javascript
-// ES6 module imports
+// ES6 module imports - Constants
 import { surfaceTypes, sampleSurfaces } from './constants/surfaceTypes.js';
 import { colorscales } from './constants/colorscales.js';
+import { getPalette } from './constants/colorPalettes.js';
+
+// ES6 module imports - Utilities
 import { formatValue, degreesToDMS } from './utils/formatters.js';
-import { calculateSurfaceValues } from './utils/calculations.js';
+import { calculateSurfaceValues, calculateSurfaceMetrics } from './utils/calculations.js';
+import { exportHTMLReport, exportPDFReport } from './utils/reportHandlers.js';
+import { handleZMXImport, importSelectedSurfaces } from './utils/zmxImportHandlers.js';
+import { handleInvertSurface, handleConvertToUnZ } from './utils/surfaceOperationHandlers.js';
+
+// ES6 module imports - Components
+import { PropertiesPanel } from './components/panels/PropertiesPanel.js';
+import { SurfacesPanel } from './components/panels/SurfacesPanel.js';
+import { VisualizationPanel } from './components/panels/VisualizationPanel.js';
 import { create3DPlot } from './components/plots/Plot3D.js';
+import { SummaryView } from './components/views/SummaryView.js';
 
 // Global dependencies (loaded via script tags)
 // - React, ReactDOM (UMD builds)
@@ -677,7 +714,36 @@ Current cache: Best-fit sphere parameters (Map with JSON key)
 
 ### Latest Updates (2025-11-23)
 
-1. **Custom Title Bar and Menu Bar (UI Modernization):**
+1. **Phase 2 Refactoring: Business Logic Extraction (Major Architectural Improvement):**
+   - Extracted business logic handlers from renderer into dedicated utility modules
+   - Reduced `renderer-modular.js` from 1316 → 984 lines (-332 lines, -25%)
+   - Combined with Phase 1: **Total reduction of 49% (1935 → 984 lines, -951 lines)**
+   - Created 3 new utility handler modules:
+     - `reportHandlers.js` (157 lines): HTML/PDF report generation logic
+     - `zmxImportHandlers.js` (117 lines): ZMX file import and parsing logic
+     - `surfaceOperationHandlers.js` (227 lines): Surface transformation operations
+   - Benefits:
+     - Clear separation of concerns (UI vs business logic)
+     - Better testability and maintainability
+     - Easier to locate and modify specific functionality
+     - Consistent architectural patterns throughout codebase
+   - Commits: 95b1888 (Phase 2), e0b6275 (Phase 1)
+
+2. **Phase 1 Refactoring: UI Panel Extraction (Major Architectural Improvement):**
+   - Extracted major layout panels from renderer into dedicated components
+   - Reduced `renderer-modular.js` from 1935 → 1316 lines (-619 lines, -32%)
+   - Created 3 new panel components:
+     - `PropertiesPanel.js` (370 lines): Right sidebar with parameters and metrics
+     - `SurfacesPanel.js` (225 lines): Left sidebar with folder tree and surface list
+     - `VisualizationPanel.js` (133 lines): Center panel with tabs, plots, data views
+   - Benefits:
+     - Single Responsibility Principle - each panel has one focused purpose
+     - Improved code organization and maintainability
+     - Easier to navigate and modify specific UI sections
+     - Better performance with isolated components
+   - Total component count increased from 19 → 22 files
+
+3. **Custom Title Bar and Menu Bar (UI Modernization):**
    - Replaced OS title bar with custom title bar component (TitleBar.js)
    - Added minimize, maximize, and close window controls
    - Replaced OS menu bar with modern custom menu bar (MenuBar.js)
@@ -690,27 +756,27 @@ Current cache: Best-fit sphere parameters (Map with JSON key)
      - `main.js`: 567 lines (+18)
      - `preload.js`: Added window control IPC handlers
 
-2. **Settings Persistence and Grid Controls:**
+4. **Settings Persistence and Grid Controls:**
    - Added persistent settings storage for colorscale and wavelength preferences
    - Added grid size controls for 3D and 2D plots
    - Settings now saved to localStorage and restored on application launch
    - Grid size controls allow customization of calculation density
    - Improved performance tuning for complex surfaces
 
-3. **Surface Transformation Features:**
+5. **Surface Transformation Features:**
    - Added NormalizeUnZDialog component for Opal Un Z surface normalization
    - Added surface transformation tools for renormalizing surfaces to different H values
    - Enhanced surface fitting workflow with better parameter control
    - File changes: 1 new dialog component
      - `NormalizeUnZDialog.js`: 156 lines (new)
 
-4. **Component Extraction and Organization:**
+6. **Component Extraction and Organization:**
    - Extracted SurfaceActionButtons component from main renderer
    - Improved component modularity and reusability
    - Better separation of concerns for surface operations
    - File changes:
      - `SurfaceActionButtons.js`: 102 lines (new)
-     - `renderer-modular.js`: 1929 lines (+277 from refactoring and new features)
+     - `renderer-modular.js`: 1929 lines (before Phase 1 & 2 refactoring)
 
 ### Previous Updates (2025-11-19 to 2025-11-20)
 
@@ -1084,18 +1150,32 @@ Supported algorithms from lmfit:
 ---
 
 **Last Updated:** 2025-11-23
-**Version:** 2.4.0 (Custom UI Components & Settings Persistence)
+**Version:** 2.5.0 (Phase 1 & 2 Refactoring - Major Architectural Improvements)
 **Major Changes:**
-- **NEW:** Custom title bar with window controls (minimize/maximize/close)
-- **NEW:** Modern custom menu bar replacing OS menu bar
-- **NEW:** Settings persistence (colorscale, wavelength, grid sizes)
-- **NEW:** NormalizeUnZDialog for Opal Un Z surface transformations
-- **NEW:** Extracted SurfaceActionButtons component for better modularity
-- Updated line counts: renderer-modular.js (1929), calculationsWrapper.js (806), main.js (567)
-- Total component count: 19 files (was 15)
-- Improved UI consistency with integrated color scheme
+- **🎯 Phase 2:** Extracted business logic handlers into 3 utility modules
+  - reportHandlers.js (157 lines): Report generation logic
+  - zmxImportHandlers.js (117 lines): ZMX import logic
+  - surfaceOperationHandlers.js (227 lines): Surface transformation logic
+  - Reduced renderer from 1316 → 984 lines (-25%)
+- **🎯 Phase 1:** Extracted major UI panels into 3 panel components
+  - PropertiesPanel.js (370 lines): Right sidebar
+  - SurfacesPanel.js (225 lines): Left sidebar
+  - VisualizationPanel.js (133 lines): Center panel
+  - Reduced renderer from 1935 → 1316 lines (-32%)
+- **📊 Combined Results:** 49% total reduction (1935 → 984 lines, -951 lines)
+- Updated file counts: 22 components (was 19), 7 utilities (was 4)
+- Clear separation of concerns: UI orchestration vs business logic
+- Improved maintainability, testability, and scalability
+- All functionality preserved - purely architectural refactoring
 
-**Previous Version (2.3.0 - 2025-11-20):**
+**Previous Version (2.4.0 - 2025-11-23):**
+- Custom title bar with window controls (minimize/maximize/close)
+- Modern custom menu bar replacing OS menu bar
+- Settings persistence (colorscale, wavelength, grid sizes)
+- NormalizeUnZDialog for Opal Un Z surface transformations
+- Extracted SurfaceActionButtons component for better modularity
+
+**Version 2.3.0 (2025-11-20):**
 - Added RMS and P-V wavefront error calculations for Zernike and Irregular surfaces
 - Wavelength setting in Settings modal for error calculations (default: 632.8 nm)
 - Enhanced report visualization with improved plots and axis labels
