@@ -24,7 +24,11 @@
       "Bash(dir /s /b d:Kalovaya_massaSE4*.png d:Kalovaya_massaSE4*.ico 2)",
       "Bash(nul)",
       "Bash(findstr:*)",
-      "Bash(find:*)"
+      "Bash(find:*)",
+      "Bash(npm run build:*)",
+      "Bash(dir:*)",
+      "Bash(\"./SurfaceExpert 2.1.0.exe\" --dev)",
+      "Bash(\"./SurfaceExpert 2.1.0.exe\")"
     ],
     "deny": [],
     "ask": []

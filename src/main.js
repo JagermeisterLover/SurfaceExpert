@@ -73,6 +73,20 @@ function setupIpcHandlers() {
     }
   });
 
+  // Toggle DevTools
+  ipcMain.on('toggle-devtools', () => {
+    if (mainWindow.webContents.isDevToolsOpened()) {
+      mainWindow.webContents.closeDevTools();
+    } else {
+      mainWindow.webContents.openDevTools();
+    }
+  });
+
+  // Open external URLs
+  ipcMain.on('open-external', (event, url) => {
+    shell.openExternal(url);
+  });
+
   // Ensure surfaces directory exists
   if (!fs.existsSync(surfacesDir)) {
     fs.mkdirSync(surfacesDir, { recursive: true });

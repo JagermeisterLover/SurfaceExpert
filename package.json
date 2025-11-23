@@ -29,6 +29,7 @@
   "build": {
     "appId": "com.surfaceexpert.app",
     "productName": "SurfaceExpert",
+    "asar": false,
     "directories": {
       "output": "dist"
     },
@@ -38,7 +39,14 @@
       "icons/**/*"
     ],
     "win": {
-      "target": "nsis",
+      "target": [
+        {
+          "target": "portable",
+          "arch": [
+            "x64"
+          ]
+        }
+      ],
       "icon": "icons/IconInvertedNoBGGlow.ico"
     },
     "mac": {
