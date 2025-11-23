@@ -2,6 +2,15 @@ const { app, BrowserWindow, Menu, dialog, ipcMain, shell } = require('electron')
 const path = require('path');
 const fs = require('fs');
 
+// Set portable mode: store userData next to the exe
+if (process.env.PORTABLE_EXECUTABLE_DIR) {
+  // Electron Builder portable mode sets this automatically
+  app.setPath('userData', path.join(process.env.PORTABLE_EXECUTABLE_DIR, 'SurfaceExpertData'));
+} else if (process.argv.includes('--portable')) {
+  // Manual portable flag
+  app.setPath('userData', path.join(path.dirname(process.execPath), 'SurfaceExpertData'));
+}
+
 let mainWindow;
 
 function createWindow() {
@@ -51,19 +60,16 @@ function createWindow() {
 
 function setupIpcHandlers() {
   // Get app directory path for storing surfaces and settings
-  // For portable build: store data next to the executable
-  // For dev mode: store in project root
-  const isPortable = !app.isPackaged || process.env.PORTABLE === 'true';
-  const appPath = app.isPackaged
-    ? path.dirname(app.getPath('exe'))  // Next to the exe for portable
-    : app.getAppPath();                  // Project root for dev
+  // Use userData directory which is persistent and user-writable
+  // This works correctly for both portable and installed versions
+  const userDataPath = app.getPath('userData');
 
-  const surfacesDir = path.join(appPath, 'surfaces');
-  const settingsPath = path.join(appPath, 'settings.json');
+  const surfacesDir = path.join(userDataPath, 'surfaces');
+  const settingsPath = path.join(userDataPath, 'settings.json');
 
   console.log('=== Storage Paths ===');
   console.log('App packaged:', app.isPackaged);
-  console.log('App path:', appPath);
+  console.log('User Data Path:', userDataPath);
   console.log('Surfaces directory:', surfacesDir);
   console.log('Settings path:', settingsPath);
   console.log('====================');
