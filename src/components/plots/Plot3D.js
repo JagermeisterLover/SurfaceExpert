@@ -2,6 +2,7 @@
 // Generates a 60x60 grid with surface visualization, contours, and Z-axis projection
 
 import { calculateSurfaceValues } from '../../utils/calculations.js';
+import { sanitizeValue, sanitizeArray2D, getSafeBounds, safePlotlyNewPlot } from '../../utils/dataSanitization.js';
 
 /**
  * Create 3D surface plot
@@ -52,6 +53,9 @@ export const create3DPlot = (plotRef, selectedSurface, activeTab, colorscale, gr
                 else if (activeTab === 'slope') val = values.slope;
                 else if (activeTab === 'asphericity') val = values.asphericity;
                 else if (activeTab === 'aberration') val = values.aberration;
+
+                // Sanitize value to prevent WebGL errors
+                val = sanitizeValue(val);
                 row.push(val);
                 validValues.push(val);
             } else {
@@ -61,18 +65,18 @@ export const create3DPlot = (plotRef, selectedSurface, activeTab, colorscale, gr
         z.push(row);
     }
 
-    // Use iterative min/max to avoid stack overflow with large arrays
-    let zMin = Infinity;
-    let zMax = -Infinity;
-    for (let i = 0; i < validValues.length; i++) {
-        if (validValues[i] < zMin) zMin = validValues[i];
-        if (validValues[i] > zMax) zMax = validValues[i];
-    }
+    // Sanitize the entire z array (additional safety check)
+    const zSanitized = sanitizeArray2D(z);
+
+    // Get safe bounds from valid values
+    const bounds = getSafeBounds(validValues);
+    const zMin = bounds.min;
+    const zMax = bounds.max;
 
     const data = [{
         x: x,
         y: y,
-        z: z,
+        z: zSanitized,
         type: 'surface',
         colorscale: colorscale,
         showscale: true,
@@ -112,5 +116,7 @@ export const create3DPlot = (plotRef, selectedSurface, activeTab, colorscale, gr
         displaylogo: false
     };
 
-    window.Plotly.newPlot(plotRef.current, data, layout, config);
+    safePlotlyNewPlot(plotRef.current, data, layout, config).catch(err => {
+        console.error('Failed to render 3D plot:', err);
+    });
 };
