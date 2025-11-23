@@ -24,6 +24,7 @@ export const isSafeValue = (value) => {
  * - Converts NaN to 0
  * - Converts Infinity/-Infinity to max/min safe values
  * - Clamps extreme values to safe bounds
+ * - Treats very small values as zero (eliminates floating-point noise)
  *
  * @param {number} value - Value to sanitize
  * @returns {number} Sanitized value safe for WebGL
@@ -37,6 +38,12 @@ export const sanitizeValue = (value) => {
     // Handle Infinity
     if (!isFinite(value)) {
         return value > 0 ? MAX_SAFE_VALUE : MIN_SAFE_VALUE;
+    }
+
+    // Treat very small values as zero to eliminate floating-point noise
+    // This prevents visual artifacts in plots that should be flat (e.g., aberration for spheres)
+    if (Math.abs(value) < 1e-10) {
+        return 0;
     }
 
     // Clamp to safe range
