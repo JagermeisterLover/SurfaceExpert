@@ -18,7 +18,7 @@ export function MenuBar({ c, onMenuAction }) {
     ],
     View: [
       { label: 'Reload', action: 'reload', shortcut: 'Ctrl+R' },
-      { label: 'Toggle DevTools', action: 'toggleDevTools', shortcut: 'Ctrl+Shift+I' },
+      { label: 'Toggle DevTools', action: 'toggle-devtools', shortcut: 'Ctrl+Shift+I' },
       { type: 'separator' },
       { label: 'Toggle Fullscreen', action: 'toggleFullscreen', shortcut: 'F11' }
     ],
@@ -45,9 +45,10 @@ export function MenuBar({ c, onMenuAction }) {
     setOpenMenu(null);
     if (action === 'reload') {
       window.location.reload();
-    } else if (action === 'toggleDevTools') {
-      // This won't work directly, need to add IPC handler
-      onMenuAction('toggle-devtools');
+    } else if (action === 'toggle-devtools') {
+      if (window.electronAPI && window.electronAPI.toggleDevTools) {
+        window.electronAPI.toggleDevTools();
+      }
     } else if (action === 'toggleFullscreen') {
       if (document.fullscreenElement) {
         document.exitFullscreen();

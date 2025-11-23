@@ -17,5 +17,7 @@ contextBridge.exposeInMainWorld('electronAPI', {
   saveSettings: (settings) => ipcRenderer.invoke('save-settings', settings),
   windowControl: (action) => ipcRenderer.send('window-control', action),
   onWindowMaximized: (callback) => ipcRenderer.on('window-maximized', callback),
-  onWindowUnmaximized: (callback) => ipcRenderer.on('window-unmaximized', callback)
+  onWindowUnmaximized: (callback) => ipcRenderer.on('window-unmaximized', callback),
+  toggleDevTools: () => ipcRenderer.send('toggle-devtools'),
+  openExternal: (url) => ipcRenderer.send('open-external', url)
 });

@@ -42,6 +42,7 @@ import { ZMXImportDialog } from './components/dialogs/ZMXImportDialog.js';
 import { ConversionDialog } from './components/dialogs/ConversionDialog.js';
 import { ConversionResultsDialog } from './components/dialogs/ConversionResultsDialog.js';
 import { NormalizeUnZDialog } from './components/dialogs/NormalizeUnZDialog.js';
+import { AboutDialog } from './components/dialogs/AboutDialog.js';
 
 // Plot Components
 import { create3DPlot } from './components/plots/Plot3D.js';
@@ -85,6 +86,7 @@ const OpticalSurfaceAnalyzer = () => {
     const [contextMenu, setContextMenu] = useState(null);
     const [inputDialog, setInputDialog] = useState(null);
     const [showNormalizeUnZ, setShowNormalizeUnZ] = useState(false);
+    const [showAbout, setShowAbout] = useState(false);
     const plotRef = useRef(null);
     const propertiesPanelRef = useRef(null);
     const scrollPositionRef = useRef(0);
@@ -266,17 +268,14 @@ const OpticalSurfaceAnalyzer = () => {
                 await handleExportPDFReport();
                 break;
             case 'toggle-devtools':
-                // DevTools can only be toggled from main process
-                // This is a placeholder - needs IPC handler
-                console.log('DevTools toggle requested');
+                // Handled directly in MenuBar component via IPC
                 break;
             case 'documentation':
                 console.log('Documentation requested');
                 // TODO: Open documentation
                 break;
             case 'about':
-                console.log('About requested');
-                // TODO: Show about dialog
+                setShowAbout(true);
                 break;
             // Add more handlers as needed
         }
@@ -1457,6 +1456,11 @@ const OpticalSurfaceAnalyzer = () => {
             onConfirm: handleNormalizeUnZConfirm,
             onCancel: () => setShowNormalizeUnZ(false),
             c
+        }),
+        // About Dialog
+        showAbout && h(AboutDialog, {
+            c,
+            onClose: () => setShowAbout(false)
         }),
         // Input Dialog (for rename/new folder)
         h(InputDialog, {
