@@ -1,10 +1,10 @@
-// Plot2DContour - Creates 2D false color map using Plotly scatter plot
-// Generates a 100x100 grid with color-coded markers
+// Plot2DHeatmap - Creates 2D heatmap using Plotly's native heatmap type
+// Generates a grid with proper heatmap visualization
 
 import { calculateSurfaceValues } from '../../utils/calculations.js';
 
 /**
- * Create 2D contour/false color map
+ * Create 2D heatmap
  * @param {Object} plotRef - React ref to plot container
  * @param {Object} selectedSurface - Surface object with type and parameters
  * @param {string} activeTab - Current metric tab (sag, slope, asphericity, aberration)
@@ -12,18 +12,27 @@ import { calculateSurfaceValues } from '../../utils/calculations.js';
  * @param {Object} c - Color scheme object
  * @param {number} gridSize - Grid size (odd number to ensure point at 0)
  */
-export const create2DContour = (plotRef, selectedSurface, activeTab, colorscale, c, gridSize = 101) => {
+export const create2DHeatmap = (plotRef, selectedSurface, activeTab, colorscale, c, gridSize = 101) => {
     const minHeight = parseFloat(selectedSurface.parameters['Min Height']) || 0;
     const maxHeight = parseFloat(selectedSurface.parameters['Max Height']) || 25;
     const size = gridSize;
 
-    // Generate grid data
-    const gridData = [];
+    // Generate coordinate arrays
+    const x = [];
+    const y = [];
     for (let i = 0; i < size; i++) {
-        const xi = -maxHeight + (i * (2 * maxHeight)) / (size - 1);
+        const coord = -maxHeight + (i * (2 * maxHeight)) / (size - 1);
+        x.push(coord);
+        y.push(coord);
+    }
+
+    // Generate Z grid data
+    const z = [];
+    for (let j = 0; j < size; j++) {
+        const yj = y[j];
         const row = [];
-        for (let j = 0; j < size; j++) {
-            const yj = -maxHeight + (j * (2 * maxHeight)) / (size - 1);
+        for (let i = 0; i < size; i++) {
+            const xi = x[i];
             const r = Math.sqrt(xi * xi + yj * yj);
 
             if (r >= minHeight && r <= maxHeight) {
@@ -31,6 +40,7 @@ export const create2DContour = (plotRef, selectedSurface, activeTab, colorscale,
                 const values = (selectedSurface.type === 'Irregular' || selectedSurface.type === 'Zernike')
                     ? calculateSurfaceValues(r, selectedSurface, xi, yj)
                     : calculateSurfaceValues(r, selectedSurface);
+
                 let val = 0;
                 if (activeTab === 'sag') val = values.sag;
                 else if (activeTab === 'slope') val = values.slope;
@@ -41,54 +51,39 @@ export const create2DContour = (plotRef, selectedSurface, activeTab, colorscale,
                 row.push(null);
             }
         }
-        gridData.push(row);
+        z.push(row);
     }
 
-    // Convert grid to scatter points with color mapping
-    const x = [], y = [], color = [], hovertext = [];
-    for (let i = 0; i < size; i++) {
-        for (let j = 0; j < size; j++) {
-            if (gridData[i][j] !== null) {
-                const xi = -maxHeight + (i * (2 * maxHeight)) / (size - 1);
-                const yj = -maxHeight + (j * (2 * maxHeight)) / (size - 1);
-                x.push(xi);
-                y.push(yj);
-                color.push(gridData[i][j]);
-                hovertext.push(`X: ${xi.toFixed(2)}<br>Y: ${yj.toFixed(2)}<br>${activeTab}: ${gridData[i][j].toFixed(6)}`);
-            }
-        }
-    }
-
-    const zMin = Math.min(...color);
-    const zMax = Math.max(...color);
     const unit = activeTab === 'slope' ? 'rad' : 'mm';
 
     const data = [{
-        x, y,
-        mode: 'markers',
-        type: 'scatter',
-        marker: {
-            size: 6,
-            color,
-            colorscale: colorscale,
-            showscale: true,
-            cmin: zMin,
-            cmax: zMax,
-            colorbar: {
-                title: `${activeTab}<br>(${unit})`,
-                thickness: 15,
-                len: 0.7
-            }
+        x: x,
+        y: y,
+        z: z,
+        type: 'heatmap',
+        colorscale: colorscale,
+        colorbar: {
+            title: `${activeTab}<br>(${unit})`,
+            thickness: 15,
+            len: 0.7
         },
-        text: hovertext,
-        hoverinfo: 'text',
-        showlegend: false
+        hoverongaps: false,
+        hovertemplate: 'X: %{x:.2f} mm<br>Y: %{y:.2f} mm<br>' +
+                       activeTab + ': %{z:.6f}<extra></extra>'
     }];
 
     const layout = {
-        title: `${activeTab.charAt(0).toUpperCase() + activeTab.slice(1)} False Color Map`,
-        xaxis: { title: 'X (mm)', scaleanchor: 'y', scaleratio: 1 },
-        yaxis: { title: 'Y (mm)', scaleanchor: 'x', scaleratio: 1 },
+        title: `${activeTab.charAt(0).toUpperCase() + activeTab.slice(1)} Heatmap`,
+        xaxis: {
+            title: 'X (mm)',
+            scaleanchor: 'y',
+            scaleratio: 1,
+            constrain: 'domain'
+        },
+        yaxis: {
+            title: 'Y (mm)',
+            constrain: 'domain'
+        },
         paper_bgcolor: c.panel,
         plot_bgcolor: c.bg,
         font: { color: c.text },
@@ -98,7 +93,8 @@ export const create2DContour = (plotRef, selectedSurface, activeTab, colorscale,
     const config = {
         responsive: true,
         displayModeBar: true,
-        displaylogo: false
+        displaylogo: false,
+        scrollZoom: true
     };
 
     window.Plotly.newPlot(plotRef.current, data, layout, config);
