@@ -11,6 +11,7 @@ export const SurfacesPanel = ({
     selectedSurface,
     selectedSurfaces,
     handleSurfaceClick,
+    handleFolderClick,
     toggleFolderExpanded,
     addSurface,
     removeSelectedSurfaces,
@@ -62,17 +63,20 @@ export const SurfacesPanel = ({
                     h('div', {
                         style: {
                             padding: '8px',
-                            backgroundColor: selectedFolder?.id === folder.id ? c.hover : 'transparent',
+                            backgroundColor: selectedFolder?.id === folder.id ? c.accent : 'transparent',
+                            color: selectedFolder?.id === folder.id ? '#ffffff' : c.text,
                             borderRadius: '4px',
                             cursor: 'pointer',
                             display: 'flex',
                             alignItems: 'center',
                             gap: '6px',
                             fontSize: '12px',
-                            fontWeight: '600'
+                            fontWeight: '600',
+                            border: selectedFolder?.id === folder.id ? `2px solid ${c.accent}` : '2px solid transparent',
+                            transition: 'all 0.15s'
                         },
                         onClick: () => {
-                            toggleFolderExpanded(folder.id);
+                            handleFolderClick(folder);
                         },
                         onContextMenu: (e) => {
                             e.preventDefault();
@@ -89,7 +93,10 @@ export const SurfacesPanel = ({
                         ),
                         h('span', { style: { flex: 1 } }, folder.name),
                         h('span', {
-                            style: { fontSize: '10px', color: c.textDim }
+                            style: {
+                                fontSize: '10px',
+                                color: selectedFolder?.id === folder.id ? 'rgba(255, 255, 255, 0.8)' : c.textDim
+                            }
                         }, `(${folder.surfaces.length})`)
                     ),
                     // Folder surfaces
