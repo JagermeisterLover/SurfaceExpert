@@ -3,6 +3,7 @@
 
 import { calculateSurfaceValues } from '../../utils/calculations.js';
 import { sanitizeValue, sanitizeArray2D, safePlotlyNewPlot } from '../../utils/dataSanitization.js';
+import { getGridColor } from '../../constants/colorPalettes.js';
 
 /**
  * Create 2D heatmap
@@ -79,17 +80,23 @@ export const create2DHeatmap = (plotRef, selectedSurface, activeTab, colorscale,
                        activeTab + ': %{z:.6f}<extra></extra>'
     }];
 
+    const gridColor = getGridColor(c);
+
     const layout = {
         title: `${activeTab.charAt(0).toUpperCase() + activeTab.slice(1)} Heatmap`,
         xaxis: {
             title: 'X (mm)',
             scaleanchor: 'y',
             scaleratio: 1,
-            constrain: 'domain'
+            constrain: 'domain',
+            gridcolor: gridColor,
+            zerolinecolor: gridColor
         },
         yaxis: {
             title: 'Y (mm)',
-            constrain: 'domain'
+            constrain: 'domain',
+            gridcolor: gridColor,
+            zerolinecolor: gridColor
         },
         paper_bgcolor: c.panel,
         plot_bgcolor: c.bg,
