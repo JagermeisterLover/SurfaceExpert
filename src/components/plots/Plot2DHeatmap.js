@@ -2,6 +2,7 @@
 // Generates a grid with proper heatmap visualization
 
 import { calculateSurfaceValues } from '../../utils/calculations.js';
+import { sanitizeValue, sanitizeArray2D, safePlotlyNewPlot } from '../../utils/dataSanitization.js';
 
 /**
  * Create 2D heatmap
@@ -46,6 +47,9 @@ export const create2DHeatmap = (plotRef, selectedSurface, activeTab, colorscale,
                 else if (activeTab === 'slope') val = values.slope;
                 else if (activeTab === 'asphericity') val = values.asphericity;
                 else if (activeTab === 'aberration') val = values.aberration;
+
+                // Sanitize value to prevent WebGL errors
+                val = sanitizeValue(val);
                 row.push(val);
             } else {
                 row.push(null);
@@ -54,12 +58,15 @@ export const create2DHeatmap = (plotRef, selectedSurface, activeTab, colorscale,
         z.push(row);
     }
 
+    // Sanitize the entire z array (additional safety check)
+    const zSanitized = sanitizeArray2D(z);
+
     const unit = activeTab === 'slope' ? 'rad' : 'mm';
 
     const data = [{
         x: x,
         y: y,
-        z: z,
+        z: zSanitized,
         type: 'heatmap',
         colorscale: colorscale,
         colorbar: {
@@ -97,5 +104,7 @@ export const create2DHeatmap = (plotRef, selectedSurface, activeTab, colorscale,
         scrollZoom: true
     };
 
-    window.Plotly.newPlot(plotRef.current, data, layout, config);
+    safePlotlyNewPlot(plotRef.current, data, layout, config).catch(err => {
+        console.error('Failed to render 2D heatmap:', err);
+    });
 };
