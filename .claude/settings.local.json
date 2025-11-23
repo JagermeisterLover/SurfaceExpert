@@ -28,7 +28,8 @@
       "Bash(npm run build:*)",
       "Bash(dir:*)",
       "Bash(\"./SurfaceExpert 2.1.0.exe\" --dev)",
-      "Bash(\"./SurfaceExpert 2.1.0.exe\")"
+      "Bash(\"./SurfaceExpert 2.1.0.exe\")",
+      "Bash(.gitignore)"
     ],
     "deny": [],
     "ask": []
