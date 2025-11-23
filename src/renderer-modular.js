@@ -22,6 +22,14 @@ import { formatValue, degreesToDMS } from './utils/formatters.js';
 import { calculateSurfaceValues, calculateSagOnly, getBestFitSphereParams, calculateSurfaceMetrics } from './utils/calculations.js';
 import { generateReportData } from './utils/reportGenerator.js';
 import { normalizeUnZ, convertPolyToUnZ, convertUnZToPoly, invertSurface } from './utils/surfaceTransformations.js';
+import { exportHTMLReport, exportPDFReport } from './utils/reportHandlers.js';
+import { handleZMXImport as zmxImportHandler, importSelectedSurfaces } from './utils/zmxImportHandlers.js';
+import {
+    handleInvertSurface as invertSurfaceHandler,
+    handleNormalizeUnZConfirm as normalizeUnZConfirmHandler,
+    handleConvertToUnZ as convertToUnZHandler,
+    handleConvertToPoly as convertToPolyHandler
+} from './utils/surfaceOperationHandlers.js';
 
 // UI Components
 import { PropertySection } from './components/ui/PropertySection.js';
@@ -292,85 +300,20 @@ const OpticalSurfaceAnalyzer = () => {
     // ============================================
 
     const handleImportZMX = async () => {
-        if (!window.electronAPI || !window.electronAPI.openZMXDialog) {
-            alert('File dialog not available');
-            return;
-        }
-
-        const result = await window.electronAPI.openZMXDialog();
-
-        if (result.canceled) {
-            if (result.error) {
-                alert('Error opening file: ' + result.error);
-            }
-            return;
-        }
-
-        try {
-            const parsedSurfaces = window.ZMXParser.parse(result.content);
-            setZmxSurfaces(parsedSurfaces);
-            setShowZMXImport(true);
-        } catch (error) {
-            alert('Error parsing ZMX file: ' + error.message);
-        }
+        await zmxImportHandler(setZmxSurfaces, setShowZMXImport);
     };
 
     const handleImportSelectedSurfaces = (selectedIndices) => {
-        // If no folder exists, create a default one
-        let targetFolder = selectedFolder;
-        let currentFolders = folders;
-
-        if (!targetFolder) {
-            const defaultFolder = {
-                id: 'default',
-                name: 'My Surfaces',
-                expanded: true,
-                surfaces: []
-            };
-            currentFolders = [defaultFolder];
-            targetFolder = defaultFolder;
-        }
-
-        const colorOptions = ['#4a90e2', '#e94560', '#2ecc71', '#f39c12', '#9b59b6', '#e67e22', '#1abc9c', '#34495e'];
-        const allSurfaces = currentFolders.flatMap(f => f.surfaces);
-        let nextId = allSurfaces.length > 0 ? Math.max(...allSurfaces.map(s => s.id)) + 1 : 1;
-
-        // Helper to generate unique surface name
-        const getUniqueName = (baseName) => {
-            const existingNames = new Set(allSurfaces.map(s => s.name));
-            if (!existingNames.has(baseName)) return baseName;
-
-            let counter = 1;
-            let newName = `${baseName} (${counter})`;
-            while (existingNames.has(newName)) {
-                counter++;
-                newName = `${baseName} (${counter})`;
-            }
-            return newName;
-        };
-
-        const newSurfaces = selectedIndices.map((index, i) => {
-            const zmxSurface = zmxSurfaces[index];
-            const color = colorOptions[(nextId + i) % colorOptions.length];
-            const surface = window.ZMXParser.convertToAppSurface(zmxSurface, nextId + i, color);
-
-            // Ensure unique name
-            surface.name = getUniqueName(surface.name);
-            return surface;
-        });
-
-        const updated = currentFolders.map(f =>
-            f.id === targetFolder.id
-                ? { ...f, surfaces: [...f.surfaces, ...newSurfaces] }
-                : f
+        importSelectedSurfaces(
+            selectedIndices,
+            zmxSurfaces,
+            folders,
+            selectedFolder,
+            setFolders,
+            setSelectedFolder,
+            setSelectedSurface,
+            setShowZMXImport
         );
-        setFolders(updated);
-        setSelectedFolder(targetFolder);
-        setShowZMXImport(false);
-
-        if (newSurfaces.length > 0) {
-            setSelectedSurface(newSurfaces[0]);
-        }
     };
 
     // ============================================
@@ -380,97 +323,13 @@ const OpticalSurfaceAnalyzer = () => {
     const handleExportHTMLReport = async () => {
         // Use ref to access latest value (important for menu actions)
         const surface = selectedSurfaceRef.current;
-        console.log('handleExportHTMLReport called, surface:', surface);
-
-        if (!surface) {
-            alert('Please select a surface from the list to generate a report.\n\nClick on a surface in the left sidebar to select it.');
-            return;
-        }
-
-        if (!window.electronAPI || !window.electronAPI.saveHTMLReport) {
-            alert('Report export not available - please check Electron API');
-            return;
-        }
-
-        try {
-            console.log('Generating report for surface:', surface.name);
-
-            // Generate plot data for the report
-            const plotData = generateReportPlotData(surface);
-
-            // Calculate summary metrics
-            const summaryMetrics = calculateSurfaceMetrics(surface, wavelength);
-
-            // Generate report data with plot images
-            const reportData = await generateReportData(
-                surface,
-                plotData,
-                summaryMetrics,
-                colorscale
-            );
-
-            // Sanitize surface name for filename
-            const sanitizedName = surface.name.replace(/[<>:"/\\|?*]/g, '_');
-
-            // Save HTML report via Electron dialog
-            const result = await window.electronAPI.saveHTMLReport(reportData.html, sanitizedName);
-
-            // Only show error alerts, success opens folder automatically
-            if (!result.canceled && !result.success) {
-                alert('Error saving report: ' + (result.error || 'Unknown error'));
-            }
-        } catch (error) {
-            alert('Error generating report: ' + error.message);
-            console.error('Report generation error:', error);
-        }
+        await exportHTMLReport(surface, wavelength, colorscale);
     };
 
     const handleExportPDFReport = async () => {
         // Use ref to access latest value (important for menu actions)
         const surface = selectedSurfaceRef.current;
-        console.log('handleExportPDFReport called, surface:', surface);
-
-        if (!surface) {
-            alert('Please select a surface from the list to generate a report.\n\nClick on a surface in the left sidebar to select it.');
-            return;
-        }
-
-        if (!window.electronAPI || !window.electronAPI.generatePDFReport) {
-            alert('PDF export not available - please check Electron API');
-            return;
-        }
-
-        try {
-            console.log('Generating PDF report for surface:', surface.name);
-
-            // Generate plot data for the report
-            const plotData = generateReportPlotData(surface);
-
-            // Calculate summary metrics
-            const summaryMetrics = calculateSurfaceMetrics(surface, wavelength);
-
-            // Generate report data with plot images
-            const reportData = await generateReportData(
-                surface,
-                plotData,
-                summaryMetrics,
-                colorscale
-            );
-
-            // Sanitize surface name for filename
-            const sanitizedName = surface.name.replace(/[<>:"/\\|?*]/g, '_');
-
-            // Generate and save PDF report via Electron
-            const result = await window.electronAPI.generatePDFReport(reportData.html, sanitizedName);
-
-            // Only show error alerts, success opens folder automatically
-            if (!result.canceled && !result.success) {
-                alert('Error saving PDF: ' + (result.error || 'Unknown error'));
-            }
-        } catch (error) {
-            alert('Error generating PDF: ' + error.message);
-            console.error('PDF generation error:', error);
-        }
+        await exportPDFReport(surface, wavelength, colorscale);
     };
 
     // ============================================
@@ -478,37 +337,7 @@ const OpticalSurfaceAnalyzer = () => {
     // ============================================
 
     const handleInvertSurface = () => {
-        if (!selectedSurface || !selectedFolder) return;
-
-        try {
-            const invertedParams = invertSurface(selectedSurface.type, selectedSurface.parameters);
-
-            // Update the surface with inverted parameters
-            const updatedFolders = folders.map(folder => {
-                if (folder.id === selectedFolder.id) {
-                    return {
-                        ...folder,
-                        surfaces: folder.surfaces.map(s =>
-                            s.id === selectedSurface.id
-                                ? { ...s, parameters: invertedParams }
-                                : s
-                        )
-                    };
-                }
-                return folder;
-            });
-
-            setFolders(updatedFolders);
-
-            // Save to disk
-            const updatedSurface = { ...selectedSurface, parameters: invertedParams };
-            if (window.electronAPI && window.electronAPI.saveSurface) {
-                window.electronAPI.saveSurface(selectedFolder.name, updatedSurface);
-            }
-        } catch (error) {
-            alert(`Error inverting surface: ${error.message}`);
-            console.error('Invert error:', error);
-        }
+        invertSurfaceHandler(selectedSurface, selectedFolder, folders, setFolders);
     };
 
     const handleNormalizeUnZ = () => {
@@ -517,183 +346,22 @@ const OpticalSurfaceAnalyzer = () => {
     };
 
     const handleNormalizeUnZConfirm = (newH) => {
-        if (!selectedSurface || !selectedFolder) return;
-
-        try {
-            const currentH = parseFloat(selectedSurface.parameters.H) || 1;
-            const currentCoeffs = {};
-            for (let n = 3; n <= 13; n++) {
-                currentCoeffs[`A${n}`] = selectedSurface.parameters[`A${n}`];
-            }
-
-            const result = normalizeUnZ(newH, currentH, currentCoeffs);
-
-            // Update parameters with normalized coefficients and new H
-            const updatedParams = {
-                ...selectedSurface.parameters,
-                H: result.H.toString(),
-                ...result.coefficients
-            };
-
-            // Update folders
-            const updatedFolders = folders.map(folder => {
-                if (folder.id === selectedFolder.id) {
-                    return {
-                        ...folder,
-                        surfaces: folder.surfaces.map(s =>
-                            s.id === selectedSurface.id
-                                ? { ...s, parameters: updatedParams }
-                                : s
-                        )
-                    };
-                }
-                return folder;
-            });
-
-            setFolders(updatedFolders);
-            setShowNormalizeUnZ(false);
-
-            // Save to disk
-            const updatedSurface = { ...selectedSurface, parameters: updatedParams };
-            if (window.electronAPI && window.electronAPI.saveSurface) {
-                window.electronAPI.saveSurface(selectedFolder.name, updatedSurface);
-            }
-        } catch (error) {
-            alert(`Error normalizing surface: ${error.message}`);
-            console.error('Normalize error:', error);
-        }
+        normalizeUnZConfirmHandler(
+            newH,
+            selectedSurface,
+            selectedFolder,
+            folders,
+            setFolders,
+            setShowNormalizeUnZ
+        );
     };
 
     const handleConvertToUnZ = () => {
-        if (!selectedSurface || selectedSurface.type !== 'Poly' || !selectedFolder) return;
-
-        try {
-            const unzParams = convertPolyToUnZ(selectedSurface.parameters);
-
-            // Create new surface with UnZ type
-            const newSurface = {
-                id: Date.now(),
-                name: `${selectedSurface.name} (UnZ)`,
-                type: 'Opal Un Z',
-                color: selectedSurface.color,
-                parameters: {
-                    'Min Height': selectedSurface.parameters['Min Height'],
-                    'Max Height': selectedSurface.parameters['Max Height'],
-                    'Step': selectedSurface.parameters['Step'],
-                    ...unzParams
-                }
-            };
-
-            // Add new surface to folder
-            const updatedFolders = folders.map(folder => {
-                if (folder.id === selectedFolder.id) {
-                    return {
-                        ...folder,
-                        surfaces: [...folder.surfaces, newSurface]
-                    };
-                }
-                return folder;
-            });
-
-            setFolders(updatedFolders);
-            setSelectedSurface(newSurface);
-
-            // Save to disk
-            if (window.electronAPI && window.electronAPI.saveSurface) {
-                window.electronAPI.saveSurface(selectedFolder.name, newSurface);
-            }
-        } catch (error) {
-            alert(`Error converting to UnZ: ${error.message}`);
-            console.error('Convert to UnZ error:', error);
-        }
+        convertToUnZHandler(selectedSurface, selectedFolder, folders, setFolders, setSelectedSurface);
     };
 
     const handleConvertToPoly = () => {
-        if (!selectedSurface || selectedSurface.type !== 'Opal Un Z' || !selectedFolder) return;
-
-        try {
-            const polyParams = convertUnZToPoly(selectedSurface.parameters);
-
-            // Create new surface with Poly type
-            const newSurface = {
-                id: Date.now(),
-                name: `${selectedSurface.name} (Poly)`,
-                type: 'Poly',
-                color: selectedSurface.color,
-                parameters: {
-                    'Min Height': selectedSurface.parameters['Min Height'],
-                    'Max Height': selectedSurface.parameters['Max Height'],
-                    'Step': selectedSurface.parameters['Step'],
-                    ...polyParams
-                }
-            };
-
-            // Add new surface to folder
-            const updatedFolders = folders.map(folder => {
-                if (folder.id === selectedFolder.id) {
-                    return {
-                        ...folder,
-                        surfaces: [...folder.surfaces, newSurface]
-                    };
-                }
-                return folder;
-            });
-
-            setFolders(updatedFolders);
-            setSelectedSurface(newSurface);
-
-            // Save to disk
-            if (window.electronAPI && window.electronAPI.saveSurface) {
-                window.electronAPI.saveSurface(selectedFolder.name, newSurface);
-            }
-        } catch (error) {
-            alert(`Error converting to Poly: ${error.message}`);
-            console.error('Convert to Poly error:', error);
-        }
-    };
-
-    // Helper function to generate plot data for reports
-    const generateReportPlotData = (surface) => {
-        const minHeight = parseFloat(surface.parameters['Min Height']) || 0;
-        const maxHeight = parseFloat(surface.parameters['Max Height']) || 25;
-        const step = parseFloat(surface.parameters['Step']) || 1;
-
-        const rValues = [];
-        const sagValues = [];
-        const slopeValues = [];
-        const asphericityValues = [];
-        const aberrationValues = [];
-        const angleValues = [];
-
-        for (let r = minHeight; r <= maxHeight; r += step) {
-            // For non-rotationally symmetric surfaces, use scan angle
-            let values;
-            if (surface.type === 'Irregular' || surface.type === 'Zernike') {
-                const scanAngle = parseFloat(surface.parameters['Scan Angle']) || 0;
-                const scanAngleRad = scanAngle * Math.PI / 180;
-                const x = r * Math.cos(scanAngleRad);
-                const y = r * Math.sin(scanAngleRad);
-                values = calculateSurfaceValues(r, surface, x, y);
-            } else {
-                values = calculateSurfaceValues(r, surface);
-            }
-
-            rValues.push(r);
-            sagValues.push(values.sag);
-            slopeValues.push(values.slope);
-            asphericityValues.push(values.asphericity);
-            aberrationValues.push(values.aberration);
-            angleValues.push(values.angle);
-        }
-
-        return {
-            rValues,
-            sagValues,
-            slopeValues,
-            asphericityValues,
-            aberrationValues,
-            angleValues
-        };
+        convertToPolyHandler(selectedSurface, selectedFolder, folders, setFolders, setSelectedSurface);
     };
 
     // ============================================
