@@ -62,7 +62,9 @@ SurfaceExpert/
     │   └── views/                 # View components (2 files)
     │       ├── DataView.js
     │       └── SummaryView.js
-    ├── constants/                 # Application constants (1 file)
+    ├── constants/                 # Application constants (3 files)
+    │   ├── colorscales.js         # Plotly.js colorscale names
+    │   ├── colorPalettes.js       # UI color theme definitions
     │   └── surfaceTypes.js        # Surface type and parameter definitions
     └── utils/                     # Utility functions (3 files)
         ├── calculations.js        # Surface calculations with BFS caching
@@ -120,7 +122,7 @@ The application was refactored from a 3,435-line monolithic `renderer.js` into a
 - **Performance**: ES6 modules enable better tree-shaking and code splitting
 
 **Module Organization:**
-1. **Constants** (`src/constants/`): Surface type and parameter definitions, sample data, colorscales
+1. **Constants** (`src/constants/`): Surface type and parameter definitions, sample data, colorscales, color palettes
 2. **Utilities** (`src/utils/`): Pure functions for calculations and formatting
 3. **Layout Components** (`src/components/`): TitleBar, MenuBar - application chrome components
 4. **UI Components** (`src/components/ui/`): Reusable UI building blocks (DebouncedInput, PropertyRow, PropertySection, SurfaceActionButtons)
@@ -133,6 +135,7 @@ The application was refactored from a 3,435-line monolithic `renderer.js` into a
 ```javascript
 // ES6 module imports
 import { surfaceTypes, sampleSurfaces } from './constants/surfaceTypes.js';
+import { colorscales } from './constants/colorscales.js';
 import { formatValue, degreesToDMS } from './utils/formatters.js';
 import { calculateSurfaceValues } from './utils/calculations.js';
 import { create3DPlot } from './components/plots/Plot3D.js';
@@ -907,7 +910,10 @@ Current cache: Best-fit sphere parameters (Map with JSON key)
   - **Components:** `src/components/` (dialogs, plots, ui, views) - Modular React components
   - **Main App:** `src/renderer-modular.js` - Application orchestration
   - **Styles:** `src/styles.css` - Global styles only
-  - **Constants:** `src/constants/surfaceTypes.js` - Surface type definitions
+  - **Constants:**
+    - `src/constants/surfaceTypes.js` - Surface type definitions
+    - `src/constants/colorscales.js` - Plotly.js colorscale names
+    - `src/constants/colorPalettes.js` - UI color theme definitions
 - **Calculations:**
   - **JavaScript:** `src/calculationsWrapper.js` (SurfaceCalculations class, RMS/P-V base calculations)
   - **Utilities:** `src/utils/calculations.js` (surface value calculator with BFS caching, RMS/P-V error calculations)

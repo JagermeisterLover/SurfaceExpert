@@ -39,14 +39,6 @@ export const sampleSurfaces = [
     }
 ];
 
-// Available colorscales for plots
-export const colorscales = [
-    'Viridis', 'Plasma', 'Inferno', 'Magma', 'Cividis',
-    'Blues', 'Greens', 'Greys', 'Oranges', 'Reds',
-    'Rainbow', 'Jet', 'Hot', 'Cool', 'Spring',
-    'Summer', 'Autumn', 'Winter', 'RdBu', 'RdYlBu'
-];
-
 // Color scheme for dark theme
 export const colors = {
     bg: '#2b2b2b',        // Main background

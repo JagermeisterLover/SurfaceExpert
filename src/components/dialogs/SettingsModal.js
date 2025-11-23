@@ -1,6 +1,6 @@
 // SettingsModal component - Settings dialog for plot colorscale selection
 
-import { colorscales } from '../../constants/surfaceTypes.js';
+import { colorscales } from '../../constants/colorscales.js';
 import { getPaletteNames } from '../../constants/colorPalettes.js';
 
 const { createElement: h } = React;
