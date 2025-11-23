@@ -2,14 +2,15 @@
 
 ## Data Storage
 
-The portable version of SurfaceExpert stores all user data in the same directory as the executable:
+The portable version of SurfaceExpert stores all user data in a `SurfaceExpertData` folder next to the executable:
 
 ```
 SurfaceExpert 2.1.0.exe    <- The portable executable
-surfaces/                   <- Your saved surfaces (JSON files)
-  └── My Surfaces/
-      └── Surface1.json
-settings.json              <- Application settings (colorscale, wavelength, etc.)
+SurfaceExpertData/          <- All application data (created on first run)
+  ├── surfaces/             <- Your saved surfaces (JSON files)
+  │   └── My Surfaces/
+  │       └── Surface1.json
+  └── settings.json         <- Application settings (colorscale, wavelength, etc.)
 ```
 
 ### Features
@@ -22,19 +23,20 @@ settings.json              <- Application settings (colorscale, wavelength, etc.
 ### First Run
 
 On first launch, the application will automatically create:
-1. `surfaces/` folder for storing surface data
-2. `settings.json` with default settings
+1. `SurfaceExpertData/` folder next to the exe
+2. `SurfaceExpertData/surfaces/` folder for storing surface data
+3. `SurfaceExpertData/settings.json` with default settings
 
 ### Moving the Application
 
-You can move the entire folder (exe + data folders) to any location and it will continue to work with all your saved data.
+You can move the entire folder (exe + SurfaceExpertData folder) to any location and it will continue to work with all your saved data.
 
 ### Sharing Surfaces
 
 To share surfaces with others:
-1. Copy the `surfaces/` folder from your portable installation
+1. Copy the `SurfaceExpertData/surfaces/` folder from your portable installation
 2. Share it with another user
-3. They can copy it to their portable installation directory
+3. They can copy it to their `SurfaceExpertData/` folder
 
 ### Troubleshooting
 
