@@ -63,7 +63,7 @@ const getUniqueSurfaceName = (baseName, allSurfaces) => {
  * @param {Function} setSelectedSurface - State setter for selected surface
  * @param {Function} setShowZMXImport - State setter for import dialog visibility
  */
-export const importSelectedSurfaces = (
+export const importSelectedSurfaces = async (
     selectedIndices,
     zmxSurfaces,
     folders,
@@ -101,6 +101,13 @@ export const importSelectedSurfaces = (
         surface.name = getUniqueSurfaceName(surface.name, allSurfaces);
         return surface;
     });
+
+    // Save all imported surfaces to disk
+    if (window.electronAPI && window.electronAPI.saveSurface) {
+        for (const surface of newSurfaces) {
+            await window.electronAPI.saveSurface(targetFolder.name, surface);
+        }
+    }
 
     const updated = currentFolders.map(f =>
         f.id === targetFolder.id
