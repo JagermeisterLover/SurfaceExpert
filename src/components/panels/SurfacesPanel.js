@@ -11,7 +11,7 @@ export const SurfacesPanel = ({
     selectedSurface,
     selectedSurfaces,
     handleSurfaceClick,
-    handleFolderClick,
+    setSelectedFolder,
     toggleFolderExpanded,
     addSurface,
     removeSelectedSurfaces,
@@ -75,8 +75,9 @@ export const SurfacesPanel = ({
                             border: selectedFolder?.id === folder.id ? `2px solid ${c.accent}` : '2px solid transparent',
                             transition: 'all 0.15s'
                         },
-                        onClick: () => {
-                            handleFolderClick(folder);
+                        onClick: (e) => {
+                            // Only select folder, don't toggle expansion
+                            setSelectedFolder(folder);
                         },
                         onContextMenu: (e) => {
                             e.preventDefault();
@@ -88,7 +89,13 @@ export const SurfacesPanel = ({
                             });
                         }
                     },
-                        h('span', { style: { fontSize: '10px', userSelect: 'none' } },
+                        h('span', {
+                            style: { fontSize: '10px', userSelect: 'none', cursor: 'pointer' },
+                            onClick: (e) => {
+                                e.stopPropagation();
+                                toggleFolderExpanded(folder.id);
+                            }
+                        },
                             folder.expanded ? '▼' : '▶'
                         ),
                         h('span', { style: { flex: 1 } }, folder.name),
