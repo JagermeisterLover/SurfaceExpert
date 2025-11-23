@@ -13,7 +13,8 @@ console.log('📅 Build timestamp:', new Date().toISOString());
 // ============================================
 
 // Constants
-import { surfaceTypes, universalParameters, sampleSurfaces, colorscales, colors } from './constants/surfaceTypes.js';
+import { surfaceTypes, universalParameters, sampleSurfaces, colors } from './constants/surfaceTypes.js';
+import { colorscales } from './constants/colorscales.js';
 import { getPalette } from './constants/colorPalettes.js';
 
 // Utilities
