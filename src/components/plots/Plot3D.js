@@ -3,6 +3,7 @@
 
 import { calculateSurfaceValues } from '../../utils/calculations.js';
 import { sanitizeValue, sanitizeArray2D, getSafeBounds, safePlotlyNewPlot } from '../../utils/dataSanitization.js';
+import { getGridColor } from '../../constants/colorPalettes.js';
 
 /**
  * Create 3D surface plot
@@ -90,14 +91,31 @@ export const create3DPlot = (plotRef, selectedSurface, activeTab, colorscale, gr
         }
     }];
 
+    const gridColor = getGridColor(colors);
+
     const layout = {
         scene: {
             camera: {
                 eye: { x: 1.5, y: 1.5, z: 1.5 }
             },
-            xaxis: { title: 'X (mm)', range: [-maxHeight, maxHeight] },
-            yaxis: { title: 'Y (mm)', range: [-maxHeight, maxHeight] },
-            zaxis: { title: `${activeTab.charAt(0).toUpperCase() + activeTab.slice(1)} (${unit})`, range: [zMin, zMax] },
+            xaxis: {
+                title: 'X (mm)',
+                range: [-maxHeight, maxHeight],
+                gridcolor: gridColor,
+                zerolinecolor: gridColor
+            },
+            yaxis: {
+                title: 'Y (mm)',
+                range: [-maxHeight, maxHeight],
+                gridcolor: gridColor,
+                zerolinecolor: gridColor
+            },
+            zaxis: {
+                title: `${activeTab.charAt(0).toUpperCase() + activeTab.slice(1)} (${unit})`,
+                range: [zMin, zMax],
+                gridcolor: gridColor,
+                zerolinecolor: gridColor
+            },
             bgcolor: colors.bg,
             // For sag tab, use manual aspect ratio to maintain 1:1 scale for X:Y
             // For other tabs, use cube mode for uniform scaling
