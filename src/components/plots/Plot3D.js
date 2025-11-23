@@ -61,8 +61,13 @@ export const create3DPlot = (plotRef, selectedSurface, activeTab, colorscale, gr
         z.push(row);
     }
 
-    const zMin = Math.min(...validValues);
-    const zMax = Math.max(...validValues);
+    // Use iterative min/max to avoid stack overflow with large arrays
+    let zMin = Infinity;
+    let zMax = -Infinity;
+    for (let i = 0; i < validValues.length; i++) {
+        if (validValues[i] < zMin) zMin = validValues[i];
+        if (validValues[i] > zMax) zMax = validValues[i];
+    }
 
     const data = [{
         x: x,
