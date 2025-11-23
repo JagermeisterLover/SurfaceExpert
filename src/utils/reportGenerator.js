@@ -429,8 +429,8 @@ const generatePlotsSection = (plotImages, showSlope, showAsphericity, showAberra
     }
     if (plotImages.plot2D) {
         html += `<div class="plot-container">
-            <div class="plot-title">2D Contour Plot</div>
-            <img src="${plotImages.plot2D}" alt="2D Contour Plot" />
+            <div class="plot-title">2D Heatmap</div>
+            <img src="${plotImages.plot2D}" alt="2D Heatmap" />
         </div>`;
     }
     html += '</div>';
@@ -648,10 +648,10 @@ const generate2DContourImage = async (surface, plotData, colorscale = 'Jet') => 
     }
 
     // Generate 2D grid by calculating actual surface values
-    const gridData = [];
-    for (let i = 0; i < size; i++) {
+    const z = [];
+    for (let j = 0; j < size; j++) {
         const row = [];
-        for (let j = 0; j < size; j++) {
+        for (let i = 0; i < size; i++) {
             const xi = x[i];
             const yj = y[j];
             const r = Math.sqrt(xi * xi + yj * yj);
@@ -666,25 +666,8 @@ const generate2DContourImage = async (surface, plotData, colorscale = 'Jet') => 
                 row.push(null);
             }
         }
-        gridData.push(row);
+        z.push(row);
     }
-
-    // Convert grid to scatter points with color mapping (like Plot2DContour.js)
-    const xPoints = [], yPoints = [], color = [];
-    for (let i = 0; i < size; i++) {
-        for (let j = 0; j < size; j++) {
-            if (gridData[i][j] !== null) {
-                const xi = x[i];
-                const yj = x[j];
-                xPoints.push(xi);
-                yPoints.push(yj);
-                color.push(gridData[i][j]);
-            }
-        }
-    }
-
-    const zMin = Math.min(...color);
-    const zMax = Math.max(...color);
 
     const plotDiv = document.createElement('div');
     plotDiv.id = 'temp-plot2d-' + Date.now() + Math.random();
@@ -695,27 +678,20 @@ const generate2DContourImage = async (surface, plotData, colorscale = 'Jet') => 
     document.body.appendChild(plotDiv);
 
     await Plotly.newPlot(plotDiv, [{
-        x: xPoints,
-        y: yPoints,
-        mode: 'markers',
-        type: 'scatter',
-        marker: {
-            size: 6,
-            color: color,
-            colorscale: colorscale,
-            showscale: true,
-            cmin: zMin,
-            cmax: zMax,
-            colorbar: {
-                title: 'Sag (mm)',
-                thickness: 15,
-                len: 0.7
-            }
+        x: x,
+        y: y,
+        z: z,
+        type: 'heatmap',
+        colorscale: colorscale,
+        colorbar: {
+            title: 'Sag (mm)',
+            thickness: 15,
+            len: 0.7
         },
-        showlegend: false
+        hoverongaps: false
     }], {
-        xaxis: { title: 'X (mm)', scaleanchor: 'y', scaleratio: 1 },
-        yaxis: { title: 'Y (mm)', scaleanchor: 'x', scaleratio: 1 },
+        xaxis: { title: 'X (mm)', scaleanchor: 'y', scaleratio: 1, constrain: 'domain' },
+        yaxis: { title: 'Y (mm)', constrain: 'domain' },
         margin: { l: 60, r: 120, t: 30, b: 60 }
     }, { displayModeBar: false });
 

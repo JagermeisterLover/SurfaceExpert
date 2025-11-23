@@ -47,7 +47,7 @@ import { AboutDialog } from './components/dialogs/AboutDialog.js';
 
 // Plot Components
 import { create3DPlot } from './components/plots/Plot3D.js';
-import { create2DContour } from './components/plots/Plot2DContour.js';
+import { create2DHeatmap } from './components/plots/Plot2DHeatmap.js';
 import { createCrossSection } from './components/plots/PlotCrossSection.js';
 
 // ============================================
@@ -222,7 +222,7 @@ const OpticalSurfaceAnalyzer = () => {
         if (plotRef.current && activeTab !== 'summary' && activeSubTab === '3d') {
             create3DPlot(plotRef, selectedSurface, activeTab, colorscale, gridSize3D, c);
         } else if (plotRef.current && activeTab !== 'summary' && activeSubTab === '2d') {
-            create2DContour(plotRef, selectedSurface, activeTab, colorscale, c, gridSize2D);
+            create2DHeatmap(plotRef, selectedSurface, activeTab, colorscale, c, gridSize2D);
         } else if (plotRef.current && activeTab !== 'summary' && activeSubTab === 'cross') {
             createCrossSection(plotRef, selectedSurface, activeTab, c);
         }
@@ -1854,7 +1854,7 @@ const OpticalSurfaceAnalyzer = () => {
                                 }
                             }
                         }, subTab === '3d' ? '3D View' :
-                            subTab === '2d' ? '2D Contour' :
+                            subTab === '2d' ? '2D Heatmap' :
                                 subTab === 'cross' ? 'Cross-Section' : 'Data')
                     )
                 ),
