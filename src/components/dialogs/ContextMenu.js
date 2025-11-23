@@ -67,7 +67,7 @@ export const ContextMenu = ({
                     color: folders.length > 1 ? '#e94560' : c.textDim
                 },
                 onClick: () => {
-                    if (folders.length > 1 && confirm(`Delete folder "${contextMenu.target.name}"?`)) {
+                    if (folders.length > 1) {
                         removeFolder(contextMenu.target.id);
                     }
                     setContextMenu(null);

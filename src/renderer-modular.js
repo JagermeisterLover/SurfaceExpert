@@ -650,6 +650,10 @@ const OpticalSurfaceAnalyzer = () => {
         const folder = folders.find(f => f.id === folderId);
         if (!folder) return;
 
+        // Close any open dialogs first
+        setContextMenu(null);
+        setInputDialog(null);
+
         // Delete folder on disk
         if (window.electronAPI) {
             const result = await window.electronAPI.deleteFolder(folder.name);
@@ -661,14 +665,25 @@ const OpticalSurfaceAnalyzer = () => {
 
         const filtered = folders.filter(f => f.id !== folderId);
         setFolders(filtered);
+
+        // Update selection
         if (selectedFolder && selectedFolder.id === folderId) {
-            setSelectedFolder(filtered[0]);
-            if (filtered[0].surfaces.length > 0) {
-                setSelectedSurface(filtered[0].surfaces[0]);
+            const nextFolder = filtered[0];
+            setSelectedFolder(nextFolder);
+            if (nextFolder.surfaces.length > 0) {
+                setSelectedSurface(nextFolder.surfaces[0]);
             } else {
                 setSelectedSurface(null);
             }
         }
+
+        // Force focus back to document body after state updates
+        setTimeout(() => {
+            if (document.activeElement && document.activeElement.blur) {
+                document.activeElement.blur();
+            }
+            document.body.focus();
+        }, 0);
     };
 
     const renameFolder = async (folderId, newName) => {
@@ -700,6 +715,17 @@ const OpticalSurfaceAnalyzer = () => {
         if (selectedFolder && selectedFolder.id === folderId) {
             setSelectedFolder({ ...selectedFolder, id: newName, name: newName });
         }
+    };
+
+    const handleFolderClick = (folder) => {
+        // Select the folder
+        setSelectedFolder(folder);
+
+        // Toggle expansion
+        const updated = folders.map(f =>
+            f.id === folder.id ? { ...f, expanded: !f.expanded } : f
+        );
+        setFolders(updated);
     };
 
     const toggleFolderExpanded = (folderId) => {
@@ -904,6 +930,7 @@ const OpticalSurfaceAnalyzer = () => {
                 selectedSurface,
                 selectedSurfaces,
                 handleSurfaceClick,
+                handleFolderClick,
                 toggleFolderExpanded,
                 addSurface,
                 removeSelectedSurfaces,
