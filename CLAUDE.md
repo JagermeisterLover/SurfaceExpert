@@ -29,32 +29,36 @@ SurfaceExpert/
 ├── various code for claude/
 │   └── SurfaceCalculations.cs     # C# reference implementation
 └── src/
-    ├── main.js                    # Electron main process (~549 lines)
+    ├── main.js                    # Electron main process (~567 lines)
     ├── preload.js                 # Context isolation bridge (~14 lines)
-    ├── renderer-modular.js        # Modular React application (~1477 lines)
-    ├── calculationsWrapper.js     # Surface calculation engine (~745 lines)
+    ├── renderer-modular.js        # Modular React application (~1929 lines)
+    ├── calculationsWrapper.js     # Surface calculation engine (~806 lines)
     ├── zmxParser.js               # Zemax ZMX file parser (~341 lines)
     ├── calculations.py            # Python reference implementation (~347 lines)
     ├── surfaceFitter.py           # Surface equation fitter using lmfit (~294 lines)
     ├── index.html                 # Entry point HTML template (loads renderer-modular.js)
     ├── styles.css                 # Global CSS styles (~49 lines)
-    ├── components/                # React component modules (15 files)
+    ├── components/                # React component modules (19 files)
     │   ├── Icons.js               # SVG icon components
-    │   ├── dialogs/               # Dialog components (6 files)
+    │   ├── TitleBar.js            # Custom window title bar with controls (~172 lines)
+    │   ├── MenuBar.js             # Modern custom menu bar (~234 lines)
+    │   ├── dialogs/               # Dialog components (7 files)
     │   │   ├── ContextMenu.js
     │   │   ├── ConversionDialog.js
     │   │   ├── ConversionResultsDialog.js
     │   │   ├── InputDialog.js
+    │   │   ├── NormalizeUnZDialog.js  # Normalize Opal Un Z surfaces
     │   │   ├── SettingsModal.js
     │   │   └── ZMXImportDialog.js
     │   ├── plots/                 # Plot generation components (3 files)
     │   │   ├── Plot2DContour.js
     │   │   ├── Plot3D.js
     │   │   └── PlotCrossSection.js
-    │   ├── ui/                    # Reusable UI components (3 files)
-    │   │   ├── DebouncedInput.js  # Debounced input to prevent freezing
-    │   │   ├── PropertyRow.js
-    │   │   └── PropertySection.js
+    │   ├── ui/                    # Reusable UI components (4 files)
+    │   │   ├── DebouncedInput.js  # Debounced input to prevent freezing (~92 lines)
+    │   │   ├── PropertyRow.js     # Single parameter row display (~33 lines)
+    │   │   ├── PropertySection.js # Grouped parameter section (~19 lines)
+    │   │   └── SurfaceActionButtons.js  # Surface action buttons (~102 lines)
     │   └── views/                 # View components (2 files)
     │       ├── DataView.js
     │       └── SummaryView.js
@@ -118,11 +122,12 @@ The application was refactored from a 3,435-line monolithic `renderer.js` into a
 **Module Organization:**
 1. **Constants** (`src/constants/`): Surface type and parameter definitions, sample data, colorscales
 2. **Utilities** (`src/utils/`): Pure functions for calculations and formatting
-3. **UI Components** (`src/components/ui/`): Reusable UI building blocks (DebouncedInput, PropertyRow, PropertySection)
-4. **View Components** (`src/components/views/`): Data presentation components
-5. **Dialog Components** (`src/components/dialogs/`): Modal dialogs and context menus
-6. **Plot Components** (`src/components/plots/`): Plotly visualization generators
-7. **Icons** (`src/components/Icons.js`): SVG icon library
+3. **Layout Components** (`src/components/`): TitleBar, MenuBar - application chrome components
+4. **UI Components** (`src/components/ui/`): Reusable UI building blocks (DebouncedInput, PropertyRow, PropertySection, SurfaceActionButtons)
+5. **View Components** (`src/components/views/`): Data presentation components
+6. **Dialog Components** (`src/components/dialogs/`): Modal dialogs and context menus (7 dialogs)
+7. **Plot Components** (`src/components/plots/`): Plotly visualization generators
+8. **Icons** (`src/components/Icons.js`): SVG icon library
 
 **Import Pattern:**
 ```javascript
@@ -474,16 +479,21 @@ surfaces.push(newSurface);               // ✗ Bad
 
 ### File Organization
 
-- **main.js:** Electron-specific, window management, file I/O handlers (~549 lines)
+- **main.js:** Electron-specific, window management, file I/O handlers (~567 lines)
 - **preload.js:** Minimal security bridge, no calculations (~14 lines)
-- **renderer-modular.js:** Main React application with ES6 imports (~1652 lines)
-- **components/**: Modular React components organized by type (15 files)
-  - `dialogs/`: Modal dialogs and context menus (6 files)
+- **renderer-modular.js:** Main React application with ES6 imports (~1929 lines)
+- **components/**: Modular React components organized by type (19 files)
+  - `TitleBar.js`: Custom window title bar with minimize/maximize/close buttons (~172 lines)
+  - `MenuBar.js`: Modern custom menu bar replacing OS menu bar (~234 lines)
+  - `dialogs/`: Modal dialogs and context menus (7 files)
+    - `ContextMenu.js`, `ConversionDialog.js`, `ConversionResultsDialog.js`
+    - `InputDialog.js`, `NormalizeUnZDialog.js`, `SettingsModal.js`, `ZMXImportDialog.js`
   - `plots/`: Plotly visualization generators (3 files)
-  - `ui/`: Reusable UI building blocks (3 files)
+  - `ui/`: Reusable UI building blocks (4 files)
     - `DebouncedInput.js`: Input component that prevents UI freezing during typing (~92 lines)
     - `PropertyRow.js`: Single parameter row display (~33 lines)
     - `PropertySection.js`: Grouped parameter section (~19 lines)
+    - `SurfaceActionButtons.js`: Surface action buttons component (~102 lines)
   - `views/`: Data presentation components (2 files)
     - `DataView.js`: Tabular data display (~98 lines)
     - `SummaryView.js`: Summary metrics and detailed analysis (~251 lines)
@@ -662,7 +672,44 @@ Current cache: Best-fit sphere parameters (Map with JSON key)
 
 ## Recent Development History
 
-### Latest Updates (2025-11-19 to 2025-11-20)
+### Latest Updates (2025-11-23)
+
+1. **Custom Title Bar and Menu Bar (UI Modernization):**
+   - Replaced OS title bar with custom title bar component (TitleBar.js)
+   - Added minimize, maximize, and close window controls
+   - Replaced OS menu bar with modern custom menu bar (MenuBar.js)
+   - Integrated menu bar with application color scheme
+   - Added window state tracking (maximized/unmaximized)
+   - Improved application branding with icon integration
+   - File changes: 3 new components, updated main.js and preload.js
+     - `TitleBar.js`: 172 lines (new)
+     - `MenuBar.js`: 234 lines (new)
+     - `main.js`: 567 lines (+18)
+     - `preload.js`: Added window control IPC handlers
+
+2. **Settings Persistence and Grid Controls:**
+   - Added persistent settings storage for colorscale and wavelength preferences
+   - Added grid size controls for 3D and 2D plots
+   - Settings now saved to localStorage and restored on application launch
+   - Grid size controls allow customization of calculation density
+   - Improved performance tuning for complex surfaces
+
+3. **Surface Transformation Features:**
+   - Added NormalizeUnZDialog component for Opal Un Z surface normalization
+   - Added surface transformation tools for renormalizing surfaces to different H values
+   - Enhanced surface fitting workflow with better parameter control
+   - File changes: 1 new dialog component
+     - `NormalizeUnZDialog.js`: 156 lines (new)
+
+4. **Component Extraction and Organization:**
+   - Extracted SurfaceActionButtons component from main renderer
+   - Improved component modularity and reusability
+   - Better separation of concerns for surface operations
+   - File changes:
+     - `SurfaceActionButtons.js`: 102 lines (new)
+     - `renderer-modular.js`: 1929 lines (+277 from refactoring and new features)
+
+### Previous Updates (2025-11-19 to 2025-11-20)
 
 1. **Zernike RMS and P-V Error Calculations (Major Feature):**
    - Added comprehensive RMS (Root Mean Square) and P-V (Peak-to-Valley) wavefront error calculations for Zernike and Irregular surfaces
@@ -790,10 +837,11 @@ Current cache: Best-fit sphere parameters (Map with JSON key)
 
 1. **✅ RESOLVED - Code organization (Nov 2025):**
    - ~~renderer.js 3435 lines - MUST SPLIT~~ → **COMPLETED!**
-   - Successfully refactored into 18 modular ES6 files
-   - New structure: `components/` (15 files), `utils/` (2 files), `constants/` (1 file)
-   - Main file reduced from 3435 → 1477 lines (57% reduction)
+   - Successfully refactored into 19 modular ES6 files
+   - New structure: `components/` (19 files), `utils/` (3 files), `constants/` (1 file)
+   - Main file reduced from 3435 → 1929 lines (44% reduction)
    - Legacy `renderer.js` removed after successful migration
+   - Continued modularization with TitleBar, MenuBar, SurfaceActionButtons, NormalizeUnZDialog
    - See "Modular Architecture" section above for details
 
 2. **Build modernization:**
@@ -1029,21 +1077,30 @@ Supported algorithms from lmfit:
 
 ---
 
-**Last Updated:** 2025-11-20
-**Version:** 2.3.0 (RMS/P-V Error Calculations & Report Enhancements)
+**Last Updated:** 2025-11-23
+**Version:** 2.4.0 (Custom UI Components & Settings Persistence)
 **Major Changes:**
-- **NEW:** Added RMS and P-V wavefront error calculations for Zernike and Irregular surfaces
-- **NEW:** Wavelength setting in Settings modal for error calculations (default: 632.8 nm)
+- **NEW:** Custom title bar with window controls (minimize/maximize/close)
+- **NEW:** Modern custom menu bar replacing OS menu bar
+- **NEW:** Settings persistence (colorscale, wavelength, grid sizes)
+- **NEW:** NormalizeUnZDialog for Opal Un Z surface transformations
+- **NEW:** Extracted SurfaceActionButtons component for better modularity
+- Updated line counts: renderer-modular.js (1929), calculationsWrapper.js (806), main.js (567)
+- Total component count: 19 files (was 15)
+- Improved UI consistency with integrated color scheme
+
+**Previous Version (2.3.0 - 2025-11-20):**
+- Added RMS and P-V wavefront error calculations for Zernike and Irregular surfaces
+- Wavelength setting in Settings modal for error calculations (default: 632.8 nm)
 - Enhanced report visualization with improved plots and axis labels
 - Added helper functions for Zernike and Irregular base surface calculations
-- Updated line counts: calculationsWrapper.js (801), calculations.js (386), renderer-modular.js (1652)
 - Comprehensive test coverage for Zemax compatibility
 
-**Previous Version (2.2.0 - 2025-11-18):**
+**Version 2.2.0 (2025-11-18):**
 - Separated universal and surface-specific parameters
 - Added Step parameter to all surface types
 - Created DebouncedInput component to prevent UI freezing
 - Removed legacy renderer.js (3435 lines)
-- 18 modular ES6 files (components/, utils/, constants/)
+- Initial modular ES6 architecture
 
 **Maintained by:** AI Assistants working with this codebase
