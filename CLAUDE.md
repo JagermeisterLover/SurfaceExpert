@@ -1,8 +1,8 @@
-# CLAUDE.md - AI Assistant Guide for Optical Surface Analyzer
+# CLAUDE.md - AI Assistant Guide for SurfaceExpert
 
 ## Project Overview
 
-**Optical Surface Analyzer** is an Electron-based desktop application for analyzing and visualizing optical surface characteristics. It provides real-time calculation and visualization of optical surface properties including sag, slope, asphericity, and aberration for various surface types used in optical design.
+**SurfaceExpert** is an Electron-based desktop application for analyzing and visualizing optical surface characteristics. It provides real-time calculation and visualization of optical surface properties including sag, slope, asphericity, and aberration for various surface types used in optical design.
 
 **Tech Stack:**
 - **Frontend:** Electron + React (vanilla, no build tools)
@@ -38,11 +38,12 @@ SurfaceExpert/
     ├── surfaceFitter.py           # Surface equation fitter using lmfit (~294 lines)
     ├── index.html                 # Entry point HTML template (loads renderer-modular.js)
     ├── styles.css                 # Global CSS styles (~49 lines)
-    ├── components/                # React component modules (22 files)
+    ├── components/                # React component modules (23 files)
     │   ├── Icons.js               # SVG icon components
     │   ├── TitleBar.js            # Custom window title bar with controls (~172 lines)
     │   ├── MenuBar.js             # Modern custom menu bar (~234 lines)
-    │   ├── dialogs/               # Dialog components (7 files)
+    │   ├── dialogs/               # Dialog components (8 files)
+    │   │   ├── AboutDialog.js     # About dialog with version info
     │   │   ├── ContextMenu.js
     │   │   ├── ConversionDialog.js
     │   │   ├── ConversionResultsDialog.js
@@ -55,7 +56,7 @@ SurfaceExpert/
     │   │   ├── SurfacesPanel.js      # Left sidebar - folder tree (~225 lines)
     │   │   └── VisualizationPanel.js # Center - tabs/plots/data (~133 lines)
     │   ├── plots/                 # Plot generation components (3 files)
-    │   │   ├── Plot2DContour.js
+    │   │   ├── Plot2DHeatmap.js   # 2D heatmap visualization
     │   │   ├── Plot3D.js
     │   │   └── PlotCrossSection.js
     │   ├── ui/                    # Reusable UI components (4 files)
@@ -70,8 +71,9 @@ SurfaceExpert/
     │   ├── colorscales.js         # Plotly.js colorscale names
     │   ├── colorPalettes.js       # UI color theme definitions
     │   └── surfaceTypes.js        # Surface type and parameter definitions
-    └── utils/                     # Utility functions (7 files)
+    └── utils/                     # Utility functions (8 files)
         ├── calculations.js        # Surface calculations with BFS caching, RMS/P-V (~386 lines)
+        ├── dataSanitization.js    # Data sanitization utilities
         ├── formatters.js          # Value formatting utilities
         ├── reportGenerator.js     # HTML/PDF report generation with embedded plots
         ├── reportHandlers.js      # Report generation business logic (~157 lines) 🆕
