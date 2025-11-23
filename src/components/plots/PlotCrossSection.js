@@ -2,6 +2,7 @@
 // Plots metric values along a radial line from -maxHeight to +maxHeight
 
 import { calculateSurfaceValues } from '../../utils/calculations.js';
+import { sanitizeValue, sanitizeArray1D, safePlotlyNewPlot } from '../../utils/dataSanitization.js';
 
 /**
  * Create cross-section line plot
@@ -56,15 +57,21 @@ export const createCrossSection = (plotRef, selectedSurface, activeTab, c = null
             else if (activeTab === 'slope') val = values.slope;
             else if (activeTab === 'asphericity') val = values.asphericity;
             else if (activeTab === 'aberration') val = values.aberration;
+
+            // Sanitize value to prevent WebGL errors
+            val = sanitizeValue(val);
             y.push(val);
         } else {
             y.push(null);
         }
     }
 
+    // Sanitize the entire y array (additional safety check)
+    const ySanitized = sanitizeArray1D(y);
+
     const data = [{
         x: x,
-        y: y,
+        y: ySanitized,
         type: 'scatter',
         mode: 'lines',
         line: { color: colors.accent, width: 2 }
@@ -90,5 +97,7 @@ export const createCrossSection = (plotRef, selectedSurface, activeTab, c = null
         displaylogo: false
     };
 
-    window.Plotly.newPlot(plotRef.current, data, layout, config);
+    safePlotlyNewPlot(plotRef.current, data, layout, config).catch(err => {
+        console.error('Failed to render cross-section plot:', err);
+    });
 };
