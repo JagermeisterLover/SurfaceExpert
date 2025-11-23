@@ -64,7 +64,7 @@ export function AboutDialog({ c, onClose }) {
           fontSize: '14px',
           marginBottom: '24px'
         }
-      }, 'Version 2.1.0'),
+      }, 'Version 2.5.0'),
 
       // Build date
       h('div', {
@@ -88,16 +88,6 @@ export function AboutDialog({ c, onClose }) {
         }
       }),
 
-      // Description
-      h('p', {
-        style: {
-          color: c.text,
-          fontSize: '14px',
-          lineHeight: '1.6',
-          margin: '0 0 24px 0',
-          textAlign: 'left'
-        }
-      }, 'Optical Surface Analyzer - A professional desktop application for analyzing and visualizing optical surface characteristics including sag, slope, asphericity, and aberration for various surface types used in optical design.'),
 
       // Author
       h('div', {

@@ -1,11 +1,11 @@
-# Optical Surface Analyzer - AI Coding Guidelines
+# SurfaceExpert - AI Coding Guidelines
 
 ## Architecture Overview
 
 **Stack:** Electron (desktop) + React (UI) + JavaScript calculations + Python reference
 - `main.js`: Electron main process, window management, IPC event routing, native menus
-- `preload.js`: Context isolation bridge exposing `window.electronAPI.onMenuAction()` 
-- `renderer.js`: React app (~2000 LOC) - all UI, state management, and calculation orchestration
+- `preload.js`: Context isolation bridge exposing `window.electronAPI.onMenuAction()`
+- `renderer-modular.js`: React app (~984 LOC) - all UI orchestration with ES6 modular architecture
 - `calculationsWrapper.js`: Mathematical surface calculation library (Sag, Slope, Asphericity, Aberration)
 - `calculations.py`: Python reference implementations (not currently integrated)
 
