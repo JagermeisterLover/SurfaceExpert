@@ -7,8 +7,9 @@ const { createElement: h } = React;
 
 export const SettingsModal = ({ colorscale, setColorscale, wavelength, setWavelength, gridSize3D, setGridSize3D, gridSize2D, setGridSize2D, theme, setTheme, onClose, c }) => {
     // Grid size options (odd numbers only to ensure point at 0)
-    // Capped at 257 to prevent application freezing
-    const gridSizeOptions = [33, 65, 129, 257];
+    // Extended to 1025 for high-resolution plots
+    // 2D plots use image-based rendering for performance with large grids
+    const gridSizeOptions = [33, 65, 129, 257, 513, 1025];
 
     return h('div', {
         style: {
@@ -182,7 +183,7 @@ export const SettingsModal = ({ colorscale, setColorscale, wavelength, setWavele
                         color: c.textDim,
                         marginTop: '6px'
                     }
-                }, `Grid resolution for 3D surface plots (${gridSize3D * gridSize3D} points total)`)
+                }, `Grid resolution for 3D surface plots (${gridSize3D * gridSize3D} points)`)
             ),
 
             h('div', { style: { marginBottom: '20px' } },
@@ -221,7 +222,7 @@ export const SettingsModal = ({ colorscale, setColorscale, wavelength, setWavele
                         color: c.textDim,
                         marginTop: '6px'
                     }
-                }, `Grid resolution for 2D contour plots (${gridSize2D * gridSize2D} points total)`)
+                }, `Grid resolution for 2D heatmap plots with image-based rendering (${gridSize2D * gridSize2D} points)`)
             ),
 
             h('div', {

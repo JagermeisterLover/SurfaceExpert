@@ -318,8 +318,13 @@ export const calculateSurfaceMetrics = (surface, wavelengthNm = 632.8) => {
 
         // Calculate P-V without piston removal (matches Zemax "no removal" option)
         // P-V is the peak-to-valley range of the raw aberration values
-        const maxErr = Math.max(...errorValues);
-        const minErr = Math.min(...errorValues);
+        // Use iterative min/max to avoid stack overflow with large arrays
+        let maxErr = -Infinity;
+        let minErr = Infinity;
+        for (let i = 0; i < errorValues.length; i++) {
+            if (errorValues[i] > maxErr) maxErr = errorValues[i];
+            if (errorValues[i] < minErr) minErr = errorValues[i];
+        }
         const pvErrorMm = maxErr - minErr;
 
         // Convert to waves using provided wavelength (nm)

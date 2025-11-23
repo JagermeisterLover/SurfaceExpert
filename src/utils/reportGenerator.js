@@ -593,8 +593,13 @@ const generate3DPlotImage = async (surface, plotData, colorscale = 'Jet') => {
 
     // Calculate z range for aspect ratio
     const validZ = z.flat().filter(v => v !== null);
-    const zMin = Math.min(...validZ);
-    const zMax = Math.max(...validZ);
+    // Use iterative min/max to avoid stack overflow with large arrays
+    let zMin = Infinity;
+    let zMax = -Infinity;
+    for (let i = 0; i < validZ.length; i++) {
+        if (validZ[i] < zMin) zMin = validZ[i];
+        if (validZ[i] > zMax) zMax = validZ[i];
+    }
 
     await Plotly.newPlot(plotDiv, [{
         x: x,
