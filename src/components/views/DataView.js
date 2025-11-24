@@ -6,7 +6,7 @@ import { formatValue } from '../../utils/formatters.js';
 
 const { createElement: h } = React;
 
-export const DataView = ({ activeTab, selectedSurface, c }) => {
+export const DataView = ({ activeTab, selectedSurface, c, t }) => {
     if (!selectedSurface) return null;
 
     const generateTabData = () => {
@@ -65,12 +65,12 @@ export const DataView = ({ activeTab, selectedSurface, c }) => {
     };
 
     const data = generateTabData();
-    const columnName = activeTab.charAt(0).toUpperCase() + activeTab.slice(1);
-    const unit = activeTab === 'slope' ? 'rad' : 'mm';
+    const columnName = t.visualization.tabs[activeTab] || activeTab;
+    const unit = activeTab === 'slope' ? t.summary.units.rad : t.summary.units.mm;
 
     return h('div', { style: { padding: '20px' } },
         h('h3', { style: { marginBottom: '20px', fontSize: '16px' } },
-            `${columnName} Data`
+            `${t.dataView.title} - ${columnName}`
         ),
         h('table', {
             style: {
@@ -81,7 +81,7 @@ export const DataView = ({ activeTab, selectedSurface, c }) => {
         },
             h('thead', null,
                 h('tr', { style: { borderBottom: `2px solid ${c.border}` } },
-                    h('th', { style: { padding: '8px', textAlign: 'right', color: c.textDim } }, 'Radial Coordinate (mm)'),
+                    h('th', { style: { padding: '8px', textAlign: 'right', color: c.textDim } }, t.visualization.radialCoordinate),
                     h('th', { style: { padding: '8px', textAlign: 'right', color: c.textDim } }, `${columnName} (${unit})`)
                 )
             ),
