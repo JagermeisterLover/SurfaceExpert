@@ -123,9 +123,9 @@ export const VisualizationPanel = ({
                     h('div', null, 'Select a surface or create a new one')
                 ) :
                 activeTab === 'summary' ?
-                    h(SummaryView, { selectedSurface, wavelength, c }) :
+                    h(SummaryView, { selectedSurface, wavelength, c, t }) :
                     activeSubTab === 'data' ?
-                        h(DataView, { activeTab, selectedSurface, c }) :
+                        h(DataView, { activeTab, selectedSurface, c, t }) :
                         h('div', { ref: plotRef, style: { width: '100%', height: '100%' } })
         )
     );
