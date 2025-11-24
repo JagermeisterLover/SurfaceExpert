@@ -18,7 +18,8 @@ export const SurfacesPanel = ({
     setContextMenu,
     setInputDialog,
     addFolder,
-    c
+    c,
+    t
 }) => {
     return h('div', {
         style: {
@@ -40,10 +41,10 @@ export const SurfacesPanel = ({
                 alignItems: 'center'
             }
         },
-            h('span', null, 'Surfaces'),
+            h('span', null, t.surfaces.title),
             selectedSurfaces.length > 0 && h('button', {
                 onClick: removeSelectedSurfaces,
-                title: `Delete ${selectedSurfaces.length} surface(s)`,
+                title: `${t.surfaces.delete} ${selectedSurfaces.length}`,
                 style: {
                     padding: '4px 8px',
                     backgroundColor: '#e94560',
@@ -165,7 +166,7 @@ export const SurfacesPanel = ({
                                     }, surface.name),
                                     h('div', {
                                         style: { fontSize: '10px', color: c.textDim }
-                                    }, surface.type)
+                                    }, t.surfaceTypes[surface.type] || surface.type)
                                 )
                             );
                         })
@@ -218,7 +219,7 @@ export const SurfacesPanel = ({
                     fontSize: '12px',
                     fontWeight: '500'
                 }
-            }, '+ Folder'),
+            }, `+ ${t.surfaces.newFolder}`),
             h('button', {
                 onClick: addSurface,
                 disabled: !selectedFolder,
@@ -233,7 +234,7 @@ export const SurfacesPanel = ({
                     fontSize: '12px',
                     fontWeight: '500'
                 }
-            }, '+ Surface')
+            }, `+ ${t.surfaces.newSurface}`)
         )
     );
 };
