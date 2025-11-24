@@ -16,6 +16,7 @@ console.log('📅 Build timestamp:', new Date().toISOString());
 import { surfaceTypes, universalParameters, sampleSurfaces, colors } from './constants/surfaceTypes.js';
 import { colorscales } from './constants/colorscales.js';
 import { getPalette } from './constants/colorPalettes.js';
+import { getLocale, getCurrentLocale, saveLocale } from './constants/locales.js';
 
 // Utilities
 import { formatValue, degreesToDMS } from './utils/formatters.js';
@@ -97,6 +98,7 @@ const OpticalSurfaceAnalyzer = () => {
     const [gridSize3D, setGridSize3D] = useState(129); // Grid size for 3D plots (odd number, max 257)
     const [gridSize2D, setGridSize2D] = useState(129); // Grid size for 2D plots (odd number, max 257)
     const [theme, setTheme] = useState('Dark Gray (Default)'); // Color theme
+    const [locale, setLocaleState] = useState(getCurrentLocale()); // Application locale (en, ru, etc.)
     const [contextMenu, setContextMenu] = useState(null);
     const [inputDialog, setInputDialog] = useState(null);
     const [showNormalizeUnZ, setShowNormalizeUnZ] = useState(false);
@@ -110,6 +112,16 @@ const OpticalSurfaceAnalyzer = () => {
     useEffect(() => {
         selectedSurfaceRef.current = selectedSurface;
     }, [selectedSurface]);
+
+    // Get translation object for current locale
+    const t = getLocale(locale);
+
+    // Locale setter that also saves to localStorage
+    const setLocale = (newLocale) => {
+        setLocaleState(newLocale);
+        saveLocale(newLocale);
+        saveSettingsToDisk(); // Also save to disk via Electron
+    };
 
     // ============================================
     // DATA LOADING
@@ -187,6 +199,9 @@ const OpticalSurfaceAnalyzer = () => {
                 setGridSize3D(result.settings.gridSize3D || 129);
                 setGridSize2D(result.settings.gridSize2D || 129);
                 setTheme(result.settings.theme || 'Dark Gray (Default)');
+                if (result.settings.locale) {
+                    setLocaleState(result.settings.locale);
+                }
             }
         }
     };
@@ -198,7 +213,8 @@ const OpticalSurfaceAnalyzer = () => {
                 wavelength,
                 gridSize3D,
                 gridSize2D,
-                theme
+                theme,
+                locale
             };
             await window.electronAPI.saveSettings(settings);
         }
@@ -207,7 +223,7 @@ const OpticalSurfaceAnalyzer = () => {
     // Auto-save settings when they change
     useEffect(() => {
         saveSettingsToDisk();
-    }, [colorscale, wavelength, gridSize3D, gridSize2D, theme]);
+    }, [colorscale, wavelength, gridSize3D, gridSize2D, theme, locale]);
 
     // Update selected surface when it changes in the folders
     useEffect(() => {
@@ -769,7 +785,8 @@ const OpticalSurfaceAnalyzer = () => {
         // Custom Menu Bar
         h(MenuBar, {
             c,
-            onMenuAction: handleMenuAction
+            onMenuAction: handleMenuAction,
+            t
         }),
         // Settings Modal
         showSettings && h(SettingsModal, {
@@ -783,8 +800,11 @@ const OpticalSurfaceAnalyzer = () => {
             setGridSize2D,
             theme,
             setTheme,
+            locale,
+            setLocale,
             onClose: () => setShowSettings(false),
-            c
+            c,
+            t
         }),
         // ZMX Import Dialog
         showZMXImport && h(ZMXImportDialog, {
@@ -973,7 +993,8 @@ const OpticalSurfaceAnalyzer = () => {
                 handleNormalizeUnZ,
                 handleConvertToUnZ,
                 handleConvertToPoly,
-                c
+                c,
+                t
             })
         )
     );
