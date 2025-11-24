@@ -339,13 +339,13 @@ const OpticalSurfaceAnalyzer = () => {
     const handleExportHTMLReport = async () => {
         // Use ref to access latest value (important for menu actions)
         const surface = selectedSurfaceRef.current;
-        await exportHTMLReport(surface, wavelength, colorscale, gridSize3D, gridSize2D);
+        await exportHTMLReport(surface, wavelength, colorscale, gridSize3D, gridSize2D, t);
     };
 
     const handleExportPDFReport = async () => {
         // Use ref to access latest value (important for menu actions)
         const surface = selectedSurfaceRef.current;
-        await exportPDFReport(surface, wavelength, colorscale, gridSize3D, gridSize2D);
+        await exportPDFReport(surface, wavelength, colorscale, gridSize3D, gridSize2D, t);
     };
 
     // ============================================

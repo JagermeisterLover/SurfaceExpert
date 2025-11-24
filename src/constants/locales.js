@@ -265,6 +265,17 @@ export const locales = {
         rad: 'rad',
         deg: '°',
         perMm: '/mm'
+      },
+
+      // Table headers
+      tableHeaders: {
+        property: 'Property',
+        value: 'Value',
+        unit: 'Unit',
+        coordinate: 'Coordinate',
+        xCoordinate: 'X Coordinate',
+        yCoordinate: 'Y Coordinate',
+        sagAtXY: 'Sag at (X, Y)'
       }
     },
 
@@ -273,6 +284,27 @@ export const locales = {
       title: 'Calculated Data',
       radius: 'Radius (mm)',
       value: 'Value'
+    },
+
+    // Reports
+    reports: {
+      title: 'Surface Analysis Report',
+      surfaceEquation: 'Surface Equation',
+      surfaceParameters: 'Surface Parameters',
+      summaryMetrics: 'Summary Metrics',
+      surfaceType: 'Surface Type',
+      calculatedData: 'Calculated Data',
+      radius: 'Radius',
+      sag: 'Sag',
+      slope: 'Slope',
+      angle: 'Angle',
+      angleDMS: 'Angle (DMS)',
+      asphericity: 'Asphericity',
+      aberration: 'Aberration',
+      parameter: 'Parameter',
+      value: 'Value',
+      unit: 'Unit',
+      metric: 'Metric'
     },
 
     // Messages
@@ -563,6 +595,17 @@ export const locales = {
         rad: 'рад',
         deg: '°',
         perMm: '/мм'
+      },
+
+      // Заголовки таблиц
+      tableHeaders: {
+        property: 'Параметр',
+        value: 'Значение',
+        unit: 'Единица',
+        coordinate: 'Координата',
+        xCoordinate: 'Координата X',
+        yCoordinate: 'Координата Y',
+        sagAtXY: 'Стрелка прогиба в (X, Y)'
       }
     },
 
@@ -571,6 +614,27 @@ export const locales = {
       title: 'Вычисленные данные',
       radius: 'Радиус (мм)',
       value: 'Значение'
+    },
+
+    // Отчеты
+    reports: {
+      title: 'Отчет по анализу поверхности',
+      surfaceEquation: 'Уравнение поверхности',
+      surfaceParameters: 'Параметры поверхности',
+      summaryMetrics: 'Сводные метрики',
+      surfaceType: 'Тип поверхности',
+      calculatedData: 'Вычисленные данные',
+      radius: 'Радиус',
+      sag: 'Стрелка прогиба',
+      slope: 'Крутизна',
+      angle: 'Угол',
+      angleDMS: 'Угол (DMS)',
+      asphericity: 'Асферичность',
+      aberration: 'Аберрация нормали',
+      parameter: 'Параметр',
+      value: 'Значение',
+      unit: 'Единица',
+      metric: 'Метрика'
     },
 
     // Сообщения
