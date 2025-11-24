@@ -112,24 +112,24 @@ export const SummaryView = ({ selectedSurface, wavelength = 632.8, c, t }) => {
             },
                 h('thead', null,
                     h('tr', { style: { borderBottom: `2px solid ${c.border}` } },
-                        h('th', { style: { padding: '10px', textAlign: 'left', color: c.textDim } }, 'Coordinate'),
-                        h('th', { style: { padding: '10px', textAlign: 'right' } }, 'Value'),
-                        h('th', { style: { padding: '10px', textAlign: 'left', paddingLeft: '20px' } }, 'Unit')
+                        h('th', { style: { padding: '10px', textAlign: 'left', color: c.textDim } }, t.summary.tableHeaders.coordinate),
+                        h('th', { style: { padding: '10px', textAlign: 'right' } }, t.summary.tableHeaders.value),
+                        h('th', { style: { padding: '10px', textAlign: 'left', paddingLeft: '20px' } }, t.summary.tableHeaders.unit)
                     )
                 ),
                 h('tbody', null,
                     h('tr', { style: { borderBottom: `1px solid ${c.border}` } },
-                        h('td', { style: { padding: '10px' } }, 'X Coordinate'),
+                        h('td', { style: { padding: '10px' } }, t.summary.tableHeaders.xCoordinate),
                         h('td', { style: { padding: '10px', textAlign: 'right' } }, formatValue(xCoord)),
                         h('td', { style: { padding: '10px', paddingLeft: '20px' } }, t.summary.units.mm)
                     ),
                     h('tr', { style: { borderBottom: `1px solid ${c.border}` } },
-                        h('td', { style: { padding: '10px' } }, 'Y Coordinate'),
+                        h('td', { style: { padding: '10px' } }, t.summary.tableHeaders.yCoordinate),
                         h('td', { style: { padding: '10px', textAlign: 'right' } }, formatValue(yCoord)),
                         h('td', { style: { padding: '10px', paddingLeft: '20px' } }, t.summary.units.mm)
                     ),
                     h('tr', { style: { borderBottom: `1px solid ${c.border}`, backgroundColor: c.hover } },
-                        h('td', { style: { padding: '10px', fontWeight: 'bold' } }, 'Sag at (X, Y)'),
+                        h('td', { style: { padding: '10px', fontWeight: 'bold' } }, t.summary.tableHeaders.sagAtXY),
                         h('td', { style: { padding: '10px', textAlign: 'right', fontWeight: 'bold' } }, formatValue(singlePointSag)),
                         h('td', { style: { padding: '10px', paddingLeft: '20px' } }, t.summary.units.mm)
                     )
@@ -147,9 +147,9 @@ export const SummaryView = ({ selectedSurface, wavelength = 632.8, c, t }) => {
         },
             h('thead', null,
                 h('tr', { style: { borderBottom: `2px solid ${c.border}` } },
-                    h('th', { style: { padding: '10px', textAlign: 'left', color: c.textDim } }, 'Property'),
-                    h('th', { style: { padding: '10px', textAlign: 'right' } }, 'Value'),
-                    h('th', { style: { padding: '10px', textAlign: 'left', paddingLeft: '20px' } }, 'Unit')
+                    h('th', { style: { padding: '10px', textAlign: 'left', color: c.textDim } }, t.summary.tableHeaders.property),
+                    h('th', { style: { padding: '10px', textAlign: 'right' } }, t.summary.tableHeaders.value),
+                    h('th', { style: { padding: '10px', textAlign: 'left', paddingLeft: '20px' } }, t.summary.tableHeaders.unit)
                 )
             ),
             h('tbody', null,

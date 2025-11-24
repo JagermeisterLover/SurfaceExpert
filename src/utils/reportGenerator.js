@@ -4,6 +4,7 @@
  */
 
 import { formatValue, degreesToDMS } from './formatters.js';
+import { getLocale } from '../constants/locales.js';
 
 /**
  * Get LaTeX equation for surface type
@@ -94,7 +95,10 @@ const getSurfaceNotes = (surfaceType) => {
 /**
  * Generate complete HTML report for a surface
  */
-export const generateHTMLReport = (surface, plotData, summaryMetrics, plotImages) => {
+export const generateHTMLReport = (surface, plotData, summaryMetrics, plotImages, t = null) => {
+    // Use provided locale or default to English
+    const locale = t || getLocale('en');
+
     const timestamp = new Date().toLocaleString();
     const equation = getSurfaceEquation(surface.type);
     const notes = getSurfaceNotes(surface.type);
@@ -723,9 +727,10 @@ const generate2DContourImage = async (surface, plotData, colorscale = 'Jet', gri
  * @param {string} colorscale - Plotly colorscale name
  * @param {number} gridSize3D - Grid size for 3D plots (default: 65)
  * @param {number} gridSize2D - Grid size for 2D plots (default: 129)
+ * @param {Object} t - Locale translations object
  * @returns {Promise<Object>} Report data with HTML and plot images
  */
-export const generateReportData = async (surface, plotData, summaryMetrics, colorscale = 'Jet', gridSize3D = 65, gridSize2D = 129) => {
+export const generateReportData = async (surface, plotData, summaryMetrics, colorscale = 'Jet', gridSize3D = 65, gridSize2D = 129, t = null) => {
     console.log('Generating report plots...');
 
     // Generate 3D and 2D plots in temporary containers
@@ -746,7 +751,7 @@ export const generateReportData = async (surface, plotData, summaryMetrics, colo
     };
 
     // Generate HTML report
-    const html = generateHTMLReport(surface, plotData, summaryMetrics, plotImages);
+    const html = generateHTMLReport(surface, plotData, summaryMetrics, plotImages, t);
 
     return {
         html,
