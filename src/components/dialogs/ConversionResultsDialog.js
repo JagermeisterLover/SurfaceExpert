@@ -1,7 +1,7 @@
 const { useState } = React;
 const { createElement: h } = React;
 
-export const ConversionResultsDialog = ({ convertResults, folders, selectedFolder, setFolders, setSelectedSurface, onClose, c }) => {
+export const ConversionResultsDialog = ({ convertResults, folders, selectedFolder, setFolders, setSelectedSurface, onClose, c, t }) => {
     const [showDetailsDialog, setShowDetailsDialog] = useState(false);
     const [saveResults, setSaveResults] = useState(true);
 
@@ -271,7 +271,7 @@ export const ConversionResultsDialog = ({ convertResults, folders, selectedFolde
                         }, 'Max Sag Deviation'),
                         h('td', {
                             style: { padding: '10px', textAlign: 'right', fontFamily: 'monospace', color: c.text, fontWeight: 'bold' }
-                        }, maxDeviation.toExponential(6) + ' mm')
+                        }, `${maxDeviation.toExponential(6)} ${t?.summary?.units?.mm || 'mm'}`)
                     )
                 )
             ),

@@ -263,7 +263,8 @@ export const locales = {
       units: {
         mm: 'mm',
         rad: 'rad',
-        deg: '°'
+        deg: '°',
+        perMm: '/mm'
       }
     },
 
@@ -560,7 +561,8 @@ export const locales = {
       units: {
         mm: 'мм',
         rad: 'рад',
-        deg: '°'
+        deg: '°',
+        perMm: '/мм'
       }
     },
 
