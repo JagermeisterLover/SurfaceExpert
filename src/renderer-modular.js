@@ -249,11 +249,11 @@ const OpticalSurfaceAnalyzer = () => {
         if (!selectedSurface) return;
         const c = getPalette(theme);
         if (plotRef.current && activeTab !== 'summary' && activeSubTab === '3d') {
-            create3DPlot(plotRef, selectedSurface, activeTab, colorscale, gridSize3D, c);
+            create3DPlot(plotRef, selectedSurface, activeTab, colorscale, gridSize3D, c, t);
         } else if (plotRef.current && activeTab !== 'summary' && activeSubTab === '2d') {
-            create2DHeatmap(plotRef, selectedSurface, activeTab, colorscale, c, gridSize2D);
+            create2DHeatmap(plotRef, selectedSurface, activeTab, colorscale, c, gridSize2D, t);
         } else if (plotRef.current && activeTab !== 'summary' && activeSubTab === 'cross') {
-            createCrossSection(plotRef, selectedSurface, activeTab, c);
+            createCrossSection(plotRef, selectedSurface, activeTab, c, t);
         }
     }, [selectedSurface, activeTab, activeSubTab, colorscale, gridSize3D, gridSize2D, theme]);
 
@@ -833,7 +833,8 @@ const OpticalSurfaceAnalyzer = () => {
             setFolders,
             setSelectedSurface,
             onClose: () => setShowConvertResults(false),
-            c
+            c,
+            t
         }),
         // Normalize UnZ Dialog
         showNormalizeUnZ && selectedSurface && h(NormalizeUnZDialog, {

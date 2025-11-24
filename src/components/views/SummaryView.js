@@ -121,17 +121,17 @@ export const SummaryView = ({ selectedSurface, wavelength = 632.8, c, t }) => {
                     h('tr', { style: { borderBottom: `1px solid ${c.border}` } },
                         h('td', { style: { padding: '10px' } }, 'X Coordinate'),
                         h('td', { style: { padding: '10px', textAlign: 'right' } }, formatValue(xCoord)),
-                        h('td', { style: { padding: '10px', paddingLeft: '20px' } }, 'mm')
+                        h('td', { style: { padding: '10px', paddingLeft: '20px' } }, t.summary.units.mm)
                     ),
                     h('tr', { style: { borderBottom: `1px solid ${c.border}` } },
                         h('td', { style: { padding: '10px' } }, 'Y Coordinate'),
                         h('td', { style: { padding: '10px', textAlign: 'right' } }, formatValue(yCoord)),
-                        h('td', { style: { padding: '10px', paddingLeft: '20px' } }, 'mm')
+                        h('td', { style: { padding: '10px', paddingLeft: '20px' } }, t.summary.units.mm)
                     ),
                     h('tr', { style: { borderBottom: `1px solid ${c.border}`, backgroundColor: c.hover } },
                         h('td', { style: { padding: '10px', fontWeight: 'bold' } }, 'Sag at (X, Y)'),
                         h('td', { style: { padding: '10px', textAlign: 'right', fontWeight: 'bold' } }, formatValue(singlePointSag)),
-                        h('td', { style: { padding: '10px', paddingLeft: '20px' } }, 'mm')
+                        h('td', { style: { padding: '10px', paddingLeft: '20px' } }, t.summary.units.mm)
                     )
                 )
             )
@@ -158,7 +158,7 @@ export const SummaryView = ({ selectedSurface, wavelength = 632.8, c, t }) => {
                     h('td', { style: { padding: '10px', textAlign: 'right' } },
                         `${selectedSurface.parameters['Min Height']} - ${selectedSurface.parameters['Max Height']}`
                     ),
-                    h('td', { style: { padding: '10px', paddingLeft: '20px' } }, 'mm')
+                    h('td', { style: { padding: '10px', paddingLeft: '20px' } }, t.summary.units.mm)
                 ),
                 !isNonRotSymmetric && h('tr', { style: { borderBottom: `1px solid ${c.border}` } },
                     h('td', { style: { padding: '10px' } }, t.properties.paraxialFNum),
@@ -198,7 +198,7 @@ export const SummaryView = ({ selectedSurface, wavelength = 632.8, c, t }) => {
                 !isNonRotSymmetric && h('tr', { style: { borderBottom: `1px solid ${c.border}` } },
                     h('td', { style: { padding: '10px' } }, t.properties.maxAsphGradient),
                     h('td', { style: { padding: '10px', textAlign: 'right' } }, formatValue(maxAsphGradient)),
-                    h('td', { style: { padding: '10px', paddingLeft: '20px' } }, '/mm')
+                    h('td', { style: { padding: '10px', paddingLeft: '20px' } }, t.summary.units.perMm)
                 ),
                 !isNonRotSymmetric && h('tr', { style: { borderBottom: `1px solid ${c.border}` } },
                     h('td', { style: { padding: '10px' } }, t.properties.bestFitSphere),

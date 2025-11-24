@@ -64,19 +64,19 @@ export const PropertiesPanel = ({
     const metrics = {
         paraxialFNum: formatValue(rawMetrics.paraxialFNum),
         workingFNum: formatValue(rawMetrics.workingFNum),
-        maxSag: formatValue(rawMetrics.maxSag) + ' mm',
-        maxSlope: formatValue(rawMetrics.maxSlope) + ' rad',
-        maxAngle: formatValue(rawMetrics.maxAngle) + ' °',
+        maxSag: `${formatValue(rawMetrics.maxSag)} ${t.summary.units.mm}`,
+        maxSlope: `${formatValue(rawMetrics.maxSlope)} ${t.summary.units.rad}`,
+        maxAngle: `${formatValue(rawMetrics.maxAngle)} ${t.summary.units.deg}`,
         maxAngleDMS: degreesToDMS(rawMetrics.maxAngle),
-        maxAsphericity: formatValue(rawMetrics.maxAsphericity) + ' mm',
-        maxAsphGradient: formatValue(rawMetrics.maxAsphGradient) + ' /mm',
-        bestFitSphere: formatValue(rawMetrics.bestFitSphere) + ' mm',
+        maxAsphericity: `${formatValue(rawMetrics.maxAsphericity)} ${t.summary.units.mm}`,
+        maxAsphGradient: `${formatValue(rawMetrics.maxAsphGradient)} ${t.summary.units.perMm}`,
+        bestFitSphere: `${formatValue(rawMetrics.bestFitSphere)} ${t.summary.units.mm}`,
         rmsError: rawMetrics.rmsError !== null ? {
-            mm: formatValue(rawMetrics.rmsError.mm) + ' mm',
+            mm: `${formatValue(rawMetrics.rmsError.mm)} ${t.summary.units.mm}`,
             waves: formatValue(rawMetrics.rmsError.waves) + ' λ'
         } : null,
         pvError: rawMetrics.pvError !== null ? {
-            mm: formatValue(rawMetrics.pvError.mm) + ' mm',
+            mm: `${formatValue(rawMetrics.pvError.mm)} ${t.summary.units.mm}`,
             waves: formatValue(rawMetrics.pvError.waves) + ' λ'
         } : null
     };
