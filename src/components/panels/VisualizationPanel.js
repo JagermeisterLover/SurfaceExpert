@@ -16,7 +16,8 @@ export const VisualizationPanel = ({
     setActiveSubTab,
     plotRef,
     wavelength,
-    c
+    c,
+    t
 }) => {
     return h('div', { style: { flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden' } },
         // Main Tabs
@@ -61,7 +62,7 @@ export const VisualizationPanel = ({
                             e.currentTarget.style.backgroundColor = 'transparent';
                         }
                     }
-                }, tab.charAt(0).toUpperCase() + tab.slice(1))
+                }, t.visualization.tabs[tab])
             )
         ),
 
@@ -99,9 +100,7 @@ export const VisualizationPanel = ({
                             e.currentTarget.style.backgroundColor = 'transparent';
                         }
                     }
-                }, subTab === '3d' ? '3D View' :
-                    subTab === '2d' ? '2D Heatmap' :
-                        subTab === 'cross' ? 'Cross-Section' : 'Data')
+                }, subTab === 'cross' ? t.visualization.subtabs.crossSection : t.visualization.subtabs[subTab])
             )
         ),
 
