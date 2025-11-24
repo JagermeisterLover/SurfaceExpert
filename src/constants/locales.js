@@ -81,6 +81,7 @@ export const locales = {
       maxAngle: 'Max Angle',
       maxAsphericity: 'Max Asphericity',
       maxAsphGradient: 'Max Asph Gradient',
+      maxAberration: 'Max Aberration',
       bestFitSphere: 'Best Fit Sphere',
       rmsError: 'RMS Error',
       pvError: 'P-V Error'
@@ -132,7 +133,8 @@ export const locales = {
       slopeRad: 'Slope (rad)',
       angleDeg: 'Angle (°)',
       asphericityMm: 'Asphericity (mm)',
-      aberrationMm: 'Aberration (mm)'
+      aberrationMm: 'Aberration (mm)',
+      heightRange: 'Height Range'
     },
 
     // Surface Types
@@ -246,6 +248,7 @@ export const locales = {
       minHeightMm: 'Min Height (mm)',
       maxHeightMm: 'Max Height (mm)',
       stepMm: 'Step (mm)',
+      heightRange: 'Height Range',
 
       // Analysis headers
       analysisHeaders: {
@@ -369,13 +372,14 @@ export const locales = {
 
       // Метрики
       paraxialFNum: 'Параксиальное F/#',
-      workingFNum: 'Рабочее F/#',
-      maxSag: 'Макс. прогиб',
-      maxSlope: 'Макс. наклон',
+      workingFNum: 'рабочее F/#',
+      maxSag: 'Макс. стрелка прогиба',
+      maxSlope: 'Макс. крутизна',
       maxAngle: 'Макс. угол',
       maxAsphericity: 'Макс. асферичность',
-      maxAsphGradient: 'Макс. градиент асф.',
-      bestFitSphere: 'Наилучшая сфера',
+      maxAsphGradient: 'Макс. градиент асферичности',
+      maxAberration: 'Макс. аберрация нормали',
+      bestFitSphere: 'Ближайшая сфера сравнения',
       rmsError: 'Ошибка RMS',
       pvError: 'Ошибка P-V'
     },
@@ -406,11 +410,11 @@ export const locales = {
     visualization: {
       tabs: {
         summary: 'Сводка',
-        sag: 'Прогиб',
-        slope: 'Наклон',
+        sag: 'Стрелка прогиба',
+        slope: 'Крутизна',
         angle: 'Угол',
         asphericity: 'Асферичность',
-        aberration: 'Аберрация',
+        aberration: 'Аберрация нормали',
         data: 'Данные'
       },
 
@@ -422,20 +426,21 @@ export const locales = {
 
       // Подписи графиков
       radialCoordinate: 'Радиальная координата (мм)',
-      sagMm: 'Прогиб (мм)',
-      slopeRad: 'Наклон (рад)',
+      sagMm: 'Стрелка прогиба (мм)',
+      slopeRad: 'Крутизна (рад)',
       angleDeg: 'Угол (°)',
       asphericityMm: 'Асферичность (мм)',
-      aberrationMm: 'Аберрация (мм)'
+      aberrationMm: 'Аберрация нормали (мм)',
+      heightRange: 'Диапазон высот'
     },
 
     // Типы поверхностей
     surfaceTypes: {
-      'Sphere': 'Сфера',
-      'Even Asphere': 'Чётная асфера',
-      'Odd Asphere': 'Нечётная асфера',
+      'Sphere': 'сфера',
+      'Even Asphere': 'четная асферика',
+      'Odd Asphere': 'нечетная асферика',
       'Zernike': 'Цернике',
-      'Irregular': 'Нерегулярная',
+      'Irregular': 'Irregular',
       'Opal Un U': 'Opal Un U',
       'Opal Un Z': 'Opal Un Z',
       'Poly': 'Полином'
@@ -450,7 +455,7 @@ export const locales = {
       'Conic Constant': 'Коническая константа',
       'Extrapolate': 'Экстраполяция',
       'Norm Radius': 'Норм. радиус',
-      'Number of Terms': 'Количество членов',
+      'Number of Terms': 'Количество коэффициентов Цернике',
       'Decenter X': 'Смещение X',
       'Decenter Y': 'Смещение Y',
       'Tilt X': 'Наклон X',
@@ -540,15 +545,16 @@ export const locales = {
       minHeightMm: 'Мин. высота (мм)',
       maxHeightMm: 'Макс. высота (мм)',
       stepMm: 'Шаг (мм)',
+      heightRange: 'Диапазон высот',
 
       // Заголовки анализа
       analysisHeaders: {
         radius: 'Радиус',
-        sag: 'Прогиб',
-        slope: 'Наклон',
+        sag: 'Стрелка прогиба',
+        slope: 'Крутизна',
         angle: 'Угол',
         asphericity: 'Асферичность',
-        aberration: 'Аберрация'
+        aberration: 'Аберрация нормали'
       },
 
       units: {

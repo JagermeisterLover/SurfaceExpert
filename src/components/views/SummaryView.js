@@ -6,7 +6,7 @@ import { formatValue, degreesToDMS } from '../../utils/formatters.js';
 
 const { createElement: h } = React;
 
-export const SummaryView = ({ selectedSurface, wavelength = 632.8, c }) => {
+export const SummaryView = ({ selectedSurface, wavelength = 632.8, c, t }) => {
     if (!selectedSurface) return null;
 
     // Generate data table for summary
