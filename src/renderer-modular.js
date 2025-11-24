@@ -960,7 +960,8 @@ const OpticalSurfaceAnalyzer = () => {
                 setContextMenu,
                 setInputDialog,
                 addFolder,
-                c
+                c,
+                t
             }),
 
             // Center Panel - Visualization
@@ -972,7 +973,8 @@ const OpticalSurfaceAnalyzer = () => {
                 setActiveSubTab,
                 plotRef,
                 wavelength,
-                c
+                c,
+                t
             }),
 
             // Right Panel - Properties
