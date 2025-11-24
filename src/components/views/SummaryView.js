@@ -136,7 +136,7 @@ export const SummaryView = ({ selectedSurface, wavelength = 632.8, c, t }) => {
                 )
             )
         ),
-        h('h3', { style: { marginBottom: '20px', fontSize: '16px' } }, 'Surface Summary'),
+        h('h3', { style: { marginBottom: '20px', fontSize: '16px' } }, t.summary.title),
         h('table', {
             style: {
                 width: '100%',
@@ -154,67 +154,67 @@ export const SummaryView = ({ selectedSurface, wavelength = 632.8, c, t }) => {
             ),
             h('tbody', null,
                 h('tr', { style: { borderBottom: `1px solid ${c.border}` } },
-                    h('td', { style: { padding: '10px' } }, 'Height Range'),
+                    h('td', { style: { padding: '10px' } }, t.summary.heightRange),
                     h('td', { style: { padding: '10px', textAlign: 'right' } },
                         `${selectedSurface.parameters['Min Height']} - ${selectedSurface.parameters['Max Height']}`
                     ),
                     h('td', { style: { padding: '10px', paddingLeft: '20px' } }, 'mm')
                 ),
                 !isNonRotSymmetric && h('tr', { style: { borderBottom: `1px solid ${c.border}` } },
-                    h('td', { style: { padding: '10px' } }, 'Paraxial F/#'),
+                    h('td', { style: { padding: '10px' } }, t.properties.paraxialFNum),
                     h('td', { style: { padding: '10px', textAlign: 'right' } }, formatValue(paraxialFNum)),
                     h('td', { style: { padding: '10px', paddingLeft: '20px' } }, '—')
                 ),
                 !isNonRotSymmetric && h('tr', { style: { borderBottom: `1px solid ${c.border}` } },
-                    h('td', { style: { padding: '10px' } }, 'Working F/#'),
+                    h('td', { style: { padding: '10px' } }, t.properties.workingFNum),
                     h('td', { style: { padding: '10px', textAlign: 'right' } }, formatValue(workingFNum)),
                     h('td', { style: { padding: '10px', paddingLeft: '20px' } }, '—')
                 ),
                 h('tr', { style: { borderBottom: `1px solid ${c.border}` } },
-                    h('td', { style: { padding: '10px' } }, 'Max Sag'),
+                    h('td', { style: { padding: '10px' } }, t.properties.maxSag),
                     h('td', { style: { padding: '10px', textAlign: 'right' } }, formatValue(maxSag)),
-                    h('td', { style: { padding: '10px', paddingLeft: '20px' } }, 'mm')
+                    h('td', { style: { padding: '10px', paddingLeft: '20px' } }, t.summary.units.mm)
                 ),
                 !isNonRotSymmetric && h('tr', { style: { borderBottom: `1px solid ${c.border}` } },
-                    h('td', { style: { padding: '10px' } }, 'Max Slope'),
+                    h('td', { style: { padding: '10px' } }, t.properties.maxSlope),
                     h('td', { style: { padding: '10px', textAlign: 'right' } }, formatValue(maxSlope)),
-                    h('td', { style: { padding: '10px', paddingLeft: '20px' } }, 'rad')
+                    h('td', { style: { padding: '10px', paddingLeft: '20px' } }, t.summary.units.rad)
                 ),
                 !isNonRotSymmetric && h('tr', { style: { borderBottom: `1px solid ${c.border}` } },
-                    h('td', { style: { padding: '10px' } }, 'Max Angle'),
+                    h('td', { style: { padding: '10px' } }, t.properties.maxAngle),
                     h('td', { style: { padding: '10px', textAlign: 'right' } }, formatValue(maxAngle)),
-                    h('td', { style: { padding: '10px', paddingLeft: '20px' } }, '°')
+                    h('td', { style: { padding: '10px', paddingLeft: '20px' } }, t.summary.units.deg)
                 ),
                 !isNonRotSymmetric && h('tr', { style: { borderBottom: `1px solid ${c.border}` } },
-                    h('td', { style: { padding: '10px' } }, 'Max Angle DMS'),
+                    h('td', { style: { padding: '10px' } }, `${t.properties.maxAngle} (DMS)`),
                     h('td', { style: { padding: '10px', textAlign: 'right' } }, degreesToDMS(maxAngle)),
                     h('td', { style: { padding: '10px', paddingLeft: '20px' } }, '—')
                 ),
                 !isNonRotSymmetric && h('tr', { style: { borderBottom: `1px solid ${c.border}` } },
-                    h('td', { style: { padding: '10px' } }, 'Max Asphericity'),
+                    h('td', { style: { padding: '10px' } }, t.properties.maxAsphericity),
                     h('td', { style: { padding: '10px', textAlign: 'right' } }, formatValue(maxAsphericity)),
-                    h('td', { style: { padding: '10px', paddingLeft: '20px' } }, 'mm')
+                    h('td', { style: { padding: '10px', paddingLeft: '20px' } }, t.summary.units.mm)
                 ),
                 !isNonRotSymmetric && h('tr', { style: { borderBottom: `1px solid ${c.border}` } },
-                    h('td', { style: { padding: '10px' } }, 'Max Asph. Gradient'),
+                    h('td', { style: { padding: '10px' } }, t.properties.maxAsphGradient),
                     h('td', { style: { padding: '10px', textAlign: 'right' } }, formatValue(maxAsphGradient)),
                     h('td', { style: { padding: '10px', paddingLeft: '20px' } }, '/mm')
                 ),
                 !isNonRotSymmetric && h('tr', { style: { borderBottom: `1px solid ${c.border}` } },
-                    h('td', { style: { padding: '10px' } }, 'Best Fit Sphere'),
+                    h('td', { style: { padding: '10px' } }, t.properties.bestFitSphere),
                     h('td', { style: { padding: '10px', textAlign: 'right' } }, formatValue(bestFitSphere)),
-                    h('td', { style: { padding: '10px', paddingLeft: '20px' } }, 'mm')
+                    h('td', { style: { padding: '10px', paddingLeft: '20px' } }, t.summary.units.mm)
                 ),
                 !isNonRotSymmetric && h('tr', { style: { borderBottom: `1px solid ${c.border}` } },
-                    h('td', { style: { padding: '10px' } }, 'Max Aberration'),
+                    h('td', { style: { padding: '10px' } }, t.properties.maxAberration),
                     h('td', { style: { padding: '10px', textAlign: 'right' } }, formatValue(maxAberration)),
-                    h('td', { style: { padding: '10px', paddingLeft: '20px' } }, 'mm')
+                    h('td', { style: { padding: '10px', paddingLeft: '20px' } }, t.summary.units.mm)
                 )
             )
         ),
 
         // Detailed data table
-        h('h3', { style: { marginBottom: '15px', marginTop: '20px', fontSize: '16px' } }, 'Detailed Analysis'),
+        h('h3', { style: { marginBottom: '15px', marginTop: '20px', fontSize: '16px' } }, t.summary.detailedAnalysis),
         h('table', {
             style: {
                 width: '100%',
@@ -224,13 +224,13 @@ export const SummaryView = ({ selectedSurface, wavelength = 632.8, c, t }) => {
         },
             h('thead', null,
                 h('tr', { style: { borderBottom: `2px solid ${c.border}` } },
-                    h('th', { style: { padding: '8px', textAlign: 'right', color: c.textDim } }, 'Height (mm)'),
-                    h('th', { style: { padding: '8px', textAlign: 'right', color: c.textDim } }, 'Sag (mm)'),
-                    !isNonRotSymmetric && h('th', { style: { padding: '8px', textAlign: 'right', color: c.textDim } }, 'Slope (rad)'),
-                    !isNonRotSymmetric && h('th', { style: { padding: '8px', textAlign: 'right', color: c.textDim } }, 'Angle (°)'),
-                    !isNonRotSymmetric && h('th', { style: { padding: '8px', textAlign: 'right', color: c.textDim } }, 'Angle DMS'),
-                    !isNonRotSymmetric && h('th', { style: { padding: '8px', textAlign: 'right', color: c.textDim } }, 'Asphericity (mm)'),
-                    !isNonRotSymmetric && h('th', { style: { padding: '8px', textAlign: 'right', color: c.textDim } }, 'Aberration (mm)')
+                    h('th', { style: { padding: '8px', textAlign: 'right', color: c.textDim } }, `${t.summary.analysisHeaders.radius} (${t.summary.units.mm})`),
+                    h('th', { style: { padding: '8px', textAlign: 'right', color: c.textDim } }, `${t.summary.analysisHeaders.sag} (${t.summary.units.mm})`),
+                    !isNonRotSymmetric && h('th', { style: { padding: '8px', textAlign: 'right', color: c.textDim } }, `${t.summary.analysisHeaders.slope} (${t.summary.units.rad})`),
+                    !isNonRotSymmetric && h('th', { style: { padding: '8px', textAlign: 'right', color: c.textDim } }, `${t.summary.analysisHeaders.angle} (${t.summary.units.deg})`),
+                    !isNonRotSymmetric && h('th', { style: { padding: '8px', textAlign: 'right', color: c.textDim } }, `${t.summary.analysisHeaders.angle} (DMS)`),
+                    !isNonRotSymmetric && h('th', { style: { padding: '8px', textAlign: 'right', color: c.textDim } }, `${t.summary.analysisHeaders.asphericity} (${t.summary.units.mm})`),
+                    !isNonRotSymmetric && h('th', { style: { padding: '8px', textAlign: 'right', color: c.textDim } }, `${t.summary.analysisHeaders.aberration} (${t.summary.units.mm})`)
                 )
             ),
             h('tbody', null,
