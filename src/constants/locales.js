@@ -189,12 +189,29 @@ export const locales = {
 
       // Conversion Dialog
       conversion: {
-        title: 'Surface Conversion',
+        title: 'Convert Surface',
         convertingFrom: 'Converting from',
         to: 'to',
         targetH: 'Target H value',
         convert: 'Convert',
-        cancel: 'Cancel'
+        cancel: 'Cancel',
+        converting: 'Converting...',
+        optimizationAlgorithm: 'Optimization Algorithm',
+        targetSurfaceType: 'Target Surface Type',
+        radiusFixed: 'Radius (mm) - Fixed',
+        conicConstantVariable: 'Conic Constant (Variable)',
+        fixedConicValue: 'Fixed conic constant value',
+        e2ParameterVariable: 'e2 Parameter (Variable)',
+        fixedE2Value: 'Fixed e2 value',
+        normalizationFactorH: 'Normalization Factor H',
+        useHigherOrderCoeffs: 'Use Higher Order Coefficients',
+        numberOfCoeffs: 'Number of Coefficients',
+        algorithms: {
+          leastsq: 'Least Squares (Levenberg-Marquardt)',
+          least_squares: 'Least Squares (Trust Region)',
+          nelder: 'Nelder-Mead',
+          powell: 'Powell'
+        }
       },
 
       // Conversion Results Dialog
@@ -519,12 +536,29 @@ export const locales = {
 
       // Диалог конвертации
       conversion: {
-        title: 'Конвертация поверхности',
+        title: 'Конвертировать поверхность',
         convertingFrom: 'Конвертация из',
         to: 'в',
         targetH: 'Целевое значение H',
         convert: 'Конвертировать',
-        cancel: 'Отмена'
+        cancel: 'Отмена',
+        converting: 'Конвертация...',
+        optimizationAlgorithm: 'Алгоритм оптимизации',
+        targetSurfaceType: 'Целевой тип поверхности',
+        radiusFixed: 'Радиус (мм) - Фиксированный',
+        conicConstantVariable: 'Коническая константа (Переменная)',
+        fixedConicValue: 'Фиксированное значение конической константы',
+        e2ParameterVariable: 'Параметр e2 (Переменный)',
+        fixedE2Value: 'Фиксированное значение e2',
+        normalizationFactorH: 'Фактор нормализации H',
+        useHigherOrderCoeffs: 'Использовать коэффициенты высших порядков',
+        numberOfCoeffs: 'Количество коэффициентов',
+        algorithms: {
+          leastsq: 'Наименьшие квадраты (Левенберг-Марквардт)',
+          least_squares: 'Наименьшие квадраты (Trust Region)',
+          nelder: 'Нелдер-Мид',
+          powell: 'Пауэлл'
+        }
       },
 
       // Диалог результатов конвертации

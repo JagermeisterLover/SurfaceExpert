@@ -353,7 +353,7 @@ const generateMetricsTable = (metrics, surfaceType, locale) => {
     const leftMetrics = metricsList.slice(0, half);
     const rightMetrics = metricsList.slice(half);
 
-    let html = '<table class="metrics-table"><tr><th>Metric</th><th>Value</th><th>Metric</th><th>Value</th></tr>';
+    let html = `<table class="metrics-table"><tr><th>${locale.reports.metric}</th><th>${locale.reports.value}</th><th>${locale.reports.metric}</th><th>${locale.reports.value}</th></tr>`;
 
     for (let i = 0; i < Math.max(leftMetrics.length, rightMetrics.length); i++) {
         html += '<tr>';
