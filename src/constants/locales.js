@@ -388,7 +388,7 @@ export const locales = {
       title: 'Настройки',
       colorTheme: 'Цветовая тема',
       plotColorscale: 'Цветовая шкала графиков',
-      referenceWavelength: 'Референсная длина волны (нм)',
+      referenceWavelength: 'Опорная длина волны (нм)',
       wavelengthHelp: 'Используется для расчётов ошибок RMS/P-V (по умолчанию: 632.8 нм HeNe лазер)',
       gridSize3D: 'Размер сетки 3D графика',
       gridSize3DHelp: 'Разрешение сетки для 3D графиков поверхностей',
@@ -486,9 +486,9 @@ export const locales = {
 
     // Типы поверхностей
     surfaceTypes: {
-      'Sphere': 'сфера',
-      'Even Asphere': 'четная асферика',
-      'Odd Asphere': 'нечетная асферика',
+      'Sphere': 'Сфера',
+      'Even Asphere': 'Четная асферика',
+      'Odd Asphere': 'Нечетная асферика',
       'Zernike': 'Цернике',
       'Irregular': 'Irregular',
       'Opal Un U': 'Opal Un U',
