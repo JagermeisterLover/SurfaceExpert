@@ -4,7 +4,7 @@ const { createElement: h } = React;
 // Import calculateSurfaceValues from utils
 import { calculateSurfaceValues } from '../../utils/calculations.js';
 
-const ConversionDialog = ({ selectedSurface, folders, selectedFolder, setFolders, setSelectedSurface, setShowConvert, setShowConvertResults, setConvertResults, c }) => {
+const ConversionDialog = ({ selectedSurface, folders, selectedFolder, setFolders, setSelectedSurface, setShowConvert, setShowConvertResults, setConvertResults, c, t }) => {
     const [targetType, setTargetType] = useState('1'); // 1=Even Asphere, 2=Odd Asphere, 3=Opal UnZ, 4=Opal UnU, 5=Poly
     const [algorithm, setAlgorithm] = useState('leastsq');
     const [radius, setRadius] = useState(selectedSurface.parameters['Radius'] || '100');
@@ -115,7 +115,7 @@ const ConversionDialog = ({ selectedSurface, folders, selectedFolder, setFolders
                     fontWeight: 'bold',
                     color: c.text
                 }
-            }, 'Convert Surface'),
+            }, t.dialogs.conversion.title),
 
             // Algorithm selection
             h('div', { style: { marginBottom: '20px' } },
@@ -127,7 +127,7 @@ const ConversionDialog = ({ selectedSurface, folders, selectedFolder, setFolders
                         marginBottom: '8px',
                         color: c.textDim
                     }
-                }, 'Optimization Algorithm'),
+                }, t.dialogs.conversion.optimizationAlgorithm),
                 h('select', {
                     value: algorithm,
                     onChange: (e) => setAlgorithm(e.target.value),
@@ -141,10 +141,10 @@ const ConversionDialog = ({ selectedSurface, folders, selectedFolder, setFolders
                         fontSize: '13px'
                     }
                 },
-                    h('option', { value: 'leastsq' }, 'Least Squares (Levenberg-Marquardt)'),
-                    h('option', { value: 'least_squares' }, 'Least Squares (Trust Region)'),
-                    h('option', { value: 'nelder' }, 'Nelder-Mead'),
-                    h('option', { value: 'powell' }, 'Powell')
+                    h('option', { value: 'leastsq' }, t.dialogs.conversion.algorithms.leastsq),
+                    h('option', { value: 'least_squares' }, t.dialogs.conversion.algorithms.least_squares),
+                    h('option', { value: 'nelder' }, t.dialogs.conversion.algorithms.nelder),
+                    h('option', { value: 'powell' }, t.dialogs.conversion.algorithms.powell)
                 )
             ),
 
@@ -158,7 +158,7 @@ const ConversionDialog = ({ selectedSurface, folders, selectedFolder, setFolders
                         marginBottom: '8px',
                         color: c.textDim
                     }
-                }, 'Target Surface Type'),
+                }, t.dialogs.conversion.targetSurfaceType),
                 h('select', {
                     value: targetType,
                     onChange: (e) => setTargetType(e.target.value),
@@ -172,11 +172,11 @@ const ConversionDialog = ({ selectedSurface, folders, selectedFolder, setFolders
                         fontSize: '13px'
                     }
                 },
-                    h('option', { value: '1' }, 'Even Asphere'),
-                    h('option', { value: '2' }, 'Odd Asphere'),
-                    h('option', { value: '3' }, 'Opal UnZ'),
-                    h('option', { value: '4' }, 'Opal UnU'),
-                    h('option', { value: '5' }, 'Poly')
+                    h('option', { value: '1' }, t.surfaceTypes['Even Asphere']),
+                    h('option', { value: '2' }, t.surfaceTypes['Odd Asphere']),
+                    h('option', { value: '3' }, t.surfaceTypes['Opal Un Z']),
+                    h('option', { value: '4' }, t.surfaceTypes['Opal Un U']),
+                    h('option', { value: '5' }, t.surfaceTypes['Poly'])
                 )
             ),
 
@@ -190,7 +190,7 @@ const ConversionDialog = ({ selectedSurface, folders, selectedFolder, setFolders
                         marginBottom: '8px',
                         color: c.textDim
                     }
-                }, 'Radius (mm) - Fixed'),
+                }, t.dialogs.conversion.radiusFixed),
                 h('input', {
                     type: 'text',
                     value: radius,
@@ -224,13 +224,13 @@ const ConversionDialog = ({ selectedSurface, folders, selectedFolder, setFolders
                             fontWeight: '600',
                             color: c.textDim
                         }
-                    }, 'Conic Constant (Variable)')
+                    }, t.dialogs.conversion.conicConstantVariable)
                 ),
                 !conicVariable && h('input', {
                     type: 'text',
                     value: conicValue,
                     onChange: (e) => setConicValue(e.target.value),
-                    placeholder: 'Fixed conic constant value',
+                    placeholder: t.dialogs.conversion.fixedConicValue,
                     style: {
                         width: '100%',
                         padding: '8px',
@@ -260,13 +260,13 @@ const ConversionDialog = ({ selectedSurface, folders, selectedFolder, setFolders
                             fontWeight: '600',
                             color: c.textDim
                         }
-                    }, 'e2 Parameter (Variable)')
+                    }, t.dialogs.conversion.e2ParameterVariable)
                 ),
                 !e2Variable && h('input', {
                     type: 'text',
                     value: e2Value,
                     onChange: (e) => setE2Value(e.target.value),
-                    placeholder: 'Fixed e2 value',
+                    placeholder: t.dialogs.conversion.fixedE2Value,
                     style: {
                         width: '100%',
                         padding: '8px',
@@ -289,7 +289,7 @@ const ConversionDialog = ({ selectedSurface, folders, selectedFolder, setFolders
                         marginBottom: '8px',
                         color: c.textDim
                     }
-                }, 'Normalization Factor H'),
+                }, t.dialogs.conversion.normalizationFactorH),
                 h('input', {
                     type: 'text',
                     value: hValue,
@@ -323,7 +323,7 @@ const ConversionDialog = ({ selectedSurface, folders, selectedFolder, setFolders
                             fontWeight: '600',
                             color: c.textDim
                         }
-                    }, 'Use Higher Order Coefficients')
+                    }, t.dialogs.conversion.useHigherOrderCoeffs)
                 ),
                 useCoeffs && h('div', null,
                     h('label', {
@@ -333,7 +333,7 @@ const ConversionDialog = ({ selectedSurface, folders, selectedFolder, setFolders
                             marginBottom: '8px',
                             color: c.textDim
                         }
-                    }, `Number of Coefficients: ${numCoeffs}`),
+                    }, `${t.dialogs.conversion.numberOfCoeffs}: ${numCoeffs}`),
                     h('input', {
                         type: 'range',
                         min: 1,
@@ -370,7 +370,7 @@ const ConversionDialog = ({ selectedSurface, folders, selectedFolder, setFolders
                         fontWeight: '600',
                         opacity: isRunning ? 0.5 : 1
                     }
-                }, 'Cancel'),
+                }, t.dialogs.conversion.cancel),
                 h('button', {
                     onClick: runConversion,
                     disabled: isRunning,
@@ -384,7 +384,7 @@ const ConversionDialog = ({ selectedSurface, folders, selectedFolder, setFolders
                         fontSize: '13px',
                         fontWeight: '600'
                     }
-                }, isRunning ? 'Converting...' : 'Convert')
+                }, isRunning ? t.dialogs.conversion.converting : t.dialogs.conversion.convert)
             )
         )
     );

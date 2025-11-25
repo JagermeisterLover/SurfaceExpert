@@ -823,7 +823,8 @@ const OpticalSurfaceAnalyzer = () => {
             setShowConvert,
             setShowConvertResults,
             setConvertResults,
-            c
+            c,
+            t
         }),
         // Conversion Results Dialog
         showConvertResults && h(ConversionResultsDialog, {
