@@ -177,14 +177,20 @@ export const locales = {
       // ZMX Import Dialog
       zmxImport: {
         title: 'Import Surfaces from ZMX',
+        foundSurfaces: 'Found {count} surface(s). Select surfaces to import:',
         selectAll: 'Select All',
         deselectAll: 'Deselect All',
         import: 'Import',
+        importButton: 'Import {count} Surface(s)',
         cancel: 'Cancel',
+        select: 'Select',
         surface: 'Surface',
         type: 'Type',
-        radius: 'Radius',
-        diameter: 'Diameter'
+        radius: 'Radius (mm)',
+        diameter: 'Diameter (mm)',
+        conic: 'Conic',
+        params: 'Params',
+        errorNoSelection: 'Please select at least one surface to import'
       },
 
       // Conversion Dialog
@@ -220,7 +226,16 @@ export const locales = {
         conversionSuccessful: 'Conversion Successful',
         originalParameters: 'Original Parameters',
         convertedParameters: 'Converted Parameters',
+        metric: 'Metric',
+        value: 'Value',
+        maxSagDeviation: 'Max Sag Deviation',
+        saveResults: 'Save results to text files',
+        viewResults: 'View Results',
+        addToSurfaces: 'Add to Surfaces',
+        detailedResults: 'Detailed Fit Results',
+        fitReport: 'Fit Report',
         fitMetrics: 'Fit Metrics',
+        fitDeviations: 'Fit Deviations',
         rmse: 'RMSE',
         rSquared: 'R²',
         aic: 'AIC',
@@ -236,7 +251,9 @@ export const locales = {
         newH: 'New H value',
         normalize: 'Normalize',
         cancel: 'Cancel',
-        help: 'This will renormalize the Opal Un Z surface to a new H value while preserving the surface shape.'
+        help: 'This will renormalize the Opal Un Z surface to a new H value while preserving the surface shape.',
+        errorPositive: 'Please enter a positive number',
+        errorDifferent: 'New H value must be different from current H'
       },
 
       // About Dialog
@@ -252,6 +269,21 @@ export const locales = {
       input: {
         ok: 'OK',
         cancel: 'Cancel'
+      },
+
+      // Context Menu
+      contextMenu: {
+        rename: 'Rename',
+        renameFolder: 'Rename Folder',
+        deleteFolder: 'Delete Folder',
+        deleteSurface: 'Delete Surface'
+      },
+
+      // Folder Dialogs
+      folder: {
+        newFolder: 'New Folder',
+        folderNameEmpty: 'Folder name cannot be empty',
+        folderExists: 'A folder with this name already exists'
       }
     },
 
@@ -311,6 +343,7 @@ export const locales = {
       summaryMetrics: 'Summary Metrics',
       surfaceType: 'Surface Type',
       calculatedData: 'Calculated Data',
+      visualizations: 'Visualizations',
       radius: 'Radius',
       sag: 'Sag',
       slope: 'Slope',
@@ -321,7 +354,15 @@ export const locales = {
       parameter: 'Parameter',
       value: 'Value',
       unit: 'Unit',
-      metric: 'Metric'
+      metric: 'Metric',
+
+      // Plot titles
+      plot3D: '3D Surface Plot',
+      plot2D: '2D Heatmap',
+      plotSag: 'Sag vs Radial Coordinate',
+      plotSlope: 'Slope vs Radial Coordinate',
+      plotAsphericity: 'Asphericity vs Radial Coordinate',
+      plotAberration: 'Aberration vs Radial Coordinate'
     },
 
     // Messages
@@ -416,9 +457,9 @@ export const locales = {
       exportHTML: 'Экспорт HTML',
       exportPDF: 'Экспорт PDF',
       invert: 'Инвертировать',
-      normalize: 'Нормализовать Un Z',
-      convertToUnZ: 'Конвертировать в Un Z',
-      convertToPoly: 'Конвертировать в Poly',
+      normalize: 'Нормализовать H',
+      convertToUnZ: 'Конвертировать в Универсальное от Z',
+      convertToPoly: 'Конвертировать в Полином',
 
       // Метрики
       paraxialFNum: 'Параксиальное F/#',
@@ -491,8 +532,8 @@ export const locales = {
       'Odd Asphere': 'Нечетная асферика',
       'Zernike': 'Цернике',
       'Irregular': 'Irregular',
-      'Opal Un U': 'Opal Un U',
-      'Opal Un Z': 'Opal Un Z',
+      'Opal Un U': 'Универсальное от U',
+      'Opal Un Z': 'Универсальное от Z',
       'Poly': 'Полином'
     },
 
@@ -503,7 +544,7 @@ export const locales = {
       'Max Height': 'Макс. высота',
       'Step': 'Шаг',
       'Conic Constant': 'Коническая константа',
-      'Extrapolate': 'Экстраполяция',
+      'Extrapolate': 'Экстраполировать?',
       'Norm Radius': 'Норм. радиус',
       'Number of Terms': 'Количество коэффициентов Цернике',
       'Decenter X': 'Смещение X',
@@ -524,14 +565,20 @@ export const locales = {
       // Диалог импорта ZMX
       zmxImport: {
         title: 'Импорт поверхностей из ZMX',
+        foundSurfaces: 'Найдено поверхностей: {count}. Выберите поверхности для импорта:',
         selectAll: 'Выбрать все',
         deselectAll: 'Снять выбор',
         import: 'Импорт',
+        importButton: 'Импорт ({count})',
         cancel: 'Отмена',
+        select: 'Выбор',
         surface: 'Поверхность',
         type: 'Тип',
-        radius: 'Радиус',
-        diameter: 'Диаметр'
+        radius: 'Радиус (мм)',
+        diameter: 'Диаметр (мм)',
+        conic: 'Коника',
+        params: 'Парам.',
+        errorNoSelection: 'Пожалуйста, выберите хотя бы одну поверхность для импорта'
       },
 
       // Диалог конвертации
@@ -567,7 +614,16 @@ export const locales = {
         conversionSuccessful: 'Конвертация выполнена успешно',
         originalParameters: 'Исходные параметры',
         convertedParameters: 'Конвертированные параметры',
+        metric: 'Метрика',
+        value: 'Значение',
+        maxSagDeviation: 'Макс. отклонение стрелки прогиба',
+        saveResults: 'Сохранить результаты в текстовые файлы',
+        viewResults: 'Просмотр результатов',
+        addToSurfaces: 'Добавить к поверхностям',
+        detailedResults: 'Детальные результаты подгонки',
+        fitReport: 'Отчёт о подгонке',
         fitMetrics: 'Метрики подгонки',
+        fitDeviations: 'Отклонения подгонки',
         rmse: 'RMSE',
         rSquared: 'R²',
         aic: 'AIC',
@@ -583,7 +639,9 @@ export const locales = {
         newH: 'Новое значение H',
         normalize: 'Нормализовать',
         cancel: 'Отмена',
-        help: 'Это перенормирует поверхность Opal Un Z на новое значение H с сохранением формы поверхности.'
+        help: 'Это перенормирует Универсальную от Z поверхность на новое значение H с сохранением формы поверхности.',
+        errorPositive: 'Пожалуйста, введите положительное число',
+        errorDifferent: 'Новое значение H должно отличаться от текущего H'
       },
 
       // Диалог О программе
@@ -599,6 +657,21 @@ export const locales = {
       input: {
         ok: 'ОК',
         cancel: 'Отмена'
+      },
+
+      // Контекстное меню
+      contextMenu: {
+        rename: 'Переименовать',
+        renameFolder: 'Переименовать папку',
+        deleteFolder: 'Удалить папку',
+        deleteSurface: 'Удалить поверхность'
+      },
+
+      // Диалоги папок
+      folder: {
+        newFolder: 'Новая папка',
+        folderNameEmpty: 'Имя папки не может быть пустым',
+        folderExists: 'Папка с таким именем уже существует'
       }
     },
 
@@ -639,7 +712,7 @@ export const locales = {
         coordinate: 'Координата',
         xCoordinate: 'Координата X',
         yCoordinate: 'Координата Y',
-        sagAtXY: 'Стрелка прогиба в (X, Y)'
+        sagAtXY: 'Стрелка прогиба в точке (X, Y)'
       }
     },
 
@@ -655,9 +728,10 @@ export const locales = {
       title: 'Отчет по анализу поверхности',
       surfaceEquation: 'Уравнение поверхности',
       surfaceParameters: 'Параметры поверхности',
-      summaryMetrics: 'Сводные метрики',
+      summaryMetrics: 'Сводка',
       surfaceType: 'Тип поверхности',
       calculatedData: 'Вычисленные данные',
+      visualizations: 'Графики',
       radius: 'Радиус',
       sag: 'Стрелка прогиба',
       slope: 'Крутизна',
@@ -668,7 +742,15 @@ export const locales = {
       parameter: 'Параметр',
       value: 'Значение',
       unit: 'Единица',
-      metric: 'Метрика'
+      metric: 'Свойство',
+
+      // Названия графиков
+      plot3D: '3D график поверхности',
+      plot2D: '2D heatmap',
+      plotSag: 'Зависимость стрелки прогиба от радиальной координаты',
+      plotSlope: 'Зависимость крутизны от радиальной координаты',
+      plotAsphericity: 'Зависимость асферичности от радиальной координаты',
+      plotAberration: 'Зависимость аберраций нормали от радиальной координаты'
     },
 
     // Сообщения

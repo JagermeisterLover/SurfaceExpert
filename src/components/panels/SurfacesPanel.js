@@ -188,14 +188,14 @@ export const SurfacesPanel = ({
                 onClick: (e) => {
                     e.stopPropagation();
                     setInputDialog({
-                        title: 'New Folder',
+                        title: t.dialogs.folder.newFolder,
                         defaultValue: 'New Folder',
                         validate: (name) => {
                             if (!name || !name.trim()) {
-                                return 'Folder name cannot be empty';
+                                return t.dialogs.folder.folderNameEmpty;
                             }
-                            if (folders.some(f => f.name === name.trim())) {
-                                return 'A folder with this name already exists';
+                            if (folders.some(f => f.name.toLowerCase() === name.trim().toLowerCase())) {
+                                return t.dialogs.folder.folderExists;
                             }
                             return '';
                         },

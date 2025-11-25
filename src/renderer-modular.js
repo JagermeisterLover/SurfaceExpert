@@ -811,7 +811,8 @@ const OpticalSurfaceAnalyzer = () => {
             zmxSurfaces,
             onImport: handleImportSelectedSurfaces,
             onClose: () => setShowZMXImport(false),
-            c
+            c,
+            t
         }),
         // Conversion Dialog
         showConvert && h(ConversionDialog, {
@@ -842,7 +843,8 @@ const OpticalSurfaceAnalyzer = () => {
             currentH: parseFloat(selectedSurface.parameters.H) || 1,
             onConfirm: handleNormalizeUnZConfirm,
             onCancel: () => setShowNormalizeUnZ(false),
-            c
+            c,
+            t
         }),
         // About Dialog
         showAbout && h(AboutDialog, {
@@ -852,7 +854,8 @@ const OpticalSurfaceAnalyzer = () => {
         // Input Dialog (for rename/new folder)
         h(InputDialog, {
             inputDialog,
-            c
+            c,
+            t
         }),
         // Context Menu
         contextMenu && h('div', {
@@ -885,15 +888,16 @@ const OpticalSurfaceAnalyzer = () => {
                         const targetName = contextMenu.target.name;
                         setContextMenu(null);
                         setInputDialog({
-                            title: 'Rename Folder',
+                            title: t.dialogs.contextMenu.renameFolder,
                             defaultValue: targetName,
                             validate: (name) => {
                                 if (!name || !name.trim()) {
-                                    return 'Folder name cannot be empty';
+                                    return t.dialogs.folder.folderNameEmpty;
                                 }
-                                // Allow same name (no change) but check for conflicts with other folders
-                                if (name.trim() !== targetName && folders.some(f => f.name === name.trim())) {
-                                    return 'A folder with this name already exists';
+                                // Allow same name (no change) but check for conflicts with other folders (case-insensitive)
+                                if (name.trim().toLowerCase() !== targetName.toLowerCase() &&
+                                    folders.some(f => f.name.toLowerCase() === name.trim().toLowerCase())) {
+                                    return t.dialogs.folder.folderExists;
                                 }
                                 return '';
                             },
@@ -908,7 +912,7 @@ const OpticalSurfaceAnalyzer = () => {
                     },
                     onMouseEnter: (e) => e.currentTarget.style.backgroundColor = c.hover,
                     onMouseLeave: (e) => e.currentTarget.style.backgroundColor = 'transparent'
-                }, 'Rename'),
+                }, t.dialogs.contextMenu.rename),
                 h('div', {
                     key: 'delete',
                     style: {
@@ -927,7 +931,7 @@ const OpticalSurfaceAnalyzer = () => {
                         if (folders.length > 1) e.currentTarget.style.backgroundColor = c.hover;
                     },
                     onMouseLeave: (e) => e.currentTarget.style.backgroundColor = 'transparent'
-                }, 'Delete Folder')
+                }, t.dialogs.contextMenu.deleteFolder)
             ] : [
                 h('div', {
                     key: 'delete',
@@ -943,7 +947,7 @@ const OpticalSurfaceAnalyzer = () => {
                     },
                     onMouseEnter: (e) => e.currentTarget.style.backgroundColor = c.hover,
                     onMouseLeave: (e) => e.currentTarget.style.backgroundColor = 'transparent'
-                }, 'Delete Surface')
+                }, t.dialogs.contextMenu.deleteSurface)
             ]
         ),
         // Main Content Area

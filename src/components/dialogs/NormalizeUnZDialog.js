@@ -10,19 +10,20 @@ const { useState } = React;
  * @param {Function} props.onConfirm - Callback with new H value
  * @param {Function} props.onCancel - Callback to close dialog
  * @param {Object} props.c - Color scheme object
+ * @param {Object} props.t - Localization strings
  */
-export const NormalizeUnZDialog = ({ currentH, onConfirm, onCancel, c }) => {
+export const NormalizeUnZDialog = ({ currentH, onConfirm, onCancel, c, t }) => {
     const [newH, setNewH] = useState(currentH.toString());
     const [error, setError] = useState('');
 
     const handleConfirm = () => {
         const value = parseFloat(newH);
         if (isNaN(value) || value <= 0) {
-            setError('Please enter a positive number');
+            setError(t.dialogs.normalizeUnZ.errorPositive || 'Please enter a positive number');
             return;
         }
         if (value === currentH) {
-            setError('New H value must be different from current H');
+            setError(t.dialogs.normalizeUnZ.errorDifferent || 'New H value must be different from current H');
             return;
         }
         onConfirm(value);
@@ -63,7 +64,7 @@ export const NormalizeUnZDialog = ({ currentH, onConfirm, onCancel, c }) => {
                     fontWeight: 'bold',
                     color: c.text
                 }
-            }, 'Normalize to H'),
+            }, t.dialogs.normalizeUnZ.title),
 
             h('div', {
                 style: {
@@ -71,7 +72,7 @@ export const NormalizeUnZDialog = ({ currentH, onConfirm, onCancel, c }) => {
                     fontSize: '13px',
                     color: c.textDim
                 }
-            }, `Current H: ${currentH}`),
+            }, `${t.dialogs.normalizeUnZ.currentH}: ${currentH}`),
 
             h('div', { style: { marginBottom: '20px' } },
                 h('label', {
@@ -84,7 +85,7 @@ export const NormalizeUnZDialog = ({ currentH, onConfirm, onCancel, c }) => {
                         textTransform: 'uppercase',
                         letterSpacing: '0.5px'
                     }
-                }, 'New H Value'),
+                }, t.dialogs.normalizeUnZ.newH),
                 h('input', {
                     type: 'number',
                     value: newH,
@@ -125,7 +126,7 @@ export const NormalizeUnZDialog = ({ currentH, onConfirm, onCancel, c }) => {
                     marginBottom: '20px',
                     lineHeight: '1.5'
                 }
-            }, 'This will scale all coefficients A3-A13 according to the formula: A_n_new = A_n_old × (newH / currentH)^n'),
+            }, t.dialogs.normalizeUnZ.help),
 
             h('div', {
                 style: {
@@ -146,7 +147,7 @@ export const NormalizeUnZDialog = ({ currentH, onConfirm, onCancel, c }) => {
                         fontSize: '13px',
                         fontWeight: '600'
                     }
-                }, 'Cancel'),
+                }, t.dialogs.normalizeUnZ.cancel),
                 h('button', {
                     onClick: handleConfirm,
                     style: {
@@ -159,7 +160,7 @@ export const NormalizeUnZDialog = ({ currentH, onConfirm, onCancel, c }) => {
                         fontSize: '13px',
                         fontWeight: '600'
                     }
-                }, 'Normalize')
+                }, t.dialogs.normalizeUnZ.normalize)
             )
         )
     );
