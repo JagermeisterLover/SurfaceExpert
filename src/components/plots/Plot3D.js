@@ -13,18 +13,28 @@ import { getGridColor } from '../../constants/colorPalettes.js';
  * @param {string} colorscale - Plotly colorscale name
  * @param {number} gridSize - Grid size (odd number to ensure point at 0)
  * @param {Object} c - Color palette object
+ * @param {Object} t - Locale translations object
  */
-export const create3DPlot = (plotRef, selectedSurface, activeTab, colorscale, gridSize = 61, c = null) => {
+export const create3DPlot = (plotRef, selectedSurface, activeTab, colorscale, gridSize = 61, c = null, t = null) => {
     // Default colors if palette not provided
     const colors = c || {
         bg: '#2b2b2b',
         panel: '#353535',
         text: '#e0e0e0'
     };
+    // Default translations if not provided
+    const translations = t || {
+        summary: {
+            units: {
+                mm: 'mm',
+                rad: 'rad'
+            }
+        }
+    };
     const minHeight = parseFloat(selectedSurface.parameters['Min Height']) || 0;
     const maxHeight = parseFloat(selectedSurface.parameters['Max Height']) || 25;
     const size = gridSize;
-    const unit = activeTab === 'slope' ? 'rad' : 'mm';
+    const unit = activeTab === 'slope' ? translations.summary.units.rad : translations.summary.units.mm;
 
     // Create coordinate arrays
     const x = [], y = [];

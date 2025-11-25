@@ -30,7 +30,8 @@ export const PropertiesPanel = ({
     handleNormalizeUnZ,
     handleConvertToUnZ,
     handleConvertToPoly,
-    c
+    c,
+    t
 }) => {
     // Local state for surface name to avoid interrupting typing
     const [localName, setLocalName] = React.useState(selectedSurface?.name || '');
@@ -55,7 +56,7 @@ export const PropertiesPanel = ({
                 color: c.textDim,
                 fontSize: '13px'
             }
-        }, 'No surface selected');
+        }, t.properties.noSurfaceSelected);
     }
 
     // Calculate metrics for display using shared utility function
@@ -63,19 +64,19 @@ export const PropertiesPanel = ({
     const metrics = {
         paraxialFNum: formatValue(rawMetrics.paraxialFNum),
         workingFNum: formatValue(rawMetrics.workingFNum),
-        maxSag: formatValue(rawMetrics.maxSag) + ' mm',
-        maxSlope: formatValue(rawMetrics.maxSlope) + ' rad',
-        maxAngle: formatValue(rawMetrics.maxAngle) + ' °',
+        maxSag: `${formatValue(rawMetrics.maxSag)} ${t.summary.units.mm}`,
+        maxSlope: `${formatValue(rawMetrics.maxSlope)} ${t.summary.units.rad}`,
+        maxAngle: `${formatValue(rawMetrics.maxAngle)} ${t.summary.units.deg}`,
         maxAngleDMS: degreesToDMS(rawMetrics.maxAngle),
-        maxAsphericity: formatValue(rawMetrics.maxAsphericity) + ' mm',
-        maxAsphGradient: formatValue(rawMetrics.maxAsphGradient) + ' /mm',
-        bestFitSphere: formatValue(rawMetrics.bestFitSphere) + ' mm',
+        maxAsphericity: `${formatValue(rawMetrics.maxAsphericity)} ${t.summary.units.mm}`,
+        maxAsphGradient: `${formatValue(rawMetrics.maxAsphGradient)} ${t.summary.units.perMm}`,
+        bestFitSphere: `${formatValue(rawMetrics.bestFitSphere)} ${t.summary.units.mm}`,
         rmsError: rawMetrics.rmsError !== null ? {
-            mm: formatValue(rawMetrics.rmsError.mm) + ' mm',
+            mm: `${formatValue(rawMetrics.rmsError.mm)} ${t.summary.units.mm}`,
             waves: formatValue(rawMetrics.rmsError.waves) + ' λ'
         } : null,
         pvError: rawMetrics.pvError !== null ? {
-            mm: formatValue(rawMetrics.pvError.mm) + ' mm',
+            mm: `${formatValue(rawMetrics.pvError.mm)} ${t.summary.units.mm}`,
             waves: formatValue(rawMetrics.pvError.waves) + ' λ'
         } : null
     };
@@ -99,15 +100,15 @@ export const PropertiesPanel = ({
                 fontSize: '13px',
                 fontWeight: 'bold'
             }
-        }, 'Properties'),
+        }, t.properties.title),
 
         h('div', { style: { padding: '12px' } },
             // Basic Properties
-            h(PropertySection, { title: "Basic", c },
+            h(PropertySection, { title: t.properties.basic, c },
                 h('div', { style: { marginBottom: '8px' } },
                     h('label', {
                         style: { fontSize: '12px', color: c.textDim, display: 'block', marginBottom: '4px' }
-                    }, 'Name'),
+                    }, t.properties.name),
                     h('input', {
                         type: 'text',
                         value: localName,
@@ -137,7 +138,7 @@ export const PropertiesPanel = ({
                 h('div', { style: { marginBottom: '8px' } },
                     h('label', {
                         style: { fontSize: '12px', color: c.textDim, display: 'block', marginBottom: '4px' }
-                    }, 'Type'),
+                    }, t.properties.type),
                     h('select', {
                         value: selectedSurface.type,
                         onChange: (e) => updateSurfaceType(e.target.value),
@@ -153,7 +154,7 @@ export const PropertiesPanel = ({
                         }
                     },
                         Object.keys(surfaceTypes).map(type =>
-                            h('option', { key: type, value: type }, type)
+                            h('option', { key: type, value: type }, t.surfaceTypes[type] || type)
                         )
                     )
                 )
@@ -179,13 +180,13 @@ export const PropertiesPanel = ({
                             textTransform: 'uppercase',
                             letterSpacing: '0.3px'
                         }
-                    }, 'Universal'),
+                    }, t.properties.universalParameters),
                     universalParameters[selectedSurface.type].map(param => (
                         selectedSurface.parameters[param] !== undefined &&
                         h('div', { key: param, style: { marginBottom: '8px' } },
                             h('label', {
                                 style: { fontSize: '12px', color: c.textDim, display: 'block', marginBottom: '4px' }
-                            }, param),
+                            }, t.parameters[param] || param),
                             h(DebouncedInput, {
                                 value: selectedSurface.parameters[param] || '0',
                                 onChange: (value) => updateParameter(param, value),
@@ -226,13 +227,13 @@ export const PropertiesPanel = ({
                             textTransform: 'uppercase',
                             letterSpacing: '0.3px'
                         }
-                    }, 'Scan & Coordinates'),
+                    }, t.properties.surfaceSpecificParameters),
                     ['Scan Angle', 'X Coordinate', 'Y Coordinate'].map(param => (
                         selectedSurface.parameters[param] !== undefined &&
                         h('div', { key: param, style: { marginBottom: '8px' } },
                             h('label', {
                                 style: { fontSize: '12px', color: c.textDim, display: 'block', marginBottom: '4px' }
-                            }, param),
+                            }, t.parameters[param] || param),
                             h(DebouncedInput, {
                                 value: selectedSurface.parameters[param] || '0',
                                 onChange: (value) => updateParameter(param, value),
@@ -269,7 +270,7 @@ export const PropertiesPanel = ({
                     h('div', { key: param, style: { marginBottom: '8px' } },
                         h('label', {
                             style: { fontSize: '12px', color: c.textDim, display: 'block', marginBottom: '4px' }
-                        }, param),
+                        }, t.parameters[param] || param),
                         h(DebouncedInput, {
                             value: selectedSurface.parameters[param] || '0',
                             onChange: (value) => updateParameter(param, value),
@@ -291,22 +292,22 @@ export const PropertiesPanel = ({
             ),
 
             // Calculated Metrics
-            h(PropertySection, { title: "Calculated Metrics", c },
+            h(PropertySection, { title: t.properties.calculatedMetrics, c },
                 // F/# only for rotationally symmetric surfaces
-                selectedSurface.type !== 'Zernike' && selectedSurface.type !== 'Irregular' && h(PropertyRow, { label: "Paraxial F/#", value: metrics.paraxialFNum, editable: false, c }),
-                selectedSurface.type !== 'Zernike' && selectedSurface.type !== 'Irregular' && h(PropertyRow, { label: "Working F/#", value: metrics.workingFNum, editable: false, c }),
-                h(PropertyRow, { label: "Max Sag", value: metrics.maxSag, editable: false, c }),
-                selectedSurface.type !== 'Zernike' && selectedSurface.type !== 'Irregular' && h(PropertyRow, { label: "Max Slope", value: metrics.maxSlope, editable: false, c }),
-                selectedSurface.type !== 'Zernike' && selectedSurface.type !== 'Irregular' && h(PropertyRow, { label: "Max Angle", value: metrics.maxAngle, editable: false, c }),
-                selectedSurface.type !== 'Zernike' && selectedSurface.type !== 'Irregular' && h(PropertyRow, { label: "Max Angle DMS", value: metrics.maxAngleDMS, editable: false, c }),
-                selectedSurface.type !== 'Zernike' && selectedSurface.type !== 'Irregular' && h(PropertyRow, { label: "Max Asphericity", value: metrics.maxAsphericity, editable: false, c }),
-                selectedSurface.type !== 'Zernike' && selectedSurface.type !== 'Irregular' && h(PropertyRow, { label: "Max Asph. Gradient", value: metrics.maxAsphGradient, editable: false, c }),
-                selectedSurface.type !== 'Zernike' && selectedSurface.type !== 'Irregular' && h(PropertyRow, { label: "Best Fit Sphere", value: metrics.bestFitSphere, editable: false, c }),
+                selectedSurface.type !== 'Zernike' && selectedSurface.type !== 'Irregular' && h(PropertyRow, { label: t.properties.paraxialFNum, value: metrics.paraxialFNum, editable: false, c }),
+                selectedSurface.type !== 'Zernike' && selectedSurface.type !== 'Irregular' && h(PropertyRow, { label: t.properties.workingFNum, value: metrics.workingFNum, editable: false, c }),
+                h(PropertyRow, { label: t.properties.maxSag, value: metrics.maxSag, editable: false, c }),
+                selectedSurface.type !== 'Zernike' && selectedSurface.type !== 'Irregular' && h(PropertyRow, { label: t.properties.maxSlope, value: metrics.maxSlope, editable: false, c }),
+                selectedSurface.type !== 'Zernike' && selectedSurface.type !== 'Irregular' && h(PropertyRow, { label: t.properties.maxAngle, value: metrics.maxAngle, editable: false, c }),
+                selectedSurface.type !== 'Zernike' && selectedSurface.type !== 'Irregular' && h(PropertyRow, { label: `${t.properties.maxAngle} (DMS)`, value: metrics.maxAngleDMS, editable: false, c }),
+                selectedSurface.type !== 'Zernike' && selectedSurface.type !== 'Irregular' && h(PropertyRow, { label: t.properties.maxAsphericity, value: metrics.maxAsphericity, editable: false, c }),
+                selectedSurface.type !== 'Zernike' && selectedSurface.type !== 'Irregular' && h(PropertyRow, { label: t.properties.maxAsphGradient, value: metrics.maxAsphGradient, editable: false, c }),
+                selectedSurface.type !== 'Zernike' && selectedSurface.type !== 'Irregular' && h(PropertyRow, { label: t.properties.bestFitSphere, value: metrics.bestFitSphere, editable: false, c }),
                 // RMS and P-V error for Zernike and Irregular surfaces
-                (selectedSurface.type === 'Zernike' || selectedSurface.type === 'Irregular') && metrics.rmsError && h(PropertyRow, { label: "RMS Error (mm)", value: metrics.rmsError.mm, editable: false, c }),
-                (selectedSurface.type === 'Zernike' || selectedSurface.type === 'Irregular') && metrics.rmsError && h(PropertyRow, { label: "RMS Error (waves)", value: metrics.rmsError.waves, editable: false, c }),
-                (selectedSurface.type === 'Zernike' || selectedSurface.type === 'Irregular') && metrics.pvError && h(PropertyRow, { label: "P-V Error (mm)", value: metrics.pvError.mm, editable: false, c }),
-                (selectedSurface.type === 'Zernike' || selectedSurface.type === 'Irregular') && metrics.pvError && h(PropertyRow, { label: "P-V Error (waves)", value: metrics.pvError.waves, editable: false, c })
+                (selectedSurface.type === 'Zernike' || selectedSurface.type === 'Irregular') && metrics.rmsError && h(PropertyRow, { label: `${t.properties.rmsError} (mm)`, value: metrics.rmsError.mm, editable: false, c }),
+                (selectedSurface.type === 'Zernike' || selectedSurface.type === 'Irregular') && metrics.rmsError && h(PropertyRow, { label: `${t.properties.rmsError} (waves)`, value: metrics.rmsError.waves, editable: false, c }),
+                (selectedSurface.type === 'Zernike' || selectedSurface.type === 'Irregular') && metrics.pvError && h(PropertyRow, { label: `${t.properties.pvError} (mm)`, value: metrics.pvError.mm, editable: false, c }),
+                (selectedSurface.type === 'Zernike' || selectedSurface.type === 'Irregular') && metrics.pvError && h(PropertyRow, { label: `${t.properties.pvError} (waves)`, value: metrics.pvError.waves, editable: false, c })
             ),
 
             // Surface Transformation Actions
@@ -316,11 +317,12 @@ export const PropertiesPanel = ({
                 onNormalizeUnZ: handleNormalizeUnZ,
                 onConvertToUnZ: handleConvertToUnZ,
                 onConvertToPoly: handleConvertToPoly,
-                c
+                c,
+                t
             }),
 
             // Quick Actions
-            h(PropertySection, { title: "Quick Actions", c },
+            h(PropertySection, { title: t.properties.actions, c },
                 h('button', {
                     onClick: onConvert,
                     style: {
@@ -334,7 +336,7 @@ export const PropertiesPanel = ({
                         cursor: 'pointer',
                         fontSize: '13px'
                     }
-                }, 'Convert'),
+                }, t.buttons.convert),
                 h('button', {
                     onClick: handleExportHTMLReport,
                     style: {
@@ -349,7 +351,7 @@ export const PropertiesPanel = ({
                         fontSize: '13px',
                         fontWeight: '500'
                     }
-                }, 'Generate HTML Report'),
+                }, t.properties.exportHTML),
                 h('button', {
                     onClick: handleExportPDFReport,
                     style: {
@@ -363,7 +365,7 @@ export const PropertiesPanel = ({
                         fontSize: '13px',
                         fontWeight: '500'
                     }
-                }, 'Generate PDF Report')
+                }, t.properties.exportPDF)
             )
         )
     );

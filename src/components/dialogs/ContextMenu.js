@@ -10,7 +10,8 @@ export const ContextMenu = ({
     removeFolder,
     removeSurface,
     setInputDialog,
-    c
+    c,
+    t
 }) => {
     if (!contextMenu) return null;
 
@@ -44,7 +45,7 @@ export const ContextMenu = ({
                     const targetName = contextMenu.target.name;
                     setContextMenu(null);
                     setInputDialog({
-                        title: 'Rename Folder',
+                        title: t.dialogs.contextMenu.renameFolder,
                         defaultValue: targetName,
                         onConfirm: (name) => {
                             if (name && name.trim()) {
@@ -57,7 +58,7 @@ export const ContextMenu = ({
                 },
                 onMouseEnter: (e) => e.currentTarget.style.backgroundColor = c.hover,
                 onMouseLeave: (e) => e.currentTarget.style.backgroundColor = 'transparent'
-            }, 'Rename'),
+            }, t.dialogs.contextMenu.rename),
             h('div', {
                 key: 'delete',
                 style: {
@@ -76,7 +77,7 @@ export const ContextMenu = ({
                     if (folders.length > 1) e.currentTarget.style.backgroundColor = c.hover;
                 },
                 onMouseLeave: (e) => e.currentTarget.style.backgroundColor = 'transparent'
-            }, 'Delete Folder')
+            }, t.dialogs.contextMenu.deleteFolder)
         ] : [
             h('div', {
                 key: 'delete',
@@ -92,7 +93,7 @@ export const ContextMenu = ({
                 },
                 onMouseEnter: (e) => e.currentTarget.style.backgroundColor = c.hover,
                 onMouseLeave: (e) => e.currentTarget.style.backgroundColor = 'transparent'
-            }, 'Delete Surface')
+            }, t.dialogs.contextMenu.deleteSurface)
         ]
     );
 };

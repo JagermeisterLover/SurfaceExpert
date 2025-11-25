@@ -4,6 +4,7 @@
  */
 
 import { formatValue, degreesToDMS } from './formatters.js';
+import { getLocale } from '../constants/locales.js';
 
 /**
  * Get LaTeX equation for surface type
@@ -94,7 +95,10 @@ const getSurfaceNotes = (surfaceType) => {
 /**
  * Generate complete HTML report for a surface
  */
-export const generateHTMLReport = (surface, plotData, summaryMetrics, plotImages) => {
+export const generateHTMLReport = (surface, plotData, summaryMetrics, plotImages, t = null) => {
+    // Use provided locale or default to English
+    const locale = t || getLocale('en');
+
     const timestamp = new Date().toLocaleString();
     const equation = getSurfaceEquation(surface.type);
     const notes = getSurfaceNotes(surface.type);
@@ -236,36 +240,36 @@ export const generateHTMLReport = (surface, plotData, summaryMetrics, plotImages
     <div class="header">
         <h1>${surface.name}</h1>
         <div class="info">
-            <strong>Surface Type:</strong> ${surface.type} &nbsp;|&nbsp;
+            <strong>${locale.reports.surfaceType}:</strong> ${locale.surfaceTypes[surface.type] || surface.type} &nbsp;|&nbsp;
             <strong>Generated:</strong> ${timestamp}
         </div>
     </div>
 
     <div class="equation">
-        <strong>Surface Equation:</strong> $${equation}$
+        <strong>${locale.reports.surfaceEquation}:</strong> $${equation}$
     </div>
 
     ${notes}
     ${zernikeTable}
 
     <div class="section">
-        <div class="section-title">Surface Parameters</div>
-        ${generateParametersTable(surface)}
+        <div class="section-title">${locale.reports.surfaceParameters}</div>
+        ${generateParametersTable(surface, locale)}
     </div>
 
     <div class="section">
-        <div class="section-title">Surface Metrics</div>
-        ${generateMetricsTable(summaryMetrics, surface.type)}
+        <div class="section-title">${locale.reports.summaryMetrics}</div>
+        ${generateMetricsTable(summaryMetrics, surface.type, locale)}
     </div>
 
     <div class="section">
-        <div class="section-title">Calculated Data</div>
-        ${generateDataTable(plotData, showSlope, showAsphericity, showAberration)}
+        <div class="section-title">${locale.reports.calculatedData}</div>
+        ${generateDataTable(plotData, showSlope, showAsphericity, showAberration, locale)}
     </div>
 
     <div class="section">
-        <div class="section-title">Visualizations</div>
-        ${generatePlotsSection(plotImages, showSlope, showAsphericity, showAberration)}
+        <div class="section-title">${locale.reports.visualizations}</div>
+        ${generatePlotsSection(plotImages, showSlope, showAsphericity, showAberration, locale)}
     </div>
 
     <div style="text-align: center; margin-top: 20px; padding-top: 10px; border-top: 1px solid #ccc; font-size: 8pt; color: #666;">
@@ -278,17 +282,18 @@ export const generateHTMLReport = (surface, plotData, summaryMetrics, plotImages
 /**
  * Generate simple 2-column parameters table
  */
-const generateParametersTable = (surface) => {
+const generateParametersTable = (surface, locale) => {
     const params = Object.entries(surface.parameters).filter(([name, value]) => {
         // Skip zero or empty values for cleaner display
         if (value === '' || value === '0' || value === '0.0') return false;
         return true;
     });
 
-    let html = '<table class="params-table"><tr><th>Parameter</th><th>Value</th></tr>';
+    let html = `<table class="params-table"><tr><th>${locale.reports.parameter}</th><th>${locale.reports.value}</th></tr>`;
 
     for (const [name, value] of params) {
-        html += `<tr><td>${name}</td><td>${value}</td></tr>`;
+        const translatedName = locale.parameters[name] || name;
+        html += `<tr><td>${translatedName}</td><td>${value}</td></tr>`;
     }
 
     html += '</table>';
@@ -298,49 +303,49 @@ const generateParametersTable = (surface) => {
 /**
  * Generate compact metrics table
  */
-const generateMetricsTable = (metrics, surfaceType) => {
+const generateMetricsTable = (metrics, surfaceType, locale) => {
     if (!metrics) return '<p>No metrics available.</p>';
 
     const metricsList = [
-        { label: 'Max Sag', value: formatValue(metrics.maxSag) + ' mm' },
-        { label: 'Max Slope', value: formatValue(metrics.maxSlope) + ' rad' },
-        { label: 'Max Angle', value: formatValue(metrics.maxAngle) + '°' },
-        { label: 'Max Angle (DMS)', value: metrics.maxAngleDMS || 'N/A' },
+        { label: locale.properties.maxSag, value: `${formatValue(metrics.maxSag)} ${locale.summary.units.mm}` },
+        { label: locale.properties.maxSlope, value: `${formatValue(metrics.maxSlope)} ${locale.summary.units.rad}` },
+        { label: locale.properties.maxAngle, value: `${formatValue(metrics.maxAngle)}${locale.summary.units.deg}` },
+        { label: `${locale.properties.maxAngle} (DMS)`, value: (metrics.maxAngle !== null && metrics.maxAngle !== undefined) ? degreesToDMS(metrics.maxAngle) : 'N/A' },
     ];
 
     // Add asphericity metrics only for non-sphere surfaces
     if (surfaceType !== 'Sphere') {
         metricsList.push(
-            { label: 'Max Asphericity', value: formatValue(metrics.maxAsphericity) + ' mm' },
-            { label: 'Max Asph. Gradient', value: formatValue(metrics.maxAsphGradient) + ' mm' }
+            { label: locale.properties.maxAsphericity, value: `${formatValue(metrics.maxAsphericity)} ${locale.summary.units.mm}` },
+            { label: locale.properties.maxAsphGradient, value: `${formatValue(metrics.maxAsphGradient)} ${locale.summary.units.perMm}` }
         );
     }
 
     // Add aberration only for surfaces that aren't Sphere, Irregular, or Zernike
     if (surfaceType !== 'Sphere' && surfaceType !== 'Irregular' && surfaceType !== 'Zernike') {
-        metricsList.push({ label: 'Max Aberration', value: formatValue(metrics.maxAberration) + ' mm' });
+        metricsList.push({ label: locale.properties.maxAberration, value: `${formatValue(metrics.maxAberration)} ${locale.summary.units.mm}` });
     }
 
     // Add RMS and P-V error for Zernike and Irregular surfaces
     if (surfaceType === 'Zernike' || surfaceType === 'Irregular') {
         if (metrics.rmsError) {
             metricsList.push(
-                { label: 'RMS Error (mm)', value: formatValue(metrics.rmsError.mm) + ' mm' },
-                { label: 'RMS Error (waves)', value: formatValue(metrics.rmsError.waves) + ' λ' }
+                { label: `${locale.properties.rmsError} (${locale.summary.units.mm})`, value: `${formatValue(metrics.rmsError.mm)} ${locale.summary.units.mm}` },
+                { label: `${locale.properties.rmsError} (waves)`, value: formatValue(metrics.rmsError.waves) + ' λ' }
             );
         }
         if (metrics.pvError) {
             metricsList.push(
-                { label: 'P-V Error (mm)', value: formatValue(metrics.pvError.mm) + ' mm' },
-                { label: 'P-V Error (waves)', value: formatValue(metrics.pvError.waves) + ' λ' }
+                { label: `${locale.properties.pvError} (${locale.summary.units.mm})`, value: `${formatValue(metrics.pvError.mm)} ${locale.summary.units.mm}` },
+                { label: `${locale.properties.pvError} (waves)`, value: formatValue(metrics.pvError.waves) + ' λ' }
             );
         }
     }
 
     metricsList.push(
-        { label: 'Best Fit Sphere', value: formatValue(metrics.bestFitSphere) + ' mm' },
-        { label: 'Paraxial F/#', value: formatValue(metrics.paraxialFNum) },
-        { label: 'Working F/#', value: formatValue(metrics.workingFNum) }
+        { label: locale.properties.bestFitSphere, value: `${formatValue(metrics.bestFitSphere)} ${locale.summary.units.mm}` },
+        { label: locale.properties.paraxialFNum, value: formatValue(metrics.paraxialFNum) },
+        { label: locale.properties.workingFNum, value: formatValue(metrics.workingFNum) }
     );
 
     // Split into two columns
@@ -348,7 +353,7 @@ const generateMetricsTable = (metrics, surfaceType) => {
     const leftMetrics = metricsList.slice(0, half);
     const rightMetrics = metricsList.slice(half);
 
-    let html = '<table class="metrics-table"><tr><th>Metric</th><th>Value</th><th>Metric</th><th>Value</th></tr>';
+    let html = `<table class="metrics-table"><tr><th>${locale.reports.metric}</th><th>${locale.reports.value}</th><th>${locale.reports.metric}</th><th>${locale.reports.value}</th></tr>`;
 
     for (let i = 0; i < Math.max(leftMetrics.length, rightMetrics.length); i++) {
         html += '<tr>';
@@ -372,7 +377,7 @@ const generateMetricsTable = (metrics, surfaceType) => {
 /**
  * Generate compact data table
  */
-const generateDataTable = (plotData, showSlope, showAsphericity, showAberration) => {
+const generateDataTable = (plotData, showSlope, showAsphericity, showAberration, locale) => {
     if (!plotData || !plotData.rValues || plotData.rValues.length === 0) {
         return '<p>No calculated data available.</p>';
     }
@@ -384,10 +389,10 @@ const generateDataTable = (plotData, showSlope, showAsphericity, showAberration)
     const step = 1;
 
     let html = '<table class="data-table"><thead><tr>';
-    html += '<th>Radius (mm)</th><th>Sag (mm)</th>';
-    if (showSlope) html += '<th>Slope (rad)</th><th>Angle (°)</th><th>Angle (DMS)</th>';
-    if (showAsphericity) html += '<th>Asphericity (mm)</th>';
-    if (showAberration) html += '<th>Aberration (mm)</th>';
+    html += `<th>${locale.reports.radius} (${locale.summary.units.mm})</th><th>${locale.reports.sag} (${locale.summary.units.mm})</th>`;
+    if (showSlope) html += `<th>${locale.reports.slope} (${locale.summary.units.rad})</th><th>${locale.reports.angle} (${locale.summary.units.deg})</th><th>${locale.reports.angleDMS}</th>`;
+    if (showAsphericity) html += `<th>${locale.reports.asphericity} (${locale.summary.units.mm})</th>`;
+    if (showAberration) html += `<th>${locale.reports.aberration} (${locale.summary.units.mm})</th>`;
     html += '</tr></thead><tbody>';
 
     for (let i = 0; i < rValues.length; i += step) {
@@ -414,7 +419,7 @@ const generateDataTable = (plotData, showSlope, showAsphericity, showAberration)
 /**
  * Generate plots section
  */
-const generatePlotsSection = (plotImages, showSlope, showAsphericity, showAberration) => {
+const generatePlotsSection = (plotImages, showSlope, showAsphericity, showAberration, locale) => {
     if (!plotImages) return '<p>No plots available.</p>';
 
     let html = '';
@@ -423,14 +428,14 @@ const generatePlotsSection = (plotImages, showSlope, showAsphericity, showAberra
     html += '<div class="two-column">';
     if (plotImages.plot3D) {
         html += `<div class="plot-container">
-            <div class="plot-title">3D Surface Plot</div>
-            <img src="${plotImages.plot3D}" alt="3D Surface Plot" />
+            <div class="plot-title">${locale.reports.plot3D}</div>
+            <img src="${plotImages.plot3D}" alt="${locale.reports.plot3D}" />
         </div>`;
     }
     if (plotImages.plot2D) {
         html += `<div class="plot-container">
-            <div class="plot-title">2D Heatmap</div>
-            <img src="${plotImages.plot2D}" alt="2D Heatmap" />
+            <div class="plot-title">${locale.reports.plot2D}</div>
+            <img src="${plotImages.plot2D}" alt="${locale.reports.plot2D}" />
         </div>`;
     }
     html += '</div>';
@@ -440,14 +445,14 @@ const generatePlotsSection = (plotImages, showSlope, showAsphericity, showAberra
         html += '<div class="two-column">';
         if (plotImages.sagPlot) {
             html += `<div class="plot-container">
-                <div class="plot-title">Sag vs Radial Coordinate</div>
-                <img src="${plotImages.sagPlot}" alt="Sag Plot" />
+                <div class="plot-title">${locale.reports.plotSag}</div>
+                <img src="${plotImages.sagPlot}" alt="${locale.reports.plotSag}" />
             </div>`;
         }
         if (showSlope && plotImages.slopePlot) {
             html += `<div class="plot-container">
-                <div class="plot-title">Slope vs Radial Coordinate</div>
-                <img src="${plotImages.slopePlot}" alt="Slope Plot" />
+                <div class="plot-title">${locale.reports.plotSlope}</div>
+                <img src="${plotImages.slopePlot}" alt="${locale.reports.plotSlope}" />
             </div>`;
         }
         html += '</div>';
@@ -458,14 +463,14 @@ const generatePlotsSection = (plotImages, showSlope, showAsphericity, showAberra
         html += '<div class="two-column">';
         if (showAsphericity && plotImages.asphericityPlot) {
             html += `<div class="plot-container">
-                <div class="plot-title">Asphericity vs Radial Coordinate</div>
-                <img src="${plotImages.asphericityPlot}" alt="Asphericity Plot" />
+                <div class="plot-title">${locale.reports.plotAsphericity}</div>
+                <img src="${plotImages.asphericityPlot}" alt="${locale.reports.plotAsphericity}" />
             </div>`;
         }
         if (showAberration && plotImages.aberrationPlot) {
             html += `<div class="plot-container">
-                <div class="plot-title">Aberration vs Radial Coordinate</div>
-                <img src="${plotImages.aberrationPlot}" alt="Aberration Plot" />
+                <div class="plot-title">${locale.reports.plotAberration}</div>
+                <img src="${plotImages.aberrationPlot}" alt="${locale.reports.plotAberration}" />
             </div>`;
         }
         html += '</div>';
@@ -723,9 +728,10 @@ const generate2DContourImage = async (surface, plotData, colorscale = 'Jet', gri
  * @param {string} colorscale - Plotly colorscale name
  * @param {number} gridSize3D - Grid size for 3D plots (default: 65)
  * @param {number} gridSize2D - Grid size for 2D plots (default: 129)
+ * @param {Object} t - Locale translations object
  * @returns {Promise<Object>} Report data with HTML and plot images
  */
-export const generateReportData = async (surface, plotData, summaryMetrics, colorscale = 'Jet', gridSize3D = 65, gridSize2D = 129) => {
+export const generateReportData = async (surface, plotData, summaryMetrics, colorscale = 'Jet', gridSize3D = 65, gridSize2D = 129, t = null) => {
     console.log('Generating report plots...');
 
     // Generate 3D and 2D plots in temporary containers
@@ -746,7 +752,7 @@ export const generateReportData = async (surface, plotData, summaryMetrics, colo
     };
 
     // Generate HTML report
-    const html = generateHTMLReport(surface, plotData, summaryMetrics, plotImages);
+    const html = generateHTMLReport(surface, plotData, summaryMetrics, plotImages, t);
 
     return {
         html,
