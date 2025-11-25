@@ -463,7 +463,7 @@ export const locales = {
 
       // Метрики
       paraxialFNum: 'Параксиальное F/#',
-      workingFNum: 'рабочее F/#',
+      workingFNum: 'Рабочее F/#',
       maxSag: 'Макс. стрелка прогиба',
       maxSlope: 'Макс. крутизна',
       maxAngle: 'Макс. угол',
