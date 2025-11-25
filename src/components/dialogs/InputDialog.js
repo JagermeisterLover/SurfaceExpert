@@ -2,7 +2,7 @@
 
 const { createElement: h } = React;
 
-export const InputDialog = ({ inputDialog, c }) => {
+export const InputDialog = ({ inputDialog, c, t }) => {
     if (!inputDialog) return null;
 
     const [value, setValue] = React.useState(inputDialog.defaultValue || '');
@@ -112,7 +112,7 @@ export const InputDialog = ({ inputDialog, c }) => {
                         cursor: 'pointer',
                         fontSize: '13px'
                     }
-                }, 'Cancel'),
+                }, t.dialogs.input.cancel),
                 h('button', {
                     onClick: () => {
                         if (isValid) {
@@ -130,7 +130,7 @@ export const InputDialog = ({ inputDialog, c }) => {
                         fontSize: '13px',
                         opacity: isValid ? 1 : 0.5
                     }
-                }, 'OK')
+                }, t.dialogs.input.ok)
             )
         )
     );

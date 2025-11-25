@@ -3,7 +3,7 @@
 const { useState } = React;
 const { createElement: h } = React;
 
-export const ZMXImportDialog = ({ zmxSurfaces, onImport, onClose, c }) => {
+export const ZMXImportDialog = ({ zmxSurfaces, onImport, onClose, c, t }) => {
     const [selectedIndices, setSelectedIndices] = useState([]);
 
     const toggleSurface = (index) => {
@@ -24,7 +24,7 @@ export const ZMXImportDialog = ({ zmxSurfaces, onImport, onClose, c }) => {
 
     const handleImport = () => {
         if (selectedIndices.length === 0) {
-            alert('Please select at least one surface to import');
+            alert(t.dialogs.zmxImport.errorNoSelection || 'Please select at least one surface to import');
             return;
         }
         onImport(selectedIndices);
@@ -66,7 +66,7 @@ export const ZMXImportDialog = ({ zmxSurfaces, onImport, onClose, c }) => {
                     fontWeight: 'bold',
                     color: c.text
                 }
-            }, 'Import from ZMX'),
+            }, t.dialogs.zmxImport.title),
 
             h('p', {
                 style: {
@@ -75,7 +75,7 @@ export const ZMXImportDialog = ({ zmxSurfaces, onImport, onClose, c }) => {
                     fontSize: '13px',
                     color: c.textDim
                 }
-            }, `Found ${zmxSurfaces.length} surface${zmxSurfaces.length !== 1 ? 's' : ''}. Select surfaces to import:`),
+            }, t.dialogs.zmxImport.foundSurfaces.replace('{count}', zmxSurfaces.length)),
 
             // Select/Deselect All buttons
             h('div', {
@@ -96,7 +96,7 @@ export const ZMXImportDialog = ({ zmxSurfaces, onImport, onClose, c }) => {
                         cursor: 'pointer',
                         fontSize: '12px'
                     }
-                }, 'Select All'),
+                }, t.dialogs.zmxImport.selectAll),
                 h('button', {
                     onClick: deselectAll,
                     style: {
@@ -108,7 +108,7 @@ export const ZMXImportDialog = ({ zmxSurfaces, onImport, onClose, c }) => {
                         cursor: 'pointer',
                         fontSize: '12px'
                     }
-                }, 'Deselect All')
+                }, t.dialogs.zmxImport.deselectAll)
             ),
 
             // Surface list
@@ -137,13 +137,13 @@ export const ZMXImportDialog = ({ zmxSurfaces, onImport, onClose, c }) => {
                                 top: 0
                             }
                         },
-                            h('th', { style: { padding: '10px', textAlign: 'center', width: '60px', color: c.textDim } }, 'Select'),
+                            h('th', { style: { padding: '10px', textAlign: 'center', width: '60px', color: c.textDim } }, t.dialogs.zmxImport.select),
                             h('th', { style: { padding: '10px', textAlign: 'left', color: c.textDim } }, '#'),
-                            h('th', { style: { padding: '10px', textAlign: 'left', color: c.textDim } }, 'Type'),
-                            h('th', { style: { padding: '10px', textAlign: 'right', color: c.textDim } }, 'Radius (mm)'),
-                            h('th', { style: { padding: '10px', textAlign: 'right', color: c.textDim } }, 'Diameter (mm)'),
-                            h('th', { style: { padding: '10px', textAlign: 'right', color: c.textDim } }, 'Conic'),
-                            h('th', { style: { padding: '10px', textAlign: 'center', color: c.textDim } }, 'Params')
+                            h('th', { style: { padding: '10px', textAlign: 'left', color: c.textDim } }, t.dialogs.zmxImport.type),
+                            h('th', { style: { padding: '10px', textAlign: 'right', color: c.textDim } }, t.dialogs.zmxImport.radius),
+                            h('th', { style: { padding: '10px', textAlign: 'right', color: c.textDim } }, t.dialogs.zmxImport.diameter),
+                            h('th', { style: { padding: '10px', textAlign: 'right', color: c.textDim } }, t.dialogs.zmxImport.conic),
+                            h('th', { style: { padding: '10px', textAlign: 'center', color: c.textDim } }, t.dialogs.zmxImport.params)
                         )
                     ),
                     h('tbody', null,
@@ -211,7 +211,7 @@ export const ZMXImportDialog = ({ zmxSurfaces, onImport, onClose, c }) => {
                         fontSize: '13px',
                         fontWeight: '600'
                     }
-                }, 'Cancel'),
+                }, t.dialogs.zmxImport.cancel),
                 h('button', {
                     onClick: handleImport,
                     style: {
@@ -224,7 +224,7 @@ export const ZMXImportDialog = ({ zmxSurfaces, onImport, onClose, c }) => {
                         fontSize: '13px',
                         fontWeight: '600'
                     }
-                }, `Import ${selectedIndices.length} Surface${selectedIndices.length !== 1 ? 's' : ''}`)
+                }, t.dialogs.zmxImport.importButton.replace('{count}', selectedIndices.length))
             )
         )
     );

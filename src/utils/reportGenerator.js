@@ -268,8 +268,8 @@ export const generateHTMLReport = (surface, plotData, summaryMetrics, plotImages
     </div>
 
     <div class="section">
-        <div class="section-title">Visualizations</div>
-        ${generatePlotsSection(plotImages, showSlope, showAsphericity, showAberration)}
+        <div class="section-title">${locale.reports.visualizations}</div>
+        ${generatePlotsSection(plotImages, showSlope, showAsphericity, showAberration, locale)}
     </div>
 
     <div style="text-align: center; margin-top: 20px; padding-top: 10px; border-top: 1px solid #ccc; font-size: 8pt; color: #666;">
@@ -310,7 +310,7 @@ const generateMetricsTable = (metrics, surfaceType, locale) => {
         { label: locale.properties.maxSag, value: `${formatValue(metrics.maxSag)} ${locale.summary.units.mm}` },
         { label: locale.properties.maxSlope, value: `${formatValue(metrics.maxSlope)} ${locale.summary.units.rad}` },
         { label: locale.properties.maxAngle, value: `${formatValue(metrics.maxAngle)}${locale.summary.units.deg}` },
-        { label: `${locale.properties.maxAngle} (DMS)`, value: metrics.maxAngleDMS || 'N/A' },
+        { label: `${locale.properties.maxAngle} (DMS)`, value: (metrics.maxAngle !== null && metrics.maxAngle !== undefined) ? degreesToDMS(metrics.maxAngle) : 'N/A' },
     ];
 
     // Add asphericity metrics only for non-sphere surfaces
@@ -419,7 +419,7 @@ const generateDataTable = (plotData, showSlope, showAsphericity, showAberration,
 /**
  * Generate plots section
  */
-const generatePlotsSection = (plotImages, showSlope, showAsphericity, showAberration) => {
+const generatePlotsSection = (plotImages, showSlope, showAsphericity, showAberration, locale) => {
     if (!plotImages) return '<p>No plots available.</p>';
 
     let html = '';
@@ -428,14 +428,14 @@ const generatePlotsSection = (plotImages, showSlope, showAsphericity, showAberra
     html += '<div class="two-column">';
     if (plotImages.plot3D) {
         html += `<div class="plot-container">
-            <div class="plot-title">3D Surface Plot</div>
-            <img src="${plotImages.plot3D}" alt="3D Surface Plot" />
+            <div class="plot-title">${locale.reports.plot3D}</div>
+            <img src="${plotImages.plot3D}" alt="${locale.reports.plot3D}" />
         </div>`;
     }
     if (plotImages.plot2D) {
         html += `<div class="plot-container">
-            <div class="plot-title">2D Heatmap</div>
-            <img src="${plotImages.plot2D}" alt="2D Heatmap" />
+            <div class="plot-title">${locale.reports.plot2D}</div>
+            <img src="${plotImages.plot2D}" alt="${locale.reports.plot2D}" />
         </div>`;
     }
     html += '</div>';
@@ -445,14 +445,14 @@ const generatePlotsSection = (plotImages, showSlope, showAsphericity, showAberra
         html += '<div class="two-column">';
         if (plotImages.sagPlot) {
             html += `<div class="plot-container">
-                <div class="plot-title">Sag vs Radial Coordinate</div>
-                <img src="${plotImages.sagPlot}" alt="Sag Plot" />
+                <div class="plot-title">${locale.reports.plotSag}</div>
+                <img src="${plotImages.sagPlot}" alt="${locale.reports.plotSag}" />
             </div>`;
         }
         if (showSlope && plotImages.slopePlot) {
             html += `<div class="plot-container">
-                <div class="plot-title">Slope vs Radial Coordinate</div>
-                <img src="${plotImages.slopePlot}" alt="Slope Plot" />
+                <div class="plot-title">${locale.reports.plotSlope}</div>
+                <img src="${plotImages.slopePlot}" alt="${locale.reports.plotSlope}" />
             </div>`;
         }
         html += '</div>';
@@ -463,14 +463,14 @@ const generatePlotsSection = (plotImages, showSlope, showAsphericity, showAberra
         html += '<div class="two-column">';
         if (showAsphericity && plotImages.asphericityPlot) {
             html += `<div class="plot-container">
-                <div class="plot-title">Asphericity vs Radial Coordinate</div>
-                <img src="${plotImages.asphericityPlot}" alt="Asphericity Plot" />
+                <div class="plot-title">${locale.reports.plotAsphericity}</div>
+                <img src="${plotImages.asphericityPlot}" alt="${locale.reports.plotAsphericity}" />
             </div>`;
         }
         if (showAberration && plotImages.aberrationPlot) {
             html += `<div class="plot-container">
-                <div class="plot-title">Aberration vs Radial Coordinate</div>
-                <img src="${plotImages.aberrationPlot}" alt="Aberration Plot" />
+                <div class="plot-title">${locale.reports.plotAberration}</div>
+                <img src="${plotImages.aberrationPlot}" alt="${locale.reports.plotAberration}" />
             </div>`;
         }
         html += '</div>';
