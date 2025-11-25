@@ -3,31 +3,31 @@
  * Replaces the default OS menu bar with a modern, integrated design
  */
 
-export function MenuBar({ c, onMenuAction }) {
+export function MenuBar({ c, onMenuAction, t }) {
   const [openMenu, setOpenMenu] = React.useState(null);
   const [menuPosition, setMenuPosition] = React.useState({ x: 0, y: 0 });
 
-  // Menu structure
+  // Menu structure (using translation object)
   const menus = {
-    File: [
-      { label: 'Import from ZMX...', action: 'import-zmx', shortcut: 'Ctrl+I' }
+    [t.menu.file]: [
+      { label: t.menu.importZMX, action: 'import-zmx', shortcut: 'Ctrl+I' }
     ],
-    Reports: [
-      { label: 'Export HTML Report...', action: 'export-html-report', shortcut: 'Ctrl+E' },
-      { label: 'Export PDF Report...', action: 'export-pdf-report', shortcut: 'Ctrl+P' }
+    [t.menu.reports]: [
+      { label: t.menu.exportHTMLReport, action: 'export-html-report', shortcut: 'Ctrl+E' },
+      { label: t.menu.exportPDFReport, action: 'export-pdf-report', shortcut: 'Ctrl+P' }
     ],
-    View: [
-      { label: 'Reload', action: 'reload', shortcut: 'Ctrl+R' },
-      { label: 'Toggle DevTools', action: 'toggle-devtools', shortcut: 'Ctrl+Shift+I' },
+    [t.menu.view]: [
+      { label: t.menu.reload, action: 'reload', shortcut: 'Ctrl+R' },
+      { label: t.menu.toggleDevTools, action: 'toggle-devtools', shortcut: 'Ctrl+Shift+I' },
       { type: 'separator' },
-      { label: 'Toggle Fullscreen', action: 'toggleFullscreen', shortcut: 'F11' }
+      { label: t.menu.toggleFullscreen, action: 'toggleFullscreen', shortcut: 'F11' }
     ],
-    Tools: [
-      { label: 'Settings...', action: 'open-settings', shortcut: 'Ctrl+,' }
+    [t.menu.tools]: [
+      { label: t.menu.settings, action: 'open-settings', shortcut: 'Ctrl+,' }
     ],
-    Help: [
-      { label: 'Documentation', action: 'documentation' },
-      { label: 'About', action: 'about' }
+    [t.menu.help]: [
+      { label: t.menu.documentation, action: 'documentation' },
+      { label: t.menu.about, action: 'about' }
     ]
   };
 

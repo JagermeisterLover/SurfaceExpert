@@ -61,9 +61,10 @@ export const generateReportPlotData = (surface) => {
  * @param {string} colorscale - Plotly colorscale name
  * @param {number} gridSize3D - Grid size for 3D plots (default: 65)
  * @param {number} gridSize2D - Grid size for 2D plots (default: 129)
+ * @param {Object} t - Locale translations object
  * @returns {Promise<void>}
  */
-export const exportHTMLReport = async (surface, wavelength, colorscale, gridSize3D = 65, gridSize2D = 129) => {
+export const exportHTMLReport = async (surface, wavelength, colorscale, gridSize3D = 65, gridSize2D = 129, t = null) => {
     if (!surface) {
         alert('Please select a surface from the list to generate a report.\n\nClick on a surface in the left sidebar to select it.');
         return;
@@ -90,7 +91,8 @@ export const exportHTMLReport = async (surface, wavelength, colorscale, gridSize
             summaryMetrics,
             colorscale,
             gridSize3D,
-            gridSize2D
+            gridSize2D,
+            t
         );
 
         // Sanitize surface name for filename
@@ -116,9 +118,10 @@ export const exportHTMLReport = async (surface, wavelength, colorscale, gridSize
  * @param {string} colorscale - Plotly colorscale name
  * @param {number} gridSize3D - Grid size for 3D plots (default: 65)
  * @param {number} gridSize2D - Grid size for 2D plots (default: 129)
+ * @param {Object} t - Locale translations object
  * @returns {Promise<void>}
  */
-export const exportPDFReport = async (surface, wavelength, colorscale, gridSize3D = 65, gridSize2D = 129) => {
+export const exportPDFReport = async (surface, wavelength, colorscale, gridSize3D = 65, gridSize2D = 129, t = null) => {
     if (!surface) {
         alert('Please select a surface from the list to generate a report.\n\nClick on a surface in the left sidebar to select it.');
         return;
@@ -145,7 +148,8 @@ export const exportPDFReport = async (surface, wavelength, colorscale, gridSize3
             summaryMetrics,
             colorscale,
             gridSize3D,
-            gridSize2D
+            gridSize2D,
+            t
         );
 
         // Sanitize surface name for filename

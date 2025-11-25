@@ -16,6 +16,7 @@ console.log('📅 Build timestamp:', new Date().toISOString());
 import { surfaceTypes, universalParameters, sampleSurfaces, colors } from './constants/surfaceTypes.js';
 import { colorscales } from './constants/colorscales.js';
 import { getPalette } from './constants/colorPalettes.js';
+import { getLocale, getCurrentLocale, saveLocale } from './constants/locales.js';
 
 // Utilities
 import { formatValue, degreesToDMS } from './utils/formatters.js';
@@ -97,6 +98,7 @@ const OpticalSurfaceAnalyzer = () => {
     const [gridSize3D, setGridSize3D] = useState(129); // Grid size for 3D plots (odd number, max 257)
     const [gridSize2D, setGridSize2D] = useState(129); // Grid size for 2D plots (odd number, max 257)
     const [theme, setTheme] = useState('Dark Gray (Default)'); // Color theme
+    const [locale, setLocaleState] = useState(getCurrentLocale()); // Application locale (en, ru, etc.)
     const [contextMenu, setContextMenu] = useState(null);
     const [inputDialog, setInputDialog] = useState(null);
     const [showNormalizeUnZ, setShowNormalizeUnZ] = useState(false);
@@ -110,6 +112,16 @@ const OpticalSurfaceAnalyzer = () => {
     useEffect(() => {
         selectedSurfaceRef.current = selectedSurface;
     }, [selectedSurface]);
+
+    // Get translation object for current locale
+    const t = getLocale(locale);
+
+    // Locale setter that also saves to localStorage
+    const setLocale = (newLocale) => {
+        setLocaleState(newLocale);
+        saveLocale(newLocale);
+        saveSettingsToDisk(); // Also save to disk via Electron
+    };
 
     // ============================================
     // DATA LOADING
@@ -187,6 +199,9 @@ const OpticalSurfaceAnalyzer = () => {
                 setGridSize3D(result.settings.gridSize3D || 129);
                 setGridSize2D(result.settings.gridSize2D || 129);
                 setTheme(result.settings.theme || 'Dark Gray (Default)');
+                if (result.settings.locale) {
+                    setLocaleState(result.settings.locale);
+                }
             }
         }
     };
@@ -198,7 +213,8 @@ const OpticalSurfaceAnalyzer = () => {
                 wavelength,
                 gridSize3D,
                 gridSize2D,
-                theme
+                theme,
+                locale
             };
             await window.electronAPI.saveSettings(settings);
         }
@@ -207,7 +223,7 @@ const OpticalSurfaceAnalyzer = () => {
     // Auto-save settings when they change
     useEffect(() => {
         saveSettingsToDisk();
-    }, [colorscale, wavelength, gridSize3D, gridSize2D, theme]);
+    }, [colorscale, wavelength, gridSize3D, gridSize2D, theme, locale]);
 
     // Update selected surface when it changes in the folders
     useEffect(() => {
@@ -233,11 +249,11 @@ const OpticalSurfaceAnalyzer = () => {
         if (!selectedSurface) return;
         const c = getPalette(theme);
         if (plotRef.current && activeTab !== 'summary' && activeSubTab === '3d') {
-            create3DPlot(plotRef, selectedSurface, activeTab, colorscale, gridSize3D, c);
+            create3DPlot(plotRef, selectedSurface, activeTab, colorscale, gridSize3D, c, t);
         } else if (plotRef.current && activeTab !== 'summary' && activeSubTab === '2d') {
-            create2DHeatmap(plotRef, selectedSurface, activeTab, colorscale, c, gridSize2D);
+            create2DHeatmap(plotRef, selectedSurface, activeTab, colorscale, c, gridSize2D, t);
         } else if (plotRef.current && activeTab !== 'summary' && activeSubTab === 'cross') {
-            createCrossSection(plotRef, selectedSurface, activeTab, c);
+            createCrossSection(plotRef, selectedSurface, activeTab, c, t);
         }
     }, [selectedSurface, activeTab, activeSubTab, colorscale, gridSize3D, gridSize2D, theme]);
 
@@ -323,13 +339,13 @@ const OpticalSurfaceAnalyzer = () => {
     const handleExportHTMLReport = async () => {
         // Use ref to access latest value (important for menu actions)
         const surface = selectedSurfaceRef.current;
-        await exportHTMLReport(surface, wavelength, colorscale, gridSize3D, gridSize2D);
+        await exportHTMLReport(surface, wavelength, colorscale, gridSize3D, gridSize2D, t);
     };
 
     const handleExportPDFReport = async () => {
         // Use ref to access latest value (important for menu actions)
         const surface = selectedSurfaceRef.current;
-        await exportPDFReport(surface, wavelength, colorscale, gridSize3D, gridSize2D);
+        await exportPDFReport(surface, wavelength, colorscale, gridSize3D, gridSize2D, t);
     };
 
     // ============================================
@@ -769,7 +785,8 @@ const OpticalSurfaceAnalyzer = () => {
         // Custom Menu Bar
         h(MenuBar, {
             c,
-            onMenuAction: handleMenuAction
+            onMenuAction: handleMenuAction,
+            t
         }),
         // Settings Modal
         showSettings && h(SettingsModal, {
@@ -783,15 +800,19 @@ const OpticalSurfaceAnalyzer = () => {
             setGridSize2D,
             theme,
             setTheme,
+            locale,
+            setLocale,
             onClose: () => setShowSettings(false),
-            c
+            c,
+            t
         }),
         // ZMX Import Dialog
         showZMXImport && h(ZMXImportDialog, {
             zmxSurfaces,
             onImport: handleImportSelectedSurfaces,
             onClose: () => setShowZMXImport(false),
-            c
+            c,
+            t
         }),
         // Conversion Dialog
         showConvert && h(ConversionDialog, {
@@ -803,7 +824,8 @@ const OpticalSurfaceAnalyzer = () => {
             setShowConvert,
             setShowConvertResults,
             setConvertResults,
-            c
+            c,
+            t
         }),
         // Conversion Results Dialog
         showConvertResults && h(ConversionResultsDialog, {
@@ -813,14 +835,16 @@ const OpticalSurfaceAnalyzer = () => {
             setFolders,
             setSelectedSurface,
             onClose: () => setShowConvertResults(false),
-            c
+            c,
+            t
         }),
         // Normalize UnZ Dialog
         showNormalizeUnZ && selectedSurface && h(NormalizeUnZDialog, {
             currentH: parseFloat(selectedSurface.parameters.H) || 1,
             onConfirm: handleNormalizeUnZConfirm,
             onCancel: () => setShowNormalizeUnZ(false),
-            c
+            c,
+            t
         }),
         // About Dialog
         showAbout && h(AboutDialog, {
@@ -830,7 +854,8 @@ const OpticalSurfaceAnalyzer = () => {
         // Input Dialog (for rename/new folder)
         h(InputDialog, {
             inputDialog,
-            c
+            c,
+            t
         }),
         // Context Menu
         contextMenu && h('div', {
@@ -863,15 +888,16 @@ const OpticalSurfaceAnalyzer = () => {
                         const targetName = contextMenu.target.name;
                         setContextMenu(null);
                         setInputDialog({
-                            title: 'Rename Folder',
+                            title: t.dialogs.contextMenu.renameFolder,
                             defaultValue: targetName,
                             validate: (name) => {
                                 if (!name || !name.trim()) {
-                                    return 'Folder name cannot be empty';
+                                    return t.dialogs.folder.folderNameEmpty;
                                 }
-                                // Allow same name (no change) but check for conflicts with other folders
-                                if (name.trim() !== targetName && folders.some(f => f.name === name.trim())) {
-                                    return 'A folder with this name already exists';
+                                // Allow same name (no change) but check for conflicts with other folders (case-insensitive)
+                                if (name.trim().toLowerCase() !== targetName.toLowerCase() &&
+                                    folders.some(f => f.name.toLowerCase() === name.trim().toLowerCase())) {
+                                    return t.dialogs.folder.folderExists;
                                 }
                                 return '';
                             },
@@ -886,7 +912,7 @@ const OpticalSurfaceAnalyzer = () => {
                     },
                     onMouseEnter: (e) => e.currentTarget.style.backgroundColor = c.hover,
                     onMouseLeave: (e) => e.currentTarget.style.backgroundColor = 'transparent'
-                }, 'Rename'),
+                }, t.dialogs.contextMenu.rename),
                 h('div', {
                     key: 'delete',
                     style: {
@@ -905,7 +931,7 @@ const OpticalSurfaceAnalyzer = () => {
                         if (folders.length > 1) e.currentTarget.style.backgroundColor = c.hover;
                     },
                     onMouseLeave: (e) => e.currentTarget.style.backgroundColor = 'transparent'
-                }, 'Delete Folder')
+                }, t.dialogs.contextMenu.deleteFolder)
             ] : [
                 h('div', {
                     key: 'delete',
@@ -921,7 +947,7 @@ const OpticalSurfaceAnalyzer = () => {
                     },
                     onMouseEnter: (e) => e.currentTarget.style.backgroundColor = c.hover,
                     onMouseLeave: (e) => e.currentTarget.style.backgroundColor = 'transparent'
-                }, 'Delete Surface')
+                }, t.dialogs.contextMenu.deleteSurface)
             ]
         ),
         // Main Content Area
@@ -940,7 +966,8 @@ const OpticalSurfaceAnalyzer = () => {
                 setContextMenu,
                 setInputDialog,
                 addFolder,
-                c
+                c,
+                t
             }),
 
             // Center Panel - Visualization
@@ -952,7 +979,8 @@ const OpticalSurfaceAnalyzer = () => {
                 setActiveSubTab,
                 plotRef,
                 wavelength,
-                c
+                c,
+                t
             }),
 
             // Right Panel - Properties
@@ -973,7 +1001,8 @@ const OpticalSurfaceAnalyzer = () => {
                 handleNormalizeUnZ,
                 handleConvertToUnZ,
                 handleConvertToPoly,
-                c
+                c,
+                t
             })
         )
     );

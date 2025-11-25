@@ -16,7 +16,8 @@ export const VisualizationPanel = ({
     setActiveSubTab,
     plotRef,
     wavelength,
-    c
+    c,
+    t
 }) => {
     return h('div', { style: { flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden' } },
         // Main Tabs
@@ -61,7 +62,7 @@ export const VisualizationPanel = ({
                             e.currentTarget.style.backgroundColor = 'transparent';
                         }
                     }
-                }, tab.charAt(0).toUpperCase() + tab.slice(1))
+                }, t.visualization.tabs[tab])
             )
         ),
 
@@ -99,9 +100,7 @@ export const VisualizationPanel = ({
                             e.currentTarget.style.backgroundColor = 'transparent';
                         }
                     }
-                }, subTab === '3d' ? '3D View' :
-                    subTab === '2d' ? '2D Heatmap' :
-                        subTab === 'cross' ? 'Cross-Section' : 'Data')
+                }, subTab === 'cross' ? t.visualization.subtabs.crossSection : t.visualization.subtabs[subTab])
             )
         ),
 
@@ -124,9 +123,9 @@ export const VisualizationPanel = ({
                     h('div', null, 'Select a surface or create a new one')
                 ) :
                 activeTab === 'summary' ?
-                    h(SummaryView, { selectedSurface, wavelength, c }) :
+                    h(SummaryView, { selectedSurface, wavelength, c, t }) :
                     activeSubTab === 'data' ?
-                        h(DataView, { activeTab, selectedSurface, c }) :
+                        h(DataView, { activeTab, selectedSurface, c, t }) :
                         h('div', { ref: plotRef, style: { width: '100%', height: '100%' } })
         )
     );

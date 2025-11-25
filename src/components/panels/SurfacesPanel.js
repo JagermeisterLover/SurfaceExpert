@@ -18,7 +18,8 @@ export const SurfacesPanel = ({
     setContextMenu,
     setInputDialog,
     addFolder,
-    c
+    c,
+    t
 }) => {
     return h('div', {
         style: {
@@ -40,10 +41,10 @@ export const SurfacesPanel = ({
                 alignItems: 'center'
             }
         },
-            h('span', null, 'Surfaces'),
+            h('span', null, t.surfaces.title),
             selectedSurfaces.length > 0 && h('button', {
                 onClick: removeSelectedSurfaces,
-                title: `Delete ${selectedSurfaces.length} surface(s)`,
+                title: `${t.surfaces.delete} ${selectedSurfaces.length}`,
                 style: {
                     padding: '4px 8px',
                     backgroundColor: '#e94560',
@@ -165,7 +166,7 @@ export const SurfacesPanel = ({
                                     }, surface.name),
                                     h('div', {
                                         style: { fontSize: '10px', color: c.textDim }
-                                    }, surface.type)
+                                    }, t.surfaceTypes[surface.type] || surface.type)
                                 )
                             );
                         })
@@ -187,14 +188,14 @@ export const SurfacesPanel = ({
                 onClick: (e) => {
                     e.stopPropagation();
                     setInputDialog({
-                        title: 'New Folder',
+                        title: t.dialogs.folder.newFolder,
                         defaultValue: 'New Folder',
                         validate: (name) => {
                             if (!name || !name.trim()) {
-                                return 'Folder name cannot be empty';
+                                return t.dialogs.folder.folderNameEmpty;
                             }
-                            if (folders.some(f => f.name === name.trim())) {
-                                return 'A folder with this name already exists';
+                            if (folders.some(f => f.name.toLowerCase() === name.trim().toLowerCase())) {
+                                return t.dialogs.folder.folderExists;
                             }
                             return '';
                         },
@@ -218,7 +219,7 @@ export const SurfacesPanel = ({
                     fontSize: '12px',
                     fontWeight: '500'
                 }
-            }, '+ Folder'),
+            }, `+ ${t.surfaces.newFolder}`),
             h('button', {
                 onClick: addSurface,
                 disabled: !selectedFolder,
@@ -233,7 +234,7 @@ export const SurfacesPanel = ({
                     fontSize: '12px',
                     fontWeight: '500'
                 }
-            }, '+ Surface')
+            }, `+ ${t.surfaces.newSurface}`)
         )
     );
 };

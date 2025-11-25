@@ -11,8 +11,9 @@ import { getGridColor } from '../../constants/colorPalettes.js';
  * @param {Object} selectedSurface - Surface object with type and parameters
  * @param {string} activeTab - Current metric tab (sag, slope, asphericity, aberration)
  * @param {Object} c - Color palette object
+ * @param {Object} t - Locale translations object
  */
-export const createCrossSection = (plotRef, selectedSurface, activeTab, c = null) => {
+export const createCrossSection = (plotRef, selectedSurface, activeTab, c = null, t = null) => {
     // Default colors if palette not provided
     const colors = c || {
         bg: '#2b2b2b',
@@ -20,11 +21,20 @@ export const createCrossSection = (plotRef, selectedSurface, activeTab, c = null
         text: '#e0e0e0',
         accent: '#4a90e2'
     };
+    // Default translations if not provided
+    const translations = t || {
+        summary: {
+            units: {
+                mm: 'mm',
+                rad: 'rad'
+            }
+        }
+    };
     const minHeight = parseFloat(selectedSurface.parameters['Min Height']) || 0;
     const maxHeight = parseFloat(selectedSurface.parameters['Max Height']) || 25;
     const step = parseFloat(selectedSurface.parameters['Step']) || 1;
     const x = [], y = [];
-    const unit = activeTab === 'slope' ? 'rad' : 'mm';
+    const unit = activeTab === 'slope' ? translations.summary.units.rad : translations.summary.units.mm;
 
     // Plot from -maxHeight to +maxHeight (diameter) using step
     // Build array of r values, ensuring we always include minHeight and maxHeight

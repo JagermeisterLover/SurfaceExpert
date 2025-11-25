@@ -13,8 +13,18 @@ import { getGridColor } from '../../constants/colorPalettes.js';
  * @param {string} colorscale - Plotly colorscale name
  * @param {Object} c - Color scheme object
  * @param {number} gridSize - Grid size (odd number to ensure point at 0)
+ * @param {Object} t - Locale translations object
  */
-export const create2DHeatmap = (plotRef, selectedSurface, activeTab, colorscale, c, gridSize = 101) => {
+export const create2DHeatmap = (plotRef, selectedSurface, activeTab, colorscale, c, gridSize = 101, t = null) => {
+    // Default translations if not provided
+    const translations = t || {
+        summary: {
+            units: {
+                mm: 'mm',
+                rad: 'rad'
+            }
+        }
+    };
     const minHeight = parseFloat(selectedSurface.parameters['Min Height']) || 0;
     const maxHeight = parseFloat(selectedSurface.parameters['Max Height']) || 25;
     const size = gridSize;
@@ -62,7 +72,7 @@ export const create2DHeatmap = (plotRef, selectedSurface, activeTab, colorscale,
     // Sanitize the entire z array (additional safety check)
     const zSanitized = sanitizeArray2D(z);
 
-    const unit = activeTab === 'slope' ? 'rad' : 'mm';
+    const unit = activeTab === 'slope' ? translations.summary.units.rad : translations.summary.units.mm;
 
     const data = [{
         x: x,
@@ -76,7 +86,7 @@ export const create2DHeatmap = (plotRef, selectedSurface, activeTab, colorscale,
             len: 0.7
         },
         hoverongaps: false,
-        hovertemplate: 'X: %{x:.2f} mm<br>Y: %{y:.2f} mm<br>' +
+        hovertemplate: `X: %{x:.2f} ${translations.summary.units.mm}<br>Y: %{y:.2f} ${translations.summary.units.mm}<br>` +
                        activeTab + ': %{z:.6f}<extra></extra>'
     }];
 

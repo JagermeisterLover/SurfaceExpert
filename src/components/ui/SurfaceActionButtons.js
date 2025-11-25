@@ -13,7 +13,7 @@ const { createElement: h } = React;
  * @param {Function} props.onConvertToPoly - Callback for UnZ → Poly conversion
  * @param {Object} props.c - Color scheme object
  */
-export const SurfaceActionButtons = ({ surface, onInvert, onNormalizeUnZ, onConvertToUnZ, onConvertToPoly, c }) => {
+export const SurfaceActionButtons = ({ surface, onInvert, onNormalizeUnZ, onConvertToUnZ, onConvertToPoly, c, t }) => {
     const buttonStyle = {
         padding: '8px 16px',
         backgroundColor: c.accent,
@@ -49,7 +49,7 @@ export const SurfaceActionButtons = ({ surface, onInvert, onNormalizeUnZ, onConv
             onMouseEnter: (e) => e.target.style.backgroundColor = '#3a7bc8',
             onMouseLeave: (e) => e.target.style.backgroundColor = c.accent,
             title: 'Flip the surface by inverting parameter signs'
-        }, 'Invert'),
+        }, t.properties.invert),
 
         // Normalize to H button - shown only for Opal Un Z
         surface.type === 'Opal Un Z' && h('button', {
@@ -58,7 +58,7 @@ export const SurfaceActionButtons = ({ surface, onInvert, onNormalizeUnZ, onConv
             onMouseEnter: (e) => e.target.style.backgroundColor = '#3a7bc8',
             onMouseLeave: (e) => e.target.style.backgroundColor = c.accent,
             title: 'Normalize coefficients to a new H value'
-        }, 'Normalize to H'),
+        }, t.properties.normalize),
 
         // Convert to UnZ button - shown only for Poly
         surface.type === 'Poly' && h('button', {
@@ -67,7 +67,7 @@ export const SurfaceActionButtons = ({ surface, onInvert, onNormalizeUnZ, onConv
             onMouseEnter: (e) => e.target.style.backgroundColor = '#3a7bc8',
             onMouseLeave: (e) => e.target.style.backgroundColor = c.accent,
             title: 'Convert this Poly surface to Opal Un Z'
-        }, 'Convert to UnZ'),
+        }, t.properties.convertToUnZ),
 
         // Convert to Poly button - shown only for Opal Un Z
         surface.type === 'Opal Un Z' && h('button', {
@@ -76,6 +76,6 @@ export const SurfaceActionButtons = ({ surface, onInvert, onNormalizeUnZ, onConv
             onMouseEnter: (e) => e.target.style.backgroundColor = '#3a7bc8',
             onMouseLeave: (e) => e.target.style.backgroundColor = c.accent,
             title: 'Convert this UnZ surface to Poly'
-        }, 'Convert to Poly')
+        }, t.properties.convertToPoly)
     );
 };

@@ -1,7 +1,7 @@
 const { useState } = React;
 const { createElement: h } = React;
 
-export const ConversionResultsDialog = ({ convertResults, folders, selectedFolder, setFolders, setSelectedSurface, onClose, c }) => {
+export const ConversionResultsDialog = ({ convertResults, folders, selectedFolder, setFolders, setSelectedSurface, onClose, c, t }) => {
     const [showDetailsDialog, setShowDetailsDialog] = useState(false);
     const [saveResults, setSaveResults] = useState(true);
 
@@ -224,7 +224,7 @@ export const ConversionResultsDialog = ({ convertResults, folders, selectedFolde
                     fontWeight: 'bold',
                     color: c.text
                 }
-            }, 'Conversion Results'),
+            }, t.dialogs.conversionResults.title),
 
             // Metrics table
             h('table', {
@@ -241,10 +241,10 @@ export const ConversionResultsDialog = ({ convertResults, folders, selectedFolde
                     },
                         h('th', {
                             style: { padding: '10px', textAlign: 'left', color: c.textDim }
-                        }, 'Metric'),
+                        }, t.dialogs.conversionResults.metric),
                         h('th', {
                             style: { padding: '10px', textAlign: 'right', color: c.textDim }
-                        }, 'Value')
+                        }, t.dialogs.conversionResults.value)
                     )
                 ),
                 h('tbody', null,
@@ -268,10 +268,10 @@ export const ConversionResultsDialog = ({ convertResults, folders, selectedFolde
                     },
                         h('td', {
                             style: { padding: '10px', color: c.text, fontWeight: 'bold' }
-                        }, 'Max Sag Deviation'),
+                        }, t.dialogs.conversionResults.maxSagDeviation),
                         h('td', {
                             style: { padding: '10px', textAlign: 'right', fontFamily: 'monospace', color: c.text, fontWeight: 'bold' }
-                        }, maxDeviation.toExponential(6) + ' mm')
+                        }, `${maxDeviation.toExponential(6)} ${t?.summary?.units?.mm || 'mm'}`)
                     )
                 )
             ),
@@ -298,7 +298,7 @@ export const ConversionResultsDialog = ({ convertResults, folders, selectedFolde
                 h('label', {
                     htmlFor: 'save-results-checkbox',
                     style: { color: c.text, fontSize: '13px', cursor: 'pointer' }
-                }, 'Save results to text files')
+                }, t.dialogs.conversionResults.saveResults)
             ),
 
             // Action buttons
@@ -317,7 +317,7 @@ export const ConversionResultsDialog = ({ convertResults, folders, selectedFolde
                         fontSize: '13px',
                         fontWeight: '600'
                     }
-                }, 'View Results'),
+                }, t.dialogs.conversionResults.viewResults),
                 h('div', {
                     style: { display: 'flex', gap: '10px' }
                 },
@@ -333,7 +333,7 @@ export const ConversionResultsDialog = ({ convertResults, folders, selectedFolde
                         fontSize: '13px',
                         fontWeight: '600'
                     }
-                }, 'Close'),
+                }, t.buttons.close),
                 h('button', {
                     onClick: handleAddSurface,
                     style: {
@@ -346,7 +346,7 @@ export const ConversionResultsDialog = ({ convertResults, folders, selectedFolde
                         fontSize: '13px',
                         fontWeight: '600'
                     }
-                }, 'Add to Surfaces')
+                }, t.dialogs.conversionResults.addToSurfaces)
                 )
             ),
 
@@ -387,7 +387,7 @@ export const ConversionResultsDialog = ({ convertResults, folders, selectedFolde
                             fontWeight: 'bold',
                             color: c.text
                         }
-                    }, 'Detailed Fit Results'),
+                    }, t.dialogs.conversionResults.detailedResults),
 
                     // Fit Report section
                     h('h3', {
@@ -398,7 +398,7 @@ export const ConversionResultsDialog = ({ convertResults, folders, selectedFolde
                             fontWeight: 'bold',
                             color: c.textDim
                         }
-                    }, 'Fit Report'),
+                    }, t.dialogs.conversionResults.fitReport),
                     h('pre', {
                         style: {
                             backgroundColor: c.bg,
@@ -424,7 +424,7 @@ export const ConversionResultsDialog = ({ convertResults, folders, selectedFolde
                             fontWeight: 'bold',
                             color: c.textDim
                         }
-                    }, 'Fit Metrics'),
+                    }, t.dialogs.conversionResults.fitMetrics),
                     h('pre', {
                         style: {
                             backgroundColor: c.bg,
@@ -450,7 +450,7 @@ export const ConversionResultsDialog = ({ convertResults, folders, selectedFolde
                             fontWeight: 'bold',
                             color: c.textDim
                         }
-                    }, 'Fit Deviations'),
+                    }, t.dialogs.conversionResults.fitDeviations),
                     h('pre', {
                         style: {
                             backgroundColor: c.bg,
@@ -482,7 +482,7 @@ export const ConversionResultsDialog = ({ convertResults, folders, selectedFolde
                                 fontSize: '13px',
                                 fontWeight: '600'
                             }
-                        }, 'Close')
+                        }, t.buttons.close)
                     )
                 )
             )
