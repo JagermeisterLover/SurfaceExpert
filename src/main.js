@@ -5,9 +5,21 @@ const fs = require('fs');
 // Always use portable mode: store userData next to the exe
 // This works for restricted environments where AppData is not writable
 const isPackaged = app.isPackaged;
-const portableDataDir = isPackaged
-  ? path.join(path.dirname(app.getPath('exe')), 'SurfaceExpertData')
-  : path.join(app.getAppPath(), 'SurfaceExpertData');
+
+// Get the directory where the exe is located
+// process.execPath points to the actual .exe file
+let exeDir;
+if (isPackaged) {
+  exeDir = path.dirname(process.execPath);
+  console.log('🔍 Packaged mode - process.execPath:', process.execPath);
+  console.log('🔍 Executable directory:', exeDir);
+} else {
+  exeDir = app.getAppPath();
+  console.log('🔍 Development mode - app path:', exeDir);
+}
+
+const portableDataDir = path.join(exeDir, 'SurfaceExpertData');
+console.log('📂 Target data directory:', portableDataDir);
 
 // Ensure the portable data directory exists
 if (!fs.existsSync(portableDataDir)) {
@@ -16,11 +28,14 @@ if (!fs.existsSync(portableDataDir)) {
     console.log('✅ Created portable data directory:', portableDataDir);
   } catch (err) {
     console.error('❌ Failed to create portable data directory:', err);
+    console.error('Error details:', err);
   }
+} else {
+  console.log('✅ Portable data directory already exists:', portableDataDir);
 }
 
 app.setPath('userData', portableDataDir);
-console.log('📂 Portable mode active - data directory:', portableDataDir);
+console.log('✅ userData path set to:', app.getPath('userData'));
 
 let mainWindow;
 
