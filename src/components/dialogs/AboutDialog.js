@@ -64,7 +64,7 @@ export function AboutDialog({ c, onClose }) {
           fontSize: '14px',
           marginBottom: '24px'
         }
-      }, 'Version 2.5.0'),
+      }, `Version ${window.electronAPI?.appVersion || '2.6.0'}`),
 
       // Build date
       h('div', {
