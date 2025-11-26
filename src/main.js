@@ -7,11 +7,19 @@ const fs = require('fs');
 const isPackaged = app.isPackaged;
 
 // Get the directory where the exe is located
-// process.execPath points to the actual .exe file
+// For portable builds, we want the folder containing the .exe
 let exeDir;
 if (isPackaged) {
+  // In packaged mode, process.execPath points to the .exe
+  // For portable builds, this is the actual user-facing .exe location
+  // For NSIS installs, this is also correct (in Program Files)
   exeDir = path.dirname(process.execPath);
+
+  // IMPORTANT: For portable builds, the .exe is at the root level
+  // For NSIS/installer builds, the .exe is also at the root of installation
+  // Both should work correctly with dirname(process.execPath)
 } else {
+  // Development mode - use project directory
   exeDir = app.getAppPath();
 }
 
@@ -20,6 +28,7 @@ const portableDataDir = path.join(exeDir, 'SurfaceExpertData');
 // Initialize logging - write to both console and file
 const logFile = path.join(exeDir, 'SurfaceExpert-debug.log');
 const logMessages = []; // Buffer messages until we can write them
+let logFileReady = false;
 
 const log = (message) => {
   const timestamp = new Date().toISOString();
@@ -27,22 +36,37 @@ const log = (message) => {
   console.log(logMessage); // Always log to console
   logMessages.push(logMessage + '\n');
 
-  // Try to write immediately
-  try {
-    fs.appendFileSync(logFile, logMessage + '\n', 'utf-8');
-  } catch (err) {
-    // Silently fail - we'll retry later
+  // Try to write immediately if log file is ready
+  if (logFileReady) {
+    try {
+      fs.appendFileSync(logFile, logMessage + '\n', 'utf-8');
+    } catch (err) {
+      console.error(`Failed to append to log: ${err.message}`);
+    }
   }
 };
 
 // Function to flush buffered log messages
 const flushLog = () => {
-  if (logMessages.length > 0) {
+  if (logMessages.length > 0 && !logFileReady) {
     try {
       fs.writeFileSync(logFile, logMessages.join(''), 'utf-8');
+      logFileReady = true;
       console.log(`✅ Log file created: ${logFile}`);
     } catch (err) {
       console.error(`❌ Failed to create log file: ${err.message}`);
+      // Try to ensure directory exists
+      try {
+        const logDir = path.dirname(logFile);
+        if (!fs.existsSync(logDir)) {
+          fs.mkdirSync(logDir, { recursive: true });
+          fs.writeFileSync(logFile, logMessages.join(''), 'utf-8');
+          logFileReady = true;
+          console.log(`✅ Log file created after mkdir: ${logFile}`);
+        }
+      } catch (err2) {
+        console.error(`❌ Still failed to create log file: ${err2.message}`);
+      }
     }
   }
 };
@@ -54,20 +78,62 @@ log(`Executable directory: ${exeDir}`);
 log(`Target data directory: ${portableDataDir}`);
 log(`Log file path: ${logFile}`);
 
-// Ensure the portable data directory exists
-if (!fs.existsSync(portableDataDir)) {
-  try {
+// Ensure the portable data directory exists BEFORE setting userData path
+// Do this synchronously before app.whenReady()
+log('=== Creating Portable Data Directory ===');
+try {
+  // Check if parent directory is writable
+  const parentDir = path.dirname(portableDataDir);
+  log(`Parent directory: ${parentDir}`);
+  log(`Parent exists: ${fs.existsSync(parentDir)}`);
+
+  if (!fs.existsSync(portableDataDir)) {
+    log(`Creating directory: ${portableDataDir}`);
     fs.mkdirSync(portableDataDir, { recursive: true });
     log(`✅ Created portable data directory: ${portableDataDir}`);
-  } catch (err) {
-    log(`❌ Failed to create portable data directory: ${err.message}`);
+  } else {
+    log(`✅ Portable data directory already exists: ${portableDataDir}`);
   }
-} else {
-  log(`✅ Portable data directory already exists: ${portableDataDir}`);
+
+  // Verify the directory was actually created and is writable
+  if (fs.existsSync(portableDataDir)) {
+    log(`✅ Directory exists after creation attempt`);
+    const stats = fs.statSync(portableDataDir);
+    log(`   Is directory: ${stats.isDirectory()}`);
+
+    // Test write permissions
+    const testFile = path.join(portableDataDir, '.write-test');
+    fs.writeFileSync(testFile, 'test', 'utf-8');
+    fs.unlinkSync(testFile);
+    log(`✅ Directory is writable: ${portableDataDir}`);
+  } else {
+    log(`❌ Directory does not exist after creation attempt!`);
+  }
+} catch (err) {
+  log(`❌ Failed to create/verify portable data directory: ${err.message}`);
+  log(`   Error code: ${err.code}`);
+  log(`   Error name: ${err.name}`);
+  log(`   Error stack: ${err.stack}`);
+
+  // Try to get more details about the failure
+  try {
+    const parentDir = path.dirname(portableDataDir);
+    const parentStats = fs.statSync(parentDir);
+    log(`   Parent dir permissions: ${parentStats.mode.toString(8)}`);
+  } catch (parentErr) {
+    log(`   Could not stat parent directory: ${parentErr.message}`);
+  }
 }
 
+// Set userData path AFTER creating the directory
+// This ensures all subsequent file operations use the correct path
+log('=== Setting userData Path ===');
 app.setPath('userData', portableDataDir);
-log(`✅ userData path set to: ${app.getPath('userData')}`);
+log(`✅ userData path set to: ${portableDataDir}`);
+log(`   Actual path: ${app.getPath('userData')}`);
+
+// Flush log immediately after directory setup
+flushLog();
 
 let mainWindow;
 
@@ -755,7 +821,17 @@ function createMenu() {
 
 app.whenReady().then(() => {
   log('=== App Ready ===');
-  flushLog(); // Ensure log file is written
+  log(`Final userData path: ${app.getPath('userData')}`);
+  log(`SurfaceExpertData exists: ${fs.existsSync(portableDataDir)}`);
+  if (fs.existsSync(portableDataDir)) {
+    try {
+      const stats = fs.statSync(portableDataDir);
+      log(`SurfaceExpertData is directory: ${stats.isDirectory()}`);
+      log(`SurfaceExpertData permissions: ${stats.mode.toString(8)}`);
+    } catch (err) {
+      log(`Error getting directory stats: ${err.message}`);
+    }
+  }
   createWindow();
 });
 

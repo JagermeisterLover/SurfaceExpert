@@ -31,7 +31,8 @@
       "Bash(\"./SurfaceExpert 2.1.0.exe\")",
       "Bash(.gitignore)",
       "Bash(git revert:*)",
-      "Bash(git restore:*)"
+      "Bash(git restore:*)",
+      "Bash(timeout /t 3)"
     ],
     "deny": [],
     "ask": []
