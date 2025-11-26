@@ -27,6 +27,8 @@ export function MenuBar({ c, onMenuAction, t }) {
     ],
     [t.menu.help]: [
       { label: t.menu.documentation, action: 'documentation' },
+      { label: t.menu.checkForUpdates || 'Check for Updates', action: 'check-for-updates' },
+      { type: 'separator' },
       { label: t.menu.about, action: 'about' }
     ]
   };

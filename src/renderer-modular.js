@@ -37,6 +37,7 @@ import { PropertySection } from './components/ui/PropertySection.js';
 import { PropertyRow } from './components/ui/PropertyRow.js';
 import { DebouncedInput } from './components/ui/DebouncedInput.js';
 import { SurfaceActionButtons } from './components/ui/SurfaceActionButtons.js';
+import { UpdateBadge } from './components/ui/UpdateBadge.js';
 import { TitleBar } from './components/TitleBar.js';
 import { MenuBar } from './components/MenuBar.js';
 
@@ -58,6 +59,7 @@ import { ConversionDialog } from './components/dialogs/ConversionDialog.js';
 import { ConversionResultsDialog } from './components/dialogs/ConversionResultsDialog.js';
 import { NormalizeUnZDialog } from './components/dialogs/NormalizeUnZDialog.js';
 import { AboutDialog } from './components/dialogs/AboutDialog.js';
+import { UpdateDialog } from './components/dialogs/UpdateDialog.js';
 
 // Plot Components
 import { create3DPlot } from './components/plots/Plot3D.js';
@@ -103,6 +105,8 @@ const OpticalSurfaceAnalyzer = () => {
     const [inputDialog, setInputDialog] = useState(null);
     const [showNormalizeUnZ, setShowNormalizeUnZ] = useState(false);
     const [showAbout, setShowAbout] = useState(false);
+    const [updateInfo, setUpdateInfo] = useState(null);
+    const [showUpdateDialog, setShowUpdateDialog] = useState(false);
     const plotRef = useRef(null);
     const propertiesPanelRef = useRef(null);
     const scrollPositionRef = useRef(0);
@@ -131,7 +135,30 @@ const OpticalSurfaceAnalyzer = () => {
     useEffect(() => {
         loadFoldersFromDisk();
         loadSettingsFromDisk();
+        checkForUpdates();
     }, []);
+
+    // Check for updates function
+    const checkForUpdates = async (showDialogIfNone = false) => {
+        try {
+            if (window.electronAPI && window.electronAPI.checkForUpdates) {
+                const update = await window.electronAPI.checkForUpdates();
+                if (update && update.available) {
+                    setUpdateInfo(update);
+                    // Don't show dialog automatically, just set the update info
+                    // Badge will appear automatically when updateInfo is set
+                } else if (showDialogIfNone) {
+                    // If manually triggered and no update, show a message
+                    alert(t?.update?.noUpdates || 'You are using the latest version!');
+                }
+            }
+        } catch (error) {
+            console.error('Failed to check for updates:', error);
+            if (showDialogIfNone) {
+                alert(t?.update?.checkError || 'Failed to check for updates. Please try again later.');
+            }
+        }
+    };
 
     // Preserve scroll position in properties panel during updates
     // Use useLayoutEffect to restore scroll synchronously before paint
@@ -306,6 +333,9 @@ const OpticalSurfaceAnalyzer = () => {
                 break;
             case 'about':
                 setShowAbout(true);
+                break;
+            case 'check-for-updates':
+                await checkForUpdates(true); // Show message if no updates
                 break;
             // Add more handlers as needed
         }
@@ -850,6 +880,26 @@ const OpticalSurfaceAnalyzer = () => {
         showAbout && h(AboutDialog, {
             c,
             onClose: () => setShowAbout(false)
+        }),
+        // Update Badge (VS Code style)
+        h(UpdateBadge, {
+            c,
+            t,
+            updateInfo,
+            onClick: () => setShowUpdateDialog(true)
+        }),
+        // Update Dialog
+        showUpdateDialog && h(UpdateDialog, {
+            c,
+            t,
+            updateInfo,
+            onClose: () => setShowUpdateDialog(false),
+            onDownload: () => {
+                if (window.electronAPI && window.electronAPI.openExternal) {
+                    window.electronAPI.openExternal(updateInfo.downloadUrl);
+                }
+                setShowUpdateDialog(false);
+            }
         }),
         // Input Dialog (for rename/new folder)
         h(InputDialog, {

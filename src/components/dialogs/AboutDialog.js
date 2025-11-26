@@ -4,7 +4,15 @@
  */
 
 export function AboutDialog({ c, onClose }) {
-  const { createElement: h } = React;
+  const { createElement: h, useState, useEffect } = React;
+  const [version, setVersion] = useState('2.7.0');
+
+  useEffect(() => {
+    // Get version from electron API
+    if (window.electronAPI && window.electronAPI.getAppVersion) {
+      window.electronAPI.getAppVersion().then(v => setVersion(v));
+    }
+  }, []);
 
   return h('div', {
     style: {
@@ -64,7 +72,7 @@ export function AboutDialog({ c, onClose }) {
           fontSize: '14px',
           marginBottom: '24px'
         }
-      }, `Version ${window.electronAPI?.appVersion || '2.6.0'}`),
+      }, `Version ${version}`),
 
       // Build date
       h('div', {
