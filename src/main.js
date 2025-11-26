@@ -17,16 +17,33 @@ if (isPackaged) {
 
 const portableDataDir = path.join(exeDir, 'SurfaceExpertData');
 
-// Create log file for debugging
+// Initialize logging - write to both console and file
 const logFile = path.join(exeDir, 'SurfaceExpert-debug.log');
+const logMessages = []; // Buffer messages until we can write them
+
 const log = (message) => {
   const timestamp = new Date().toISOString();
-  const logMessage = `[${timestamp}] ${message}\n`;
-  console.log(message); // Also log to console
+  const logMessage = `[${timestamp}] ${message}`;
+  console.log(logMessage); // Always log to console
+  logMessages.push(logMessage + '\n');
+
+  // Try to write immediately
   try {
-    fs.appendFileSync(logFile, logMessage, 'utf-8');
+    fs.appendFileSync(logFile, logMessage + '\n', 'utf-8');
   } catch (err) {
-    console.error('Failed to write to log file:', err);
+    // Silently fail - we'll retry later
+  }
+};
+
+// Function to flush buffered log messages
+const flushLog = () => {
+  if (logMessages.length > 0) {
+    try {
+      fs.writeFileSync(logFile, logMessages.join(''), 'utf-8');
+      console.log(`✅ Log file created: ${logFile}`);
+    } catch (err) {
+      console.error(`❌ Failed to create log file: ${err.message}`);
+    }
   }
 };
 
@@ -35,6 +52,7 @@ log(`Packaged: ${isPackaged}`);
 log(`process.execPath: ${process.execPath}`);
 log(`Executable directory: ${exeDir}`);
 log(`Target data directory: ${portableDataDir}`);
+log(`Log file path: ${logFile}`);
 
 // Ensure the portable data directory exists
 if (!fs.existsSync(portableDataDir)) {
@@ -43,7 +61,6 @@ if (!fs.existsSync(portableDataDir)) {
     log(`✅ Created portable data directory: ${portableDataDir}`);
   } catch (err) {
     log(`❌ Failed to create portable data directory: ${err.message}`);
-    log(`Error details: ${JSON.stringify(err)}`);
   }
 } else {
   log(`✅ Portable data directory already exists: ${portableDataDir}`);
@@ -736,7 +753,11 @@ function createMenu() {
   Menu.setApplicationMenu(null);
 }
 
-app.whenReady().then(createWindow);
+app.whenReady().then(() => {
+  log('=== App Ready ===');
+  flushLog(); // Ensure log file is written
+  createWindow();
+});
 
 app.on('window-all-closed', () => {
   if (process.platform !== 'darwin') {
