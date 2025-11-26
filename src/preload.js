@@ -1,8 +1,7 @@
 const { contextBridge, ipcRenderer } = require('electron');
-const packageJson = require('../package.json');
 
 contextBridge.exposeInMainWorld('electronAPI', {
-  appVersion: packageJson.version,
+  getAppVersion: () => ipcRenderer.invoke('get-app-version'),
   onMenuAction: (callback) => ipcRenderer.on('menu-action', (event, action) => callback(action)),
   openZMXDialog: () => ipcRenderer.invoke('open-zmx-dialog'),
   runConversion: (surfaceData, settings) => ipcRenderer.invoke('run-conversion', surfaceData, settings),
