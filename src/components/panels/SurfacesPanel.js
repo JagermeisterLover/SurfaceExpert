@@ -219,7 +219,7 @@ export const SurfacesPanel = ({
                     fontSize: '12px',
                     fontWeight: '500'
                 }
-            }, `+ ${t.surfaces.newFolder}`),
+            }, `${t.surfaces.newFolder}`),
             h('button', {
                 onClick: addSurface,
                 disabled: !selectedFolder,
@@ -234,7 +234,7 @@ export const SurfacesPanel = ({
                     fontSize: '12px',
                     fontWeight: '500'
                 }
-            }, `+ ${t.surfaces.newSurface}`)
+            }, `${t.surfaces.newSurface}`)
         )
     );
 };
