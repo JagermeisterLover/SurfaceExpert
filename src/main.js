@@ -2,14 +2,14 @@ const { app, BrowserWindow, Menu, dialog, ipcMain, shell } = require('electron')
 const path = require('path');
 const fs = require('fs');
 
-// Set portable mode: store userData next to the exe
-if (process.env.PORTABLE_EXECUTABLE_DIR) {
-  // Electron Builder portable mode sets this automatically
-  app.setPath('userData', path.join(process.env.PORTABLE_EXECUTABLE_DIR, 'SurfaceExpertData'));
-} else if (process.argv.includes('--portable')) {
-  // Manual portable flag
-  app.setPath('userData', path.join(path.dirname(process.execPath), 'SurfaceExpertData'));
-}
+// Always use portable mode: store userData next to the exe
+// This works for restricted environments where AppData is not writable
+const isPackaged = app.isPackaged;
+const portableDataDir = isPackaged
+  ? path.join(path.dirname(app.getPath('exe')), 'SurfaceExpertData')
+  : path.join(app.getAppPath(), 'SurfaceExpertData');
+
+app.setPath('userData', portableDataDir);
 
 let mainWindow;
 
@@ -105,6 +105,85 @@ function setupIpcHandlers() {
   // Open external URLs
   ipcMain.on('open-external', (event, url) => {
     shell.openExternal(url);
+  });
+
+  // Get app version (works in asar-packed builds)
+  ipcMain.handle('get-app-version', () => {
+    return app.getVersion();
+  });
+
+  // Check for updates from GitHub releases
+  ipcMain.handle('check-for-updates', async () => {
+    const https = require('https');
+    const currentVersion = app.getVersion();
+
+    return new Promise((resolve) => {
+      const options = {
+        hostname: 'api.github.com',
+        path: '/repos/JagermeisterLover/SurfaceExpert/releases/latest',
+        method: 'GET',
+        headers: {
+          'User-Agent': 'SurfaceExpert',
+          'Accept': 'application/vnd.github.v3+json'
+        }
+      };
+
+      const req = https.request(options, (res) => {
+        let data = '';
+
+        res.on('data', (chunk) => {
+          data += chunk;
+        });
+
+        res.on('end', () => {
+          try {
+            if (res.statusCode !== 200) {
+              console.error('Failed to check for updates:', res.statusCode);
+              resolve(null);
+              return;
+            }
+
+            const release = JSON.parse(data);
+            const latestVersion = release.tag_name.replace(/^v/, '');
+            const current = currentVersion.split('.').map(Number);
+            const latest = latestVersion.split('.').map(Number);
+
+            let isNewer = false;
+            for (let i = 0; i < 3; i++) {
+              if (latest[i] > current[i]) {
+                isNewer = true;
+                break;
+              }
+              if (latest[i] < current[i]) break;
+            }
+
+            if (isNewer) {
+              resolve({
+                available: true,
+                currentVersion: currentVersion,
+                latestVersion: latestVersion,
+                releaseDate: release.published_at,
+                releaseNotes: release.body || '',
+                downloadUrl: 'https://github.com/JagermeisterLover/SurfaceExpert/releases',
+                releasesUrl: `https://github.com/JagermeisterLover/SurfaceExpert/releases/tag/${release.tag_name}`
+              });
+            } else {
+              resolve({ available: false, currentVersion: currentVersion });
+            }
+          } catch (error) {
+            console.error('Error parsing update response:', error);
+            resolve(null);
+          }
+        });
+      });
+
+      req.on('error', (error) => {
+        console.error('Error checking for updates:', error);
+        resolve(null);
+      });
+
+      req.end();
+    });
   });
 
   // Ensure surfaces directory exists
@@ -338,7 +417,8 @@ function setupIpcHandlers() {
   // Handler for running surface conversion
   ipcMain.handle('run-conversion', async (event, surfaceData, settings) => {
     const { spawn } = require('child_process');
-    const tempDir = path.join(__dirname, '..');
+    // Use userData directory for temp files (works in portable mode next to exe)
+    const tempDir = userDataPath;
 
     try {
       // Write surface data to temp file
@@ -351,7 +431,23 @@ function setupIpcHandlers() {
 
       // Spawn Python process
       const pythonPath = process.platform === 'win32' ? 'python' : 'python3';
-      const scriptPath = path.join(__dirname, 'surfaceFitter.py');
+
+      // Handle Python script path for asar packaging
+      let scriptPath;
+      if (app.isPackaged) {
+        // Extract Python script to userData directory for asar-packed builds
+        const extractedScriptPath = path.join(userDataPath, 'surfaceFitter.py');
+        const originalScriptPath = path.join(__dirname, 'surfaceFitter.py');
+
+        // Copy script if it doesn't exist or is outdated
+        if (!fs.existsSync(extractedScriptPath)) {
+          fs.copyFileSync(originalScriptPath, extractedScriptPath);
+        }
+        scriptPath = extractedScriptPath;
+      } else {
+        // Development mode - use script directly
+        scriptPath = path.join(__dirname, 'surfaceFitter.py');
+      }
 
       return new Promise((resolve, reject) => {
         const python = spawn(pythonPath, [scriptPath], {

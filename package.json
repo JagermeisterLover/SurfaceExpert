@@ -1,6 +1,6 @@
 {
   "name": "surface-expert",
-  "version": "2.6.0",
+  "version": "2.7.0",
   "description": "SurfaceExpert - Optical Surface Analysis Desktop Application",
   "main": "src/main.js",
   "scripts": {
@@ -29,17 +29,24 @@
   "build": {
     "appId": "com.surfaceexpert.app",
     "productName": "SurfaceExpert",
-    "asar": false,
+    "asar": true,
     "directories": {
       "output": "dist"
     },
     "files": [
       "src/**/*",
       "node_modules/**/*",
-      "icons/**/*"
+      "icons/**/*",
+      "LICENSE"
     ],
     "win": {
       "target": [
+        {
+          "target": "nsis",
+          "arch": [
+            "x64"
+          ]
+        },
         {
           "target": "portable",
           "arch": [
@@ -48,6 +55,21 @@
         }
       ],
       "icon": "icons/IconInvertedNoBGGlow.ico"
+    },
+    "nsis": {
+      "oneClick": false,
+      "perMachine": false,
+      "allowElevation": false,
+      "allowToChangeInstallationDirectory": true,
+      "installerIcon": "icons/IconInvertedNoBGGlow.ico",
+      "uninstallerIcon": "icons/IconInvertedNoBGGlow.ico",
+      "createDesktopShortcut": true,
+      "createStartMenuShortcut": true,
+      "shortcutName": "SurfaceExpert",
+      "differentialPackage": false
+    },
+    "portable": {
+      "artifactName": "${productName}-${version}-Portable.${ext}"
     },
     "mac": {
       "target": "dmg",
