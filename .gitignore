@@ -5,7 +5,7 @@ dist/
 
 # User data
 surfaces/
-
+SurfaceExpertData/
 # Temporary conversion files
 tempsurfacedata.txt
 ConvertSettings.txt
