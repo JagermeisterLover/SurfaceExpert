@@ -9,7 +9,18 @@ const portableDataDir = isPackaged
   ? path.join(path.dirname(app.getPath('exe')), 'SurfaceExpertData')
   : path.join(app.getAppPath(), 'SurfaceExpertData');
 
+// Ensure the portable data directory exists
+if (!fs.existsSync(portableDataDir)) {
+  try {
+    fs.mkdirSync(portableDataDir, { recursive: true });
+    console.log('✅ Created portable data directory:', portableDataDir);
+  } catch (err) {
+    console.error('❌ Failed to create portable data directory:', err);
+  }
+}
+
 app.setPath('userData', portableDataDir);
+console.log('📂 Portable mode active - data directory:', portableDataDir);
 
 let mainWindow;
 
@@ -188,7 +199,14 @@ function setupIpcHandlers() {
 
   // Ensure surfaces directory exists
   if (!fs.existsSync(surfacesDir)) {
-    fs.mkdirSync(surfacesDir, { recursive: true });
+    try {
+      fs.mkdirSync(surfacesDir, { recursive: true });
+      console.log('✅ Created surfaces directory:', surfacesDir);
+    } catch (err) {
+      console.error('❌ Failed to create surfaces directory:', err);
+    }
+  } else {
+    console.log('✅ Surfaces directory exists:', surfacesDir);
   }
 
   // Handler for loading settings from disk
@@ -232,10 +250,12 @@ function setupIpcHandlers() {
   // Handler for saving settings to disk
   ipcMain.handle('save-settings', async (event, settings) => {
     try {
+      console.log('💾 Saving settings to:', settingsPath);
       fs.writeFileSync(settingsPath, JSON.stringify(settings, null, 2), 'utf-8');
+      console.log('✅ Settings saved successfully');
       return { success: true };
     } catch (err) {
-      console.error('Error saving settings:', err);
+      console.error('❌ Error saving settings:', err);
       return {
         success: false,
         error: err.message
@@ -309,15 +329,19 @@ function setupIpcHandlers() {
       // Ensure folder exists
       if (!fs.existsSync(folderPath)) {
         fs.mkdirSync(folderPath, { recursive: true });
+        console.log('✅ Created folder:', folderPath);
       }
 
       // Sanitize surface name for filename
       const sanitizedName = surface.name.replace(/[<>:"/\\|?*]/g, '_');
       const filePath = path.join(folderPath, `${sanitizedName}.json`);
 
+      console.log('💾 Saving surface to:', filePath);
       fs.writeFileSync(filePath, JSON.stringify(surface, null, 2), 'utf-8');
+      console.log('✅ Surface saved successfully');
       return { success: true };
     } catch (error) {
+      console.error('❌ Error saving surface:', error);
       return { success: false, error: error.message };
     }
   });
