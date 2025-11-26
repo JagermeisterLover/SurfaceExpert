@@ -29,7 +29,9 @@
       "Bash(dir:*)",
       "Bash(\"./SurfaceExpert 2.1.0.exe\" --dev)",
       "Bash(\"./SurfaceExpert 2.1.0.exe\")",
-      "Bash(.gitignore)"
+      "Bash(.gitignore)",
+      "Bash(git revert:*)",
+      "Bash(git restore:*)"
     ],
     "deny": [],
     "ask": []

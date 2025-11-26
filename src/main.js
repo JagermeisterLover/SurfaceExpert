@@ -11,31 +11,46 @@ const isPackaged = app.isPackaged;
 let exeDir;
 if (isPackaged) {
   exeDir = path.dirname(process.execPath);
-  console.log('🔍 Packaged mode - process.execPath:', process.execPath);
-  console.log('🔍 Executable directory:', exeDir);
 } else {
   exeDir = app.getAppPath();
-  console.log('🔍 Development mode - app path:', exeDir);
 }
 
 const portableDataDir = path.join(exeDir, 'SurfaceExpertData');
-console.log('📂 Target data directory:', portableDataDir);
+
+// Create log file for debugging
+const logFile = path.join(exeDir, 'SurfaceExpert-debug.log');
+const log = (message) => {
+  const timestamp = new Date().toISOString();
+  const logMessage = `[${timestamp}] ${message}\n`;
+  console.log(message); // Also log to console
+  try {
+    fs.appendFileSync(logFile, logMessage, 'utf-8');
+  } catch (err) {
+    console.error('Failed to write to log file:', err);
+  }
+};
+
+log('=== SurfaceExpert Startup ===');
+log(`Packaged: ${isPackaged}`);
+log(`process.execPath: ${process.execPath}`);
+log(`Executable directory: ${exeDir}`);
+log(`Target data directory: ${portableDataDir}`);
 
 // Ensure the portable data directory exists
 if (!fs.existsSync(portableDataDir)) {
   try {
     fs.mkdirSync(portableDataDir, { recursive: true });
-    console.log('✅ Created portable data directory:', portableDataDir);
+    log(`✅ Created portable data directory: ${portableDataDir}`);
   } catch (err) {
-    console.error('❌ Failed to create portable data directory:', err);
-    console.error('Error details:', err);
+    log(`❌ Failed to create portable data directory: ${err.message}`);
+    log(`Error details: ${JSON.stringify(err)}`);
   }
 } else {
-  console.log('✅ Portable data directory already exists:', portableDataDir);
+  log(`✅ Portable data directory already exists: ${portableDataDir}`);
 }
 
 app.setPath('userData', portableDataDir);
-console.log('✅ userData path set to:', app.getPath('userData'));
+log(`✅ userData path set to: ${app.getPath('userData')}`);
 
 let mainWindow;
 
@@ -93,12 +108,12 @@ function setupIpcHandlers() {
   const surfacesDir = path.join(userDataPath, 'surfaces');
   const settingsPath = path.join(userDataPath, 'settings.json');
 
-  console.log('=== Storage Paths ===');
-  console.log('App packaged:', app.isPackaged);
-  console.log('User Data Path:', userDataPath);
-  console.log('Surfaces directory:', surfacesDir);
-  console.log('Settings path:', settingsPath);
-  console.log('====================');
+  log('=== Storage Paths ===');
+  log(`App packaged: ${app.isPackaged}`);
+  log(`User Data Path: ${userDataPath}`);
+  log(`Surfaces directory: ${surfacesDir}`);
+  log(`Settings path: ${settingsPath}`);
+  log('====================');
 
   // Window control handlers
   ipcMain.on('window-control', (event, action) => {
@@ -216,12 +231,12 @@ function setupIpcHandlers() {
   if (!fs.existsSync(surfacesDir)) {
     try {
       fs.mkdirSync(surfacesDir, { recursive: true });
-      console.log('✅ Created surfaces directory:', surfacesDir);
+      log(`✅ Created surfaces directory: ${surfacesDir}`);
     } catch (err) {
-      console.error('❌ Failed to create surfaces directory:', err);
+      log(`❌ Failed to create surfaces directory: ${err.message}`);
     }
   } else {
-    console.log('✅ Surfaces directory exists:', surfacesDir);
+    log(`✅ Surfaces directory exists: ${surfacesDir}`);
   }
 
   // Handler for loading settings from disk
@@ -265,12 +280,12 @@ function setupIpcHandlers() {
   // Handler for saving settings to disk
   ipcMain.handle('save-settings', async (event, settings) => {
     try {
-      console.log('💾 Saving settings to:', settingsPath);
+      log(`💾 Saving settings to: ${settingsPath}`);
       fs.writeFileSync(settingsPath, JSON.stringify(settings, null, 2), 'utf-8');
-      console.log('✅ Settings saved successfully');
+      log('✅ Settings saved successfully');
       return { success: true };
     } catch (err) {
-      console.error('❌ Error saving settings:', err);
+      log(`❌ Error saving settings: ${err.message}`);
       return {
         success: false,
         error: err.message
@@ -344,19 +359,19 @@ function setupIpcHandlers() {
       // Ensure folder exists
       if (!fs.existsSync(folderPath)) {
         fs.mkdirSync(folderPath, { recursive: true });
-        console.log('✅ Created folder:', folderPath);
+        log(`✅ Created folder: ${folderPath}`);
       }
 
       // Sanitize surface name for filename
       const sanitizedName = surface.name.replace(/[<>:"/\\|?*]/g, '_');
       const filePath = path.join(folderPath, `${sanitizedName}.json`);
 
-      console.log('💾 Saving surface to:', filePath);
+      log(`💾 Saving surface to: ${filePath}`);
       fs.writeFileSync(filePath, JSON.stringify(surface, null, 2), 'utf-8');
-      console.log('✅ Surface saved successfully');
+      log('✅ Surface saved successfully');
       return { success: true };
     } catch (error) {
-      console.error('❌ Error saving surface:', error);
+      log(`❌ Error saving surface: ${error.message}`);
       return { success: false, error: error.message };
     }
   });
