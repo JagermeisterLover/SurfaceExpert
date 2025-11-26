@@ -29,15 +29,14 @@
   "build": {
     "appId": "com.surfaceexpert.app",
     "productName": "SurfaceExpert",
-    "asar": true,
+    "asar": false,
     "directories": {
       "output": "dist"
     },
     "files": [
       "src/**/*",
       "node_modules/**/*",
-      "icons/**/*",
-      "package.json"
+      "icons/**/*"
     ],
     "win": {
       "target": [
