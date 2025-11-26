@@ -127,7 +127,8 @@ class ZMXParser {
                 'A18': '0',
                 'A20': '0',
                 'Min Height': '0',
-                'Max Height': String(maxHeight)
+                'Max Height': String(maxHeight),
+                'Step': '1'
             };
         } else if (zmxSurface.type === 'EVENASPH') {
             // EVENASPH surface
@@ -148,7 +149,8 @@ class ZMXParser {
                 'A18': String(zmxSurface.parameters['PARM9'] || 0),
                 'A20': String(zmxSurface.parameters['PARM10'] || 0),
                 'Min Height': '0',
-                'Max Height': String(maxHeight)
+                'Max Height': String(maxHeight),
+                'Step': '1'
             };
         } else if (zmxSurface.type === 'ODDASPHE') {
             // ODDASPHE surface
@@ -178,7 +180,8 @@ class ZMXParser {
                 'A19': String(zmxSurface.parameters['PARM19'] || 0),
                 'A20': String(zmxSurface.parameters['PARM20'] || 0),
                 'Min Height': '0',
-                'Max Height': String(maxHeight)
+                'Max Height': String(maxHeight),
+                'Step': '1'
             };
         } else if (zmxSurface.type === 'IRREGULA') {
             // IRREGULA surface
@@ -207,7 +210,8 @@ class ZMXParser {
                 'X Coordinate': '0',
                 'Y Coordinate': '0',
                 'Min Height': '0',
-                'Max Height': String(maxHeight)
+                'Max Height': String(maxHeight),
+                'Step': '1'
             };
         } else if (zmxSurface.type === 'FZERNSAG') {
             // FZERNSAG surface (Zernike Standard Sag)
@@ -284,7 +288,8 @@ class ZMXParser {
                 'X Coordinate': '0',
                 'Y Coordinate': '0',
                 'Min Height': '0',
-                'Max Height': String(maxHeight)
+                'Max Height': String(maxHeight),
+                'Step': '1'
             };
         } else {
             // Unsupported surface type, default to Even Asphere
@@ -302,7 +307,8 @@ class ZMXParser {
                 'A18': '0',
                 'A20': '0',
                 'Min Height': '0',
-                'Max Height': String(maxHeight)
+                'Max Height': String(maxHeight),
+                'Step': '1'
             };
         }
 
