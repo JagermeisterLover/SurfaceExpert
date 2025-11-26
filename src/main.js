@@ -107,6 +107,11 @@ function setupIpcHandlers() {
     shell.openExternal(url);
   });
 
+  // Get app version
+  ipcMain.handle('get-app-version', () => {
+    return app.getVersion();
+  });
+
   // Ensure surfaces directory exists
   if (!fs.existsSync(surfacesDir)) {
     fs.mkdirSync(surfacesDir, { recursive: true });
