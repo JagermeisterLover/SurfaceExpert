@@ -75,19 +75,13 @@ export function UpdateNotification({ c, t, updateInfo, onClose, onDownload }) {
         backgroundColor: c.bg
       }
     },
-      // Title with icon
+      // Title
       h('div', {
         style: {
           display: 'flex',
-          alignItems: 'center',
-          gap: '8px'
+          alignItems: 'center'
         }
       },
-        h('span', {
-          style: {
-            fontSize: '16px'
-          }
-        }, '⬆️'),
         h('span', {
           style: {
             color: c.text,
@@ -229,58 +223,28 @@ export function UpdateNotification({ c, t, updateInfo, onClose, onDownload }) {
         }, updateInfo.releaseNotes.substring(0, 150) + (updateInfo.releaseNotes.length > 150 ? '...' : ''))
       ),
 
-      // Action buttons
-      h('div', {
+      // Action button
+      h('button', {
+        onClick: handleDownload,
         style: {
-          display: 'flex',
-          gap: '8px'
+          width: '100%',
+          padding: '8px 16px',
+          backgroundColor: c.accent,
+          color: '#ffffff',
+          border: 'none',
+          borderRadius: '4px',
+          fontSize: '13px',
+          fontWeight: '500',
+          cursor: 'pointer',
+          transition: 'background-color 0.15s'
+        },
+        onMouseEnter: (e) => {
+          e.target.style.backgroundColor = '#5ba0f2';
+        },
+        onMouseLeave: (e) => {
+          e.target.style.backgroundColor = c.accent;
         }
-      },
-        // Download button
-        h('button', {
-          onClick: handleDownload,
-          style: {
-            flex: 1,
-            padding: '8px 16px',
-            backgroundColor: c.accent,
-            color: '#ffffff',
-            border: 'none',
-            borderRadius: '4px',
-            fontSize: '13px',
-            fontWeight: '500',
-            cursor: 'pointer',
-            transition: 'background-color 0.15s'
-          },
-          onMouseEnter: (e) => {
-            e.target.style.backgroundColor = '#5ba0f2';
-          },
-          onMouseLeave: (e) => {
-            e.target.style.backgroundColor = c.accent;
-          }
-        }, texts.download),
-
-        // Dismiss button
-        h('button', {
-          onClick: handleClose,
-          style: {
-            padding: '8px 16px',
-            backgroundColor: c.bg,
-            color: c.text,
-            border: `1px solid ${c.border}`,
-            borderRadius: '4px',
-            fontSize: '13px',
-            fontWeight: '500',
-            cursor: 'pointer',
-            transition: 'background-color 0.15s'
-          },
-          onMouseEnter: (e) => {
-            e.target.style.backgroundColor = c.hover;
-          },
-          onMouseLeave: (e) => {
-            e.target.style.backgroundColor = c.bg;
-          }
-        }, '×')
-      )
+      }, texts.download)
     )
   );
 }
