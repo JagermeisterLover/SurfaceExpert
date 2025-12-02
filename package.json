@@ -54,7 +54,9 @@
           ]
         }
       ],
-      "icon": "icons/IconInvertedNoBGGlow.ico"
+      "icon": "icons/IconInvertedNoBGGlow.ico",
+      "sign": null,
+      "signingHashAlgorithms": []
     },
     "nsis": {
       "oneClick": false,
