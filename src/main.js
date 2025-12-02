@@ -150,7 +150,7 @@ function createWindow() {
     },
     backgroundColor: '#2b2b2b',
     show: false,
-    icon: path.join(__dirname, '..', 'icons', process.platform === 'win32' ? 'Icon.ico' : 'Icon.png'),
+    icon: path.join(__dirname, '..', 'icons', process.platform === 'win32' ? 'IconInvertedNoBGGlow.ico' : 'IconInvertedNoBGGlow.png'),
     frame: false,
     titleBarStyle: 'hidden'
   });
