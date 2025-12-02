@@ -37,7 +37,8 @@ import { PropertySection } from './components/ui/PropertySection.js';
 import { PropertyRow } from './components/ui/PropertyRow.js';
 import { DebouncedInput } from './components/ui/DebouncedInput.js';
 import { SurfaceActionButtons } from './components/ui/SurfaceActionButtons.js';
-import { UpdateBadge } from './components/ui/UpdateBadge.js';
+import { UpdateNotification } from './components/ui/UpdateNotification.js';
+import { MessageNotification } from './components/ui/MessageNotification.js';
 import { TitleBar } from './components/TitleBar.js';
 import { MenuBar } from './components/MenuBar.js';
 
@@ -59,7 +60,6 @@ import { ConversionDialog } from './components/dialogs/ConversionDialog.js';
 import { ConversionResultsDialog } from './components/dialogs/ConversionResultsDialog.js';
 import { NormalizeUnZDialog } from './components/dialogs/NormalizeUnZDialog.js';
 import { AboutDialog } from './components/dialogs/AboutDialog.js';
-import { UpdateDialog } from './components/dialogs/UpdateDialog.js';
 
 // Plot Components
 import { create3DPlot } from './components/plots/Plot3D.js';
@@ -106,7 +106,8 @@ const OpticalSurfaceAnalyzer = () => {
     const [showNormalizeUnZ, setShowNormalizeUnZ] = useState(false);
     const [showAbout, setShowAbout] = useState(false);
     const [updateInfo, setUpdateInfo] = useState(null);
-    const [showUpdateDialog, setShowUpdateDialog] = useState(false);
+    const [showUpdateNotification, setShowUpdateNotification] = useState(false);
+    const [messageNotification, setMessageNotification] = useState(null);
     const plotRef = useRef(null);
     const propertiesPanelRef = useRef(null);
     const scrollPositionRef = useRef(0);
@@ -145,17 +146,22 @@ const OpticalSurfaceAnalyzer = () => {
                 const update = await window.electronAPI.checkForUpdates();
                 if (update && update.available) {
                     setUpdateInfo(update);
-                    // Don't show dialog automatically, just set the update info
-                    // Badge will appear automatically when updateInfo is set
+                    setShowUpdateNotification(true);
                 } else if (showDialogIfNone) {
-                    // If manually triggered and no update, show a message
-                    alert(t?.update?.noUpdates || 'You are using the latest version!');
+                    // If manually triggered and no update, show a modern notification
+                    setMessageNotification({
+                        message: t?.update?.noUpdates || 'You are using the latest version!',
+                        type: 'success'
+                    });
                 }
             }
         } catch (error) {
             console.error('Failed to check for updates:', error);
             if (showDialogIfNone) {
-                alert(t?.update?.checkError || 'Failed to check for updates. Please try again later.');
+                setMessageNotification({
+                    message: t?.update?.checkError || 'Failed to check for updates. Please try again later.',
+                    type: 'error'
+                });
             }
         }
     };
@@ -881,25 +887,24 @@ const OpticalSurfaceAnalyzer = () => {
             c,
             onClose: () => setShowAbout(false)
         }),
-        // Update Badge (VS Code style)
-        h(UpdateBadge, {
+        // Update Notification (VS Code style, non-modal)
+        showUpdateNotification && h(UpdateNotification, {
             c,
             t,
             updateInfo,
-            onClick: () => setShowUpdateDialog(true)
-        }),
-        // Update Dialog
-        showUpdateDialog && h(UpdateDialog, {
-            c,
-            t,
-            updateInfo,
-            onClose: () => setShowUpdateDialog(false),
+            onClose: () => setShowUpdateNotification(false),
             onDownload: () => {
                 if (window.electronAPI && window.electronAPI.openExternal) {
                     window.electronAPI.openExternal(updateInfo.downloadUrl);
                 }
-                setShowUpdateDialog(false);
             }
+        }),
+        // Message Notification (info/success/error messages)
+        messageNotification && h(MessageNotification, {
+            c,
+            message: messageNotification.message,
+            type: messageNotification.type,
+            onClose: () => setMessageNotification(null)
         }),
         // Input Dialog (for rename/new folder)
         h(InputDialog, {

@@ -33,7 +33,8 @@ export const locales = {
 
       // Help menu
       documentation: 'Documentation',
-      about: 'About'
+      about: 'About',
+      checkForUpdates: 'Check for Updates'
     },
 
     // Settings Dialog
@@ -389,6 +390,18 @@ export const locales = {
       export: 'Export',
       convert: 'Convert',
       normalize: 'Normalize'
+    },
+
+    // Update Notification
+    update: {
+      title: 'Update Available',
+      currentVersion: 'Current',
+      latestVersion: 'Latest',
+      download: 'Download',
+      releaseNotes: 'Release Notes',
+      noUpdates: 'You are using the latest version!',
+      checkError: 'Failed to check for updates. Please try again later.',
+      badgeText: 'Update available'
     }
   },
 
@@ -421,7 +434,8 @@ export const locales = {
 
       // Меню Справка
       documentation: 'Документация',
-      about: 'О программе'
+      about: 'О программе',
+      checkForUpdates: 'Проверить обновления'
     },
 
     // Диалог настроек
@@ -777,6 +791,18 @@ export const locales = {
       export: 'Экспорт',
       convert: 'Конвертировать',
       normalize: 'Нормализовать'
+    },
+
+    // Уведомление об обновлении
+    update: {
+      title: 'Доступно обновление',
+      currentVersion: 'Текущая',
+      latestVersion: 'Новая',
+      download: 'Скачать',
+      releaseNotes: 'Описание',
+      noUpdates: 'Вы используете последнюю версию!',
+      checkError: 'Не удалось проверить обновления. Попробуйте позже.',
+      badgeText: 'Доступно обновление'
     }
   }
 };
