@@ -38,6 +38,7 @@ import { PropertyRow } from './components/ui/PropertyRow.js';
 import { DebouncedInput } from './components/ui/DebouncedInput.js';
 import { SurfaceActionButtons } from './components/ui/SurfaceActionButtons.js';
 import { UpdateNotification } from './components/ui/UpdateNotification.js';
+import { MessageNotification } from './components/ui/MessageNotification.js';
 import { TitleBar } from './components/TitleBar.js';
 import { MenuBar } from './components/MenuBar.js';
 
@@ -106,6 +107,7 @@ const OpticalSurfaceAnalyzer = () => {
     const [showAbout, setShowAbout] = useState(false);
     const [updateInfo, setUpdateInfo] = useState(null);
     const [showUpdateNotification, setShowUpdateNotification] = useState(false);
+    const [messageNotification, setMessageNotification] = useState(null);
     const plotRef = useRef(null);
     const propertiesPanelRef = useRef(null);
     const scrollPositionRef = useRef(0);
@@ -146,14 +148,20 @@ const OpticalSurfaceAnalyzer = () => {
                     setUpdateInfo(update);
                     setShowUpdateNotification(true);
                 } else if (showDialogIfNone) {
-                    // If manually triggered and no update, show a message
-                    alert(t?.update?.noUpdates || 'You are using the latest version!');
+                    // If manually triggered and no update, show a modern notification
+                    setMessageNotification({
+                        message: t?.update?.noUpdates || 'You are using the latest version!',
+                        type: 'success'
+                    });
                 }
             }
         } catch (error) {
             console.error('Failed to check for updates:', error);
             if (showDialogIfNone) {
-                alert(t?.update?.checkError || 'Failed to check for updates. Please try again later.');
+                setMessageNotification({
+                    message: t?.update?.checkError || 'Failed to check for updates. Please try again later.',
+                    type: 'error'
+                });
             }
         }
     };
@@ -890,6 +898,13 @@ const OpticalSurfaceAnalyzer = () => {
                     window.electronAPI.openExternal(updateInfo.downloadUrl);
                 }
             }
+        }),
+        // Message Notification (info/success/error messages)
+        messageNotification && h(MessageNotification, {
+            c,
+            message: messageNotification.message,
+            type: messageNotification.type,
+            onClose: () => setMessageNotification(null)
         }),
         // Input Dialog (for rename/new folder)
         h(InputDialog, {
