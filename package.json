@@ -23,7 +23,8 @@
     "cross-env": "^7.0.3",
     "decimal.js": "^10.6.0",
     "electron": "^39.2.3",
-    "electron-builder": "^24.9.1"
+    "electron-builder": "^24.9.1",
+    "rcedit": "^5.0.2"
   },
   "dependencies": {
     "react": "^18.2.0",
@@ -35,6 +36,7 @@
     "asar": true,
     "asarUnpack": "**/*.ico",
     "forceCodeSigning": false,
+    "afterPack": "build/afterPack.js",
     "directories": {
       "output": "dist",
       "buildResources": "build"
