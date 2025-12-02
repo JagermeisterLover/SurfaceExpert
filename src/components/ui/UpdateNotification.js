@@ -75,19 +75,13 @@ export function UpdateNotification({ c, t, updateInfo, onClose, onDownload }) {
         backgroundColor: c.bg
       }
     },
-      // Title with icon
+      // Title
       h('div', {
         style: {
           display: 'flex',
-          alignItems: 'center',
-          gap: '8px'
+          alignItems: 'center'
         }
       },
-        h('span', {
-          style: {
-            fontSize: '16px'
-          }
-        }, '⬆️'),
         h('span', {
           style: {
             color: c.text,
