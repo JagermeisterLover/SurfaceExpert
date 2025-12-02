@@ -515,12 +515,15 @@ const OpticalSurfaceAnalyzer = () => {
             const inputs = Array.from(propertiesPanelRef.current.querySelectorAll('input[type="text"]'));
 
             // Find the input for the current parameter by matching label text
+            // Note: labels may include additional text (e.g., "Z1 - Piston"), so we check if label starts with param
             let currentIndex = -1;
             for (let i = 0; i < inputs.length; i++) {
                 const input = inputs[i];
                 const container = input.parentElement;
                 const label = container?.querySelector('label');
-                if (label?.textContent?.trim() === currentParam) {
+                const labelText = label?.textContent?.trim();
+                // Check if label matches exactly or starts with param (handles "Z1 - Piston" format)
+                if (labelText === currentParam || labelText?.startsWith(currentParam + ' -')) {
                     currentIndex = i;
                     break;
                 }
