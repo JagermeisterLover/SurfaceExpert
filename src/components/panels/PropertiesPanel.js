@@ -3,7 +3,7 @@
 // ============================================
 // Right sidebar panel showing surface properties and controls
 
-import { surfaceTypes, universalParameters } from '../../constants/surfaceTypes.js';
+import { surfaceTypes, universalParameters, zernikeNames } from '../../constants/surfaceTypes.js';
 import { formatValue, degreesToDMS } from '../../utils/formatters.js';
 import { calculateSurfaceMetrics } from '../../utils/calculations.js';
 import { PropertySection } from '../ui/PropertySection.js';
@@ -266,11 +266,15 @@ export const PropertiesPanel = ({
                     }
 
                     return true;
-                }).map(param =>
-                    h('div', { key: param, style: { marginBottom: '8px' } },
+                }).map(param => {
+                    // Get Zernike name if this is a Z parameter
+                    const zernName = zernikeNames[param];
+                    const labelText = zernName ? `${param} - ${zernName}` : (t.parameters[param] || param);
+
+                    return h('div', { key: param, style: { marginBottom: '8px' } },
                         h('label', {
                             style: { fontSize: '12px', color: c.textDim, display: 'block', marginBottom: '4px' }
-                        }, t.parameters[param] || param),
+                        }, labelText),
                         h(DebouncedInput, {
                             value: selectedSurface.parameters[param] || '0',
                             onChange: (value) => updateParameter(param, value),
@@ -287,8 +291,8 @@ export const PropertiesPanel = ({
                                 textAlign: 'right'
                             }
                         })
-                    )
-                )
+                    );
+                })
             ),
 
             // Calculated Metrics
