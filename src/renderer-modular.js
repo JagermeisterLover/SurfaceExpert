@@ -522,8 +522,11 @@ const OpticalSurfaceAnalyzer = () => {
                 const container = input.parentElement;
                 const label = container?.querySelector('label');
                 const labelText = label?.textContent?.trim();
-                // Check if label matches exactly or starts with param (handles "Z1 - Piston" format)
-                if (labelText === currentParam || labelText?.startsWith(currentParam + ' -')) {
+                // Check if label matches exactly or starts with param followed by space or separator
+                // This handles both "Radius" and "Z1 - Piston" formats
+                if (labelText === currentParam ||
+                    labelText?.startsWith(currentParam + ' ') ||
+                    labelText?.startsWith(currentParam + '\u00A0')) { // Also check for non-breaking space
                     currentIndex = i;
                     break;
                 }
