@@ -163,14 +163,6 @@ export function UpdateNotification({ c, t, updateInfo, onClose, onDownload }) {
           }, `v${updateInfo.currentVersion}`)
         ),
 
-        // Arrow
-        h('div', {
-          style: {
-            color: c.textDim,
-            fontSize: '18px'
-          }
-        }, '→'),
-
         // Latest version
         h('div', {
           style: {
