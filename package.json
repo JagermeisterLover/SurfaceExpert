@@ -1,6 +1,6 @@
 {
   "name": "surface-expert",
-  "version": "2.7.5",
+  "version": "2.7.6",
   "description": "SurfaceExpert - Optical Surface Analysis Desktop Application",
   "main": "src/main.js",
   "scripts": {
@@ -59,11 +59,18 @@
         }
       ],
       "icon": "icons/IconInvertedNoBGGlow.ico",
+      "requestedExecutionLevel": "asInvoker",
       "sign": null,
       "signingHashAlgorithms": [],
       "signAndEditExecutable": false,
       "verifyUpdateCodeSignature": false
     },
+    "extraResources": [
+      {
+        "from": "icons/IconInvertedNoBGGlow.ico",
+        "to": "IconInvertedNoBGGlow.ico"
+      }
+    ],
     "nsis": {
       "oneClick": false,
       "perMachine": false,
