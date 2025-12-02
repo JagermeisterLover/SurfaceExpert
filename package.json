@@ -58,7 +58,7 @@
           ]
         }
       ],
-      "icon": "icons/Icon.ico",
+      "icon": "icons/IconInvertedNoBGGlow.ico",
       "requestedExecutionLevel": "asInvoker",
       "sign": null,
       "signingHashAlgorithms": [],
@@ -67,8 +67,8 @@
     },
     "extraResources": [
       {
-        "from": "icons/Icon.ico",
-        "to": "Icon.ico"
+        "from": "icons/IconInvertedNoBGGlow.ico",
+        "to": "IconInvertedNoBGGlow.ico"
       }
     ],
     "nsis": {
@@ -76,8 +76,8 @@
       "perMachine": false,
       "allowElevation": false,
       "allowToChangeInstallationDirectory": true,
-      "installerIcon": "icons/Icon.ico",
-      "uninstallerIcon": "icons/Icon.ico",
+      "installerIcon": "icons/IconInvertedNoBGGlow.ico",
+      "uninstallerIcon": "icons/IconInvertedNoBGGlow.ico",
       "createDesktopShortcut": true,
       "createStartMenuShortcut": true,
       "shortcutName": "SurfaceExpert",
