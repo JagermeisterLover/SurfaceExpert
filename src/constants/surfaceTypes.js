@@ -39,6 +39,47 @@ export const sampleSurfaces = [
     }
 ];
 
+// Zernike coefficient names (Z1-Z37)
+export const zernikeNames = {
+    'Z1': 'Piston',
+    'Z2': 'Tilt X',
+    'Z3': 'Tilt Y',
+    'Z4': 'Defocus',
+    'Z5': 'Astigmatism X',
+    'Z6': 'Astigmatism Y',
+    'Z7': 'Coma X',
+    'Z8': 'Coma Y',
+    'Z9': 'Primary Spherical',
+    'Z10': 'Trefoil X',
+    'Z11': 'Trefoil Y',
+    'Z12': 'Secondary Astigmatism X',
+    'Z13': 'Secondary Astigmatism Y',
+    'Z14': 'Secondary Coma X',
+    'Z15': 'Secondary Coma Y',
+    'Z16': 'Secondary Spherical',
+    'Z17': 'Tetrafoil X',
+    'Z18': 'Tetrafoil Y',
+    'Z19': 'Secondary Trefoil X',
+    'Z20': 'Secondary Trefoil Y',
+    'Z21': 'Tertiary Astigmatism X',
+    'Z22': 'Tertiary Astigmatism Y',
+    'Z23': 'Tertiary Coma X',
+    'Z24': 'Tertiary Coma Y',
+    'Z25': 'Tertiary Spherical',
+    'Z26': 'Pentafoil X',
+    'Z27': 'Pentafoil Y',
+    'Z28': 'Secondary Tetrafoil X',
+    'Z29': 'Secondary Tetrafoil Y',
+    'Z30': 'Tertiary Trefoil X',
+    'Z31': 'Tertiary Trefoil Y',
+    'Z32': 'Quaternary Astigmatism X',
+    'Z33': 'Quaternary Astigmatism Y',
+    'Z34': 'Quaternary Coma X',
+    'Z35': 'Quaternary Coma Y',
+    'Z36': 'Quaternary Spherical',
+    'Z37': 'Quinary Spherical'
+};
+
 // Color scheme for dark theme
 export const colors = {
     bg: '#2b2b2b',        // Main background

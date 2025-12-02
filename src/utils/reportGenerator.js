@@ -28,50 +28,50 @@ const getSurfaceEquation = (surfaceType) => {
  */
 const getZernikeTermsTable = () => {
     const terms = [
-        ['1', '1'],
-        ['2', '\\rho\\cos\\phi'],
-        ['3', '\\rho\\sin\\phi'],
-        ['4', '2\\rho^2 - 1'],
-        ['5', '\\rho^2\\cos2\\phi'],
-        ['6', '\\rho^2\\sin2\\phi'],
-        ['7', '(3\\rho^2 - 2)\\rho\\cos\\phi'],
-        ['8', '(3\\rho^2 - 2)\\rho\\sin\\phi'],
-        ['9', '6\\rho^4 - 6\\rho^2 + 1'],
-        ['10', '\\rho^3\\cos3\\phi'],
-        ['11', '\\rho^3\\sin3\\phi'],
-        ['12', '(4\\rho^2 - 3)\\rho^2\\cos2\\phi'],
-        ['13', '(4\\rho^2 - 3)\\rho^2\\sin2\\phi'],
-        ['14', '(10\\rho^4 - 12\\rho^2 + 3)\\rho\\cos\\phi'],
-        ['15', '(10\\rho^4 - 12\\rho^2 + 3)\\rho\\sin\\phi'],
-        ['16', '20\\rho^6 - 30\\rho^4 + 12\\rho^2 - 1'],
-        ['17', '\\rho^4\\cos4\\phi'],
-        ['18', '\\rho^4\\sin4\\phi'],
-        ['19', '(5\\rho^2 - 4)\\rho^3\\cos3\\phi'],
-        ['20', '(5\\rho^2 - 4)\\rho^3\\sin3\\phi'],
-        ['21', '(15\\rho^4 - 20\\rho^2 + 6)\\rho^2\\cos2\\phi'],
-        ['22', '(15\\rho^4 - 20\\rho^2 + 6)\\rho^2\\sin2\\phi'],
-        ['23', '(35\\rho^6 - 60\\rho^4 + 30\\rho^2 - 4)\\rho\\cos\\phi'],
-        ['24', '(35\\rho^6 - 60\\rho^4 + 30\\rho^2 - 4)\\rho\\sin\\phi'],
-        ['25', '70\\rho^8 - 140\\rho^6 + 90\\rho^4 - 20\\rho^2 + 1'],
-        ['26', '\\rho^5\\cos5\\phi'],
-        ['27', '\\rho^5\\sin5\\phi'],
-        ['28', '(6\\rho^2 - 5)\\rho^4\\cos4\\phi'],
-        ['29', '(6\\rho^2 - 5)\\rho^4\\sin4\\phi'],
-        ['30', '(21\\rho^4 - 30\\rho^2 + 10)\\rho^3\\cos3\\phi'],
-        ['31', '(21\\rho^4 - 30\\rho^2 + 10)\\rho^3\\sin3\\phi'],
-        ['32', '(56\\rho^6 - 105\\rho^4 + 60\\rho^2 - 10)\\rho^2\\cos2\\phi'],
-        ['33', '(56\\rho^6 - 105\\rho^4 + 60\\rho^2 - 10)\\rho^2\\sin2\\phi'],
-        ['34', '(126\\rho^8 - 280\\rho^6 + 210\\rho^4 - 60\\rho^2 + 5)\\rho\\cos\\phi'],
-        ['35', '(126\\rho^8 - 280\\rho^6 + 210\\rho^4 - 60\\rho^2 + 5)\\rho\\sin\\phi'],
-        ['36', '252\\rho^{10} - 630\\rho^8 + 560\\rho^6 - 210\\rho^4 + 30\\rho^2 - 1'],
-        ['37', '924\\rho^{12} - 2772\\rho^{10} + 3150\\rho^8 - 1680\\rho^6 + 420\\rho^4 - 42\\rho^2 + 1']
+        ['1', 'Piston', '1'],
+        ['2', 'Tilt X', '\\rho\\cos\\phi'],
+        ['3', 'Tilt Y', '\\rho\\sin\\phi'],
+        ['4', 'Defocus', '2\\rho^2 - 1'],
+        ['5', 'Astigmatism X', '\\rho^2\\cos2\\phi'],
+        ['6', 'Astigmatism Y', '\\rho^2\\sin2\\phi'],
+        ['7', 'Coma X', '(3\\rho^2 - 2)\\rho\\cos\\phi'],
+        ['8', 'Coma Y', '(3\\rho^2 - 2)\\rho\\sin\\phi'],
+        ['9', 'Primary Spherical', '6\\rho^4 - 6\\rho^2 + 1'],
+        ['10', 'Trefoil X', '\\rho^3\\cos3\\phi'],
+        ['11', 'Trefoil Y', '\\rho^3\\sin3\\phi'],
+        ['12', 'Secondary Astigmatism X', '(4\\rho^2 - 3)\\rho^2\\cos2\\phi'],
+        ['13', 'Secondary Astigmatism Y', '(4\\rho^2 - 3)\\rho^2\\sin2\\phi'],
+        ['14', 'Secondary Coma X', '(10\\rho^4 - 12\\rho^2 + 3)\\rho\\cos\\phi'],
+        ['15', 'Secondary Coma Y', '(10\\rho^4 - 12\\rho^2 + 3)\\rho\\sin\\phi'],
+        ['16', 'Secondary Spherical', '20\\rho^6 - 30\\rho^4 + 12\\rho^2 - 1'],
+        ['17', 'Tetrafoil X', '\\rho^4\\cos4\\phi'],
+        ['18', 'Tetrafoil Y', '\\rho^4\\sin4\\phi'],
+        ['19', 'Secondary Trefoil X', '(5\\rho^2 - 4)\\rho^3\\cos3\\phi'],
+        ['20', 'Secondary Trefoil Y', '(5\\rho^2 - 4)\\rho^3\\sin3\\phi'],
+        ['21', 'Tertiary Astigmatism X', '(15\\rho^4 - 20\\rho^2 + 6)\\rho^2\\cos2\\phi'],
+        ['22', 'Tertiary Astigmatism Y', '(15\\rho^4 - 20\\rho^2 + 6)\\rho^2\\sin2\\phi'],
+        ['23', 'Tertiary Coma X', '(35\\rho^6 - 60\\rho^4 + 30\\rho^2 - 4)\\rho\\cos\\phi'],
+        ['24', 'Tertiary Coma Y', '(35\\rho^6 - 60\\rho^4 + 30\\rho^2 - 4)\\rho\\sin\\phi'],
+        ['25', 'Tertiary Spherical', '70\\rho^8 - 140\\rho^6 + 90\\rho^4 - 20\\rho^2 + 1'],
+        ['26', 'Pentafoil X', '\\rho^5\\cos5\\phi'],
+        ['27', 'Pentafoil Y', '\\rho^5\\sin5\\phi'],
+        ['28', 'Secondary Tetrafoil X', '(6\\rho^2 - 5)\\rho^4\\cos4\\phi'],
+        ['29', 'Secondary Tetrafoil Y', '(6\\rho^2 - 5)\\rho^4\\sin4\\phi'],
+        ['30', 'Tertiary Trefoil X', '(21\\rho^4 - 30\\rho^2 + 10)\\rho^3\\cos3\\phi'],
+        ['31', 'Tertiary Trefoil Y', '(21\\rho^4 - 30\\rho^2 + 10)\\rho^3\\sin3\\phi'],
+        ['32', 'Quaternary Astigmatism X', '(56\\rho^6 - 105\\rho^4 + 60\\rho^2 - 10)\\rho^2\\cos2\\phi'],
+        ['33', 'Quaternary Astigmatism Y', '(56\\rho^6 - 105\\rho^4 + 60\\rho^2 - 10)\\rho^2\\sin2\\phi'],
+        ['34', 'Quaternary Coma X', '(126\\rho^8 - 280\\rho^6 + 210\\rho^4 - 60\\rho^2 + 5)\\rho\\cos\\phi'],
+        ['35', 'Quaternary Coma Y', '(126\\rho^8 - 280\\rho^6 + 210\\rho^4 - 60\\rho^2 + 5)\\rho\\sin\\phi'],
+        ['36', 'Quaternary Spherical', '252\\rho^{10} - 630\\rho^8 + 560\\rho^6 - 210\\rho^4 + 30\\rho^2 - 1'],
+        ['37', 'Quinary Spherical', '924\\rho^{12} - 2772\\rho^{10} + 3150\\rho^8 - 1680\\rho^6 + 420\\rho^4 - 42\\rho^2 + 1']
     ];
 
     let html = '<div class="zernike-table" style="margin: 12px 0;"><div class="section-title" style="font-size: 11pt; margin-bottom: 8px;">Zernike Polynomial Terms</div>';
-    html += '<table class="params-table"><tr><th>Term i</th><th>ψ<sub>i</sub>(ρ, φ)</th></tr>';
+    html += '<table class="params-table"><tr><th>Term i</th><th>Name</th><th>ψ<sub>i</sub>(ρ, φ)</th></tr>';
 
-    for (const [num, formula] of terms) {
-        html += `<tr><td style="text-align: center;">${num}</td><td>$${formula}$</td></tr>`;
+    for (const [num, name, formula] of terms) {
+        html += `<tr><td style="text-align: center;">${num}</td><td>${name}</td><td>$${formula}$</td></tr>`;
     }
 
     html += '</table></div>';
