@@ -80,12 +80,10 @@
       "artifactName": "${productName}-${version}-Portable.${ext}"
     },
     "mac": {
-      "target": "dmg",
-      "icon": "icons/IconInvertedNoBGGlow.png"
+      "target": "dmg"
     },
     "linux": {
-      "target": "AppImage",
-      "icon": "icons/IconInvertedNoBGGlow.png"
+      "target": "AppImage"
     }
   }
 }
