@@ -23,7 +23,8 @@
     "cross-env": "^7.0.3",
     "decimal.js": "^10.6.0",
     "electron": "^39.2.3",
-    "electron-builder": "^24.9.1"
+    "electron-builder": "^24.9.1",
+    "rcedit": "^5.0.2"
   },
   "dependencies": {
     "react": "^18.2.0",
@@ -33,9 +34,12 @@
     "appId": "com.surfaceexpert.app",
     "productName": "SurfaceExpert",
     "asar": true,
+    "asarUnpack": "**/*.ico",
     "forceCodeSigning": false,
+    "afterPack": "build/afterPack.js",
     "directories": {
-      "output": "dist"
+      "output": "dist",
+      "buildResources": "build"
     },
     "files": [
       "src/**/*",
@@ -84,7 +88,8 @@
       "shortcutName": "SurfaceExpert",
       "differentialPackage": false,
       "unicode": true,
-      "deleteAppDataOnUninstall": false
+      "deleteAppDataOnUninstall": false,
+      "include": "build/installer.nsh"
     },
     "portable": {
       "artifactName": "${productName}-${version}-Portable.${ext}"
