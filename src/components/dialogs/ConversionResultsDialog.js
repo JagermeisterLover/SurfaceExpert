@@ -187,6 +187,11 @@ export const ConversionResultsDialog = ({ convertResults, folders, selectedFolde
             );
         }
 
+        // Save the surface immediately to disk
+        if (window.electronAPI && window.electronAPI.saveSurface) {
+            await window.electronAPI.saveSurface(selectedFolder.name, newSurface);
+        }
+
         const updated = folders.map(f =>
             f.id === selectedFolder.id
                 ? { ...f, surfaces: [...f.surfaces, newSurface] }
