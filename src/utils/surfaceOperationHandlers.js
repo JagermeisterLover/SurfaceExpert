@@ -239,6 +239,7 @@ export const handleConvertToPoly = (
  * @param {Function} setShowConvertResults - State setter for results dialog visibility
  * @param {Function} setConvertResults - State setter for conversion results
  * @param {number} maxDeviationThreshold - Maximum allowed deviation (default: 0.000001 mm)
+ * @param {Function} setProgress - State setter for progress indicator (optional)
  */
 export const handleFastConvertToPoly = async (
     selectedSurface,
@@ -248,7 +249,8 @@ export const handleFastConvertToPoly = async (
     setSelectedSurface,
     setShowConvertResults,
     setConvertResults,
-    maxDeviationThreshold = 0.000001
+    maxDeviationThreshold = 0.000001,
+    setProgress = null
 ) => {
     if (!selectedSurface || !selectedFolder) return;
 
@@ -291,8 +293,13 @@ export const handleFastConvertToPoly = async (
 
         // Iteratively add coefficients until threshold is met or max coefficients reached
         while (numCoeffs <= maxCoeffs) {
-            const coeffDesc = numCoeffs === 0 ? 'A1+A2 only' : `A1-A${2+numCoeffs}`;
+            const coeffDesc = numCoeffs === 0 ? 'A1+A2' : `A1-A${2+numCoeffs}`;
             console.log(`Trying with ${coeffDesc}...`);
+
+            // Update progress indicator
+            if (setProgress) {
+                setProgress(coeffDesc);
+            }
 
             // Prepare conversion settings for Poly (Auto-Normalized) - type 6
             const settings = {
@@ -347,6 +354,11 @@ export const handleFastConvertToPoly = async (
     } catch (error) {
         alert('Fast conversion error: ' + error.message);
         console.error('Fast convert error:', error);
+    } finally {
+        // Reset progress indicator when done
+        if (setProgress) {
+            setProgress(null);
+        }
     }
 };
 

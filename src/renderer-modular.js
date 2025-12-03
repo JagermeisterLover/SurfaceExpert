@@ -104,6 +104,7 @@ const OpticalSurfaceAnalyzer = () => {
     const [theme, setTheme] = useState('Dark Gray (Default)'); // Color theme
     const [locale, setLocaleState] = useState(getCurrentLocale()); // Application locale (en, ru, etc.)
     const [fastConvertThreshold, setFastConvertThreshold] = useState(0.000001); // Max deviation threshold for fast convert to poly (mm)
+    const [fastConvertProgress, setFastConvertProgress] = useState(null); // Progress indicator for fast convert (e.g., 'A1+A2', 'A1-A5')
     const [contextMenu, setContextMenu] = useState(null);
     const [inputDialog, setInputDialog] = useState(null);
     const [showNormalizeUnZ, setShowNormalizeUnZ] = useState(false);
@@ -430,7 +431,8 @@ const OpticalSurfaceAnalyzer = () => {
             setSelectedSurface,
             setShowConvertResults,
             setConvertResults,
-            fastConvertThreshold
+            fastConvertThreshold,
+            setFastConvertProgress
         );
     };
 
@@ -1072,6 +1074,7 @@ const OpticalSurfaceAnalyzer = () => {
                 updateParameter,
                 onConvert: () => setShowConvert(true),
                 onFastConvertToPoly: handleFastConvertToPoly,
+                fastConvertProgress,
                 wavelength,
                 propertiesPanelRef,
                 scrollPositionRef,
