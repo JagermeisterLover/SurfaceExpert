@@ -3,6 +3,7 @@ const { createElement: h } = React;
 
 // Import calculateSurfaceValues from utils
 import { calculateSurfaceValues } from '../../utils/calculations.js';
+import { parseNumber } from '../../utils/numberParsing.js';
 
 const ConversionDialog = ({ selectedSurface, folders, selectedFolder, setFolders, setSelectedSurface, setShowConvert, setShowConvertResults, setConvertResults, c, t }) => {
     const [targetType, setTargetType] = useState('1'); // 1=Even Asphere, 2=Odd Asphere, 3=Opal UnZ, 4=Opal UnU, 5=Opal Poly, 6=Poly (normalized)
@@ -38,8 +39,8 @@ const ConversionDialog = ({ selectedSurface, folders, selectedFolder, setFolders
 
         try {
             // Generate surface data points
-            const minHeight = parseFloat(selectedSurface.parameters['Min Height']) || 0;
-            const maxHeight = parseFloat(selectedSurface.parameters['Max Height']) || 25;
+            const minHeight = parseNumber(selectedSurface.parameters['Min Height']);
+            const maxHeight = parseNumber(selectedSurface.parameters['Max Height']);
             const points = 100;
             const surfaceData = [];
 

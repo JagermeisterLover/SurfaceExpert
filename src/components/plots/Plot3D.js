@@ -4,6 +4,7 @@
 import { calculateSurfaceValues } from '../../utils/calculations.js';
 import { sanitizeValue, sanitizeArray2D, getSafeBounds, safePlotlyNewPlot } from '../../utils/dataSanitization.js';
 import { getGridColor } from '../../constants/colorPalettes.js';
+import { parseNumber } from '../../utils/numberParsing.js';
 
 /**
  * Create 3D surface plot
@@ -31,8 +32,8 @@ export const create3DPlot = (plotRef, selectedSurface, activeTab, colorscale, gr
             }
         }
     };
-    const minHeight = parseFloat(selectedSurface.parameters['Min Height']) || 0;
-    const maxHeight = parseFloat(selectedSurface.parameters['Max Height']) || 25;
+    const minHeight = parseNumber(selectedSurface.parameters['Min Height']);
+    const maxHeight = parseNumber(selectedSurface.parameters['Max Height']);
     const size = gridSize;
     const unit = activeTab === 'slope' ? translations.summary.units.rad : translations.summary.units.mm;
 

@@ -4,6 +4,7 @@
 import { calculateSurfaceValues } from '../../utils/calculations.js';
 import { sanitizeValue, sanitizeArray1D, safePlotlyNewPlot } from '../../utils/dataSanitization.js';
 import { getGridColor } from '../../constants/colorPalettes.js';
+import { parseNumber } from '../../utils/numberParsing.js';
 
 /**
  * Create cross-section line plot
@@ -30,9 +31,9 @@ export const createCrossSection = (plotRef, selectedSurface, activeTab, c = null
             }
         }
     };
-    const minHeight = parseFloat(selectedSurface.parameters['Min Height']) || 0;
-    const maxHeight = parseFloat(selectedSurface.parameters['Max Height']) || 25;
-    const step = parseFloat(selectedSurface.parameters['Step']) || 1;
+    const minHeight = parseNumber(selectedSurface.parameters['Min Height']);
+    const maxHeight = parseNumber(selectedSurface.parameters['Max Height']);
+    const step = parseNumber(selectedSurface.parameters['Step']);
     const x = [], y = [];
     const unit = activeTab === 'slope' ? translations.summary.units.rad : translations.summary.units.mm;
 
@@ -55,7 +56,7 @@ export const createCrossSection = (plotRef, selectedSurface, activeTab, c = null
             // For non-rotationally symmetric surfaces (Zernike, Irregular), use scan angle to determine direction
             let values;
             if (selectedSurface.type === 'Irregular' || selectedSurface.type === 'Zernike') {
-                const scanAngle = parseFloat(selectedSurface.parameters['Scan Angle']) || 0;
+                const scanAngle = parseNumber(selectedSurface.parameters['Scan Angle']);
                 const scanAngleRad = scanAngle * Math.PI / 180;
                 const xCoord = r * Math.cos(scanAngleRad);
                 const yCoord = r * Math.sin(scanAngleRad);

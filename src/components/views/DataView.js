@@ -3,6 +3,7 @@
 
 import { calculateSurfaceValues } from '../../utils/calculations.js';
 import { formatValue } from '../../utils/formatters.js';
+import { parseNumber } from '../../utils/numberParsing.js';
 
 const { createElement: h } = React;
 
@@ -10,16 +11,16 @@ export const DataView = ({ activeTab, selectedSurface, c, t }) => {
     if (!selectedSurface) return null;
 
     const generateTabData = () => {
-        const minHeight = parseFloat(selectedSurface.parameters['Min Height']) || 0;
-        const maxHeight = parseFloat(selectedSurface.parameters['Max Height']) || 25;
-        const step = parseFloat(selectedSurface.parameters['Step']) || 1;
+        const minHeight = parseNumber(selectedSurface.parameters['Min Height']);
+        const maxHeight = parseNumber(selectedSurface.parameters['Max Height']);
+        const step = parseNumber(selectedSurface.parameters['Step']);
         const data = [];
 
         for (let r = minHeight; r < maxHeight; r += step) {
             // For non-rotationally symmetric surfaces (Zernike, Irregular), use scan angle to determine direction
             let values;
             if (selectedSurface.type === 'Irregular' || selectedSurface.type === 'Zernike') {
-                const scanAngle = parseFloat(selectedSurface.parameters['Scan Angle']) || 0;
+                const scanAngle = parseNumber(selectedSurface.parameters['Scan Angle']);
                 const scanAngleRad = scanAngle * Math.PI / 180;
                 const x = r * Math.cos(scanAngleRad);
                 const y = r * Math.sin(scanAngleRad);
@@ -43,7 +44,7 @@ export const DataView = ({ activeTab, selectedSurface, c, t }) => {
         // Always include maxHeight
         let values;
         if (selectedSurface.type === 'Irregular' || selectedSurface.type === 'Zernike') {
-            const scanAngle = parseFloat(selectedSurface.parameters['Scan Angle']) || 0;
+            const scanAngle = parseNumber(selectedSurface.parameters['Scan Angle']);
             const scanAngleRad = scanAngle * Math.PI / 180;
             const x = maxHeight * Math.cos(scanAngleRad);
             const y = maxHeight * Math.sin(scanAngleRad);

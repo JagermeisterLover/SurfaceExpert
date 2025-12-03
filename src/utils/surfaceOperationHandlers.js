@@ -4,6 +4,7 @@
 // Business logic for surface transformation operations
 
 import { normalizeUnZ, convertPolyToUnZ, convertUnZToPoly, invertSurface } from './surfaceTransformations.js';
+import { parseNumber } from './numberParsing.js';
 
 /**
  * Handle surface inversion (flip concave/convex)
@@ -66,7 +67,7 @@ export const handleNormalizeUnZConfirm = (
     if (!selectedSurface || !selectedFolder) return;
 
     try {
-        const currentH = parseFloat(selectedSurface.parameters.H) || 1;
+        const currentH = parseNumber(selectedSurface.parameters.H);
         const currentCoeffs = {};
         for (let n = 3; n <= 13; n++) {
             currentCoeffs[`A${n}`] = selectedSurface.parameters[`A${n}`];

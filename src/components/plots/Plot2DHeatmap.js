@@ -4,6 +4,7 @@
 import { calculateSurfaceValues } from '../../utils/calculations.js';
 import { sanitizeValue, sanitizeArray2D, safePlotlyNewPlot } from '../../utils/dataSanitization.js';
 import { getGridColor } from '../../constants/colorPalettes.js';
+import { parseNumber } from '../../utils/numberParsing.js';
 
 /**
  * Create 2D heatmap
@@ -25,8 +26,8 @@ export const create2DHeatmap = (plotRef, selectedSurface, activeTab, colorscale,
             }
         }
     };
-    const minHeight = parseFloat(selectedSurface.parameters['Min Height']) || 0;
-    const maxHeight = parseFloat(selectedSurface.parameters['Max Height']) || 25;
+    const minHeight = parseNumber(selectedSurface.parameters['Min Height']);
+    const maxHeight = parseNumber(selectedSurface.parameters['Max Height']);
     const size = gridSize;
 
     // Generate coordinate arrays

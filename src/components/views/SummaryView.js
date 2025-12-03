@@ -3,6 +3,7 @@
 
 import { calculateSurfaceValues, calculateSurfaceMetrics } from '../../utils/calculations.js';
 import { formatValue, degreesToDMS } from '../../utils/formatters.js';
+import { parseNumber } from '../../utils/numberParsing.js';
 
 const { createElement: h } = React;
 
@@ -11,16 +12,16 @@ export const SummaryView = ({ selectedSurface, wavelength = 632.8, c, t }) => {
 
     // Generate data table for summary
     const generateDataTable = () => {
-        const minHeight = parseFloat(selectedSurface.parameters['Min Height']) || 0;
-        const maxHeight = parseFloat(selectedSurface.parameters['Max Height']) || 25;
-        const step = parseFloat(selectedSurface.parameters['Step']) || 1;
+        const minHeight = parseNumber(selectedSurface.parameters['Min Height']);
+        const maxHeight = parseNumber(selectedSurface.parameters['Max Height']);
+        const step = parseNumber(selectedSurface.parameters['Step']);
         const data = [];
 
         for (let r = minHeight; r < maxHeight; r += step) {
             // For non-rotationally symmetric surfaces (Zernike, Irregular), use scan angle to determine direction
             let values;
             if (selectedSurface.type === 'Irregular' || selectedSurface.type === 'Zernike') {
-                const scanAngle = parseFloat(selectedSurface.parameters['Scan Angle']) || 0;
+                const scanAngle = parseNumber(selectedSurface.parameters['Scan Angle']);
                 const scanAngleRad = scanAngle * Math.PI / 180;
                 const x = r * Math.cos(scanAngleRad);
                 const y = r * Math.sin(scanAngleRad);
@@ -48,7 +49,7 @@ export const SummaryView = ({ selectedSurface, wavelength = 632.8, c, t }) => {
         // Always include maxHeight
         let values;
         if (selectedSurface.type === 'Irregular' || selectedSurface.type === 'Zernike') {
-            const scanAngle = parseFloat(selectedSurface.parameters['Scan Angle']) || 0;
+            const scanAngle = parseNumber(selectedSurface.parameters['Scan Angle']);
             const scanAngleRad = scanAngle * Math.PI / 180;
             const x = maxHeight * Math.cos(scanAngleRad);
             const y = maxHeight * Math.sin(scanAngleRad);
@@ -81,16 +82,16 @@ export const SummaryView = ({ selectedSurface, wavelength = 632.8, c, t }) => {
     const metrics = calculateSurfaceMetrics(selectedSurface, wavelength);
     const { maxSag, maxSlope, maxAngle, maxAsphericity, maxAberration, maxAsphGradient, bestFitSphere, paraxialFNum, workingFNum } = metrics;
 
-    const minHeight = parseFloat(selectedSurface.parameters['Min Height']) || 0;
-    const maxHeight = parseFloat(selectedSurface.parameters['Max Height']) || 25;
+    const minHeight = parseNumber(selectedSurface.parameters['Min Height']);
+    const maxHeight = parseNumber(selectedSurface.parameters['Max Height']);
 
     // Calculate single-point sag for non-rotationally symmetric surfaces
     const isNonRotSymmetric = selectedSurface.type === 'Zernike' || selectedSurface.type === 'Irregular';
     let singlePointSag = null;
     let xCoord = 0, yCoord = 0;
     if (isNonRotSymmetric) {
-        xCoord = parseFloat(selectedSurface.parameters['X Coordinate']) || 0;
-        yCoord = parseFloat(selectedSurface.parameters['Y Coordinate']) || 0;
+        xCoord = parseNumber(selectedSurface.parameters['X Coordinate']);
+        yCoord = parseNumber(selectedSurface.parameters['Y Coordinate']);
         const r = Math.sqrt(xCoord * xCoord + yCoord * yCoord);
         const values = calculateSurfaceValues(r, selectedSurface, xCoord, yCoord);
         singlePointSag = values.sag;
