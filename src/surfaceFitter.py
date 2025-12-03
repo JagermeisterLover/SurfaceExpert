@@ -318,9 +318,19 @@ def main():
         print(f"INFO: This improves numerical conditioning during fitting")
         print(f"INFO: Coefficients will be automatically rescaled to H=1")
 
+        # Estimate initial A1 value from linear relationship: A1*z ≈ r²
+        # Use robust estimation from first and last data points
+        A1_estimate = (r_data[0]**2 / z_data[0] + r_data[-1]**2 / z_data[-1]) / 2
+
+        print(f"INFO: Initial A1 estimate = {A1_estimate:.6e}")
+
         # Setup polynomial coefficients A1, A2, A3, ..., A13
+        # Use estimated A1 as initial guess, others start at small values
         for i in range(num_terms):
-            params.add(f'A{i+1}', value=0.0)
+            if i == 0:  # A1
+                params.add('A1', value=A1_estimate)
+            else:
+                params.add(f'A{i+1}', value=0.0)
 
         def objective(params, r, z):
             coeffs = [params[f'A{i+1}'].value for i in range(num_terms)]
