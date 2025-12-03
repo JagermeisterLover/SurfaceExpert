@@ -544,7 +544,18 @@ function setupIpcHandlers() {
 
     try {
       const filePath = result.filePaths[0];
-      const content = fs.readFileSync(filePath, 'utf-8');
+      // Read file as buffer first to support both UTF-8 and ANSI encodings
+      const buffer = fs.readFileSync(filePath);
+
+      // Try UTF-8 first
+      let content = buffer.toString('utf-8');
+
+      // Check if UTF-8 decoding produced replacement characters (indicating invalid UTF-8)
+      if (content.includes('\uFFFD')) {
+        // Fall back to latin1 (ANSI encoding)
+        content = buffer.toString('latin1');
+      }
+
       return { canceled: false, content, filePath };
     } catch (error) {
       return { canceled: true, error: error.message };
