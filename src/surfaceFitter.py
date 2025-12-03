@@ -42,6 +42,50 @@ def opal_universal_z(r, R, H, e2, *coeffs):
         z = z_new
     return z
 
+def poly_surface(r, H, *coeffs):
+    """Pure polynomial surface with internal normalization.
+
+    The surface satisfies: z * Q(z/H) = r² where Q is a polynomial.
+    Q(w) = A1*w + A2*w² + A3*w³ + ... where w = z/H
+
+    Args:
+        r: Radial coordinate array
+        H: Normalization factor (improves numerical conditioning)
+        coeffs: Polynomial coefficients A1, A2, A3, ..., A13
+    """
+    tolerance = 1e-12
+    max_iterations = 1000
+    r_squared = r**2
+    z = np.ones_like(r)  # Initial guess
+
+    for iteration in range(max_iterations):
+        w = z / H  # Normalized variable
+
+        # Evaluate Q(w) = A1*w + A2*w² + ... using Horner's method
+        Q = np.zeros_like(w)
+        for i in range(len(coeffs) - 1, -1, -1):
+            Q = Q * w + coeffs[i]
+        Q = Q * w  # Multiply by w once more for A1*w term
+
+        # Evaluate Q'(w) for Newton-Raphson
+        Q_deriv = np.zeros_like(w)
+        for i in range(len(coeffs) - 1, -1, -1):
+            Q_deriv = Q_deriv * w + coeffs[i] * (i + 1)
+
+        # Newton-Raphson: solve z * Q(z/H) - r² = 0
+        P = z * Q
+        P_deriv = Q + z * Q_deriv / H
+
+        delta = (P - r_squared) / np.where(np.abs(P_deriv) > 1e-15, P_deriv, 1e-15)
+        z_new = z - delta
+
+        if np.all(np.abs(delta) < tolerance):
+            return z_new
+
+        z = z_new
+
+    return z
+
 def opal_polynomial_z(r, R, e2, *coeffs):
     A1 = 2 * R
     A2 = e2 - 1
@@ -63,7 +107,37 @@ def opal_universal_u(r, R, H, e2, *coeffs):
         z = z_new
     return z
 
-def generate_fit_report(filename, equation_choice, result, R, H, num_terms, A1=None, A2=None):
+def rescale_poly_coefficients(coeffs, H_internal):
+    """Rescale polynomial coefficients from internal H to H=1.
+
+    The Poly equation is: P(z) = z*Q(z) = A1*z + A2*z² + A3*z³ + ... = r²
+
+    When fitting with normalization H, we use: P(z) = z*Q(z/H) where Q(w) = A1 + A2*w + A3*w² + ...
+    This gives: P(z) = A1*z + A2*z²/H + A3*z³/H² + ...
+
+    To convert back to standard form (H=1):
+    A_std[1] = A_fit[1] / H⁰ = A_fit[1]
+    A_std[2] = A_fit[2] / H¹
+    A_std[3] = A_fit[3] / H²
+    Generally: A_std[i] = A_fit[i] / H^(i-1)
+
+    Args:
+        coeffs: List of fitted coefficients [A1, A2, A3, ...]
+        H_internal: Internal normalization factor used during fitting
+
+    Returns:
+        List of rescaled coefficients for H=1
+    """
+    rescaled = []
+    for i, coeff in enumerate(coeffs):
+        power = i  # A1 (i=0) has H^0, A2 (i=1) has H^1, etc.
+        if power == 0:
+            rescaled.append(coeff)  # A1 doesn't need rescaling
+        else:
+            rescaled.append(coeff / (H_internal ** power))
+    return rescaled
+
+def generate_fit_report(filename, equation_choice, result, R, H, num_terms, A1=None, A2=None, H_internal=None):
     with open(filename, 'w') as file:
         if equation_choice == '1':  # Even Asphere
             file.write("Type=EA\n")
@@ -107,9 +181,19 @@ def generate_fit_report(filename, equation_choice, result, R, H, num_terms, A1=N
                 key = f"A{3 + i}"
                 file.write(f"{key}={result.params[key].value:.12e}\n")
 
+        elif equation_choice == '6':  # Poly (with automatic rescaling)
+            file.write("Type=Poly\n")
+            file.write(f"# Fitted with internal H={H_internal:.6f}, rescaled to H=1\n")
+            # Get fitted coefficients and rescale them
+            fitted_coeffs = [result.params[f'A{i+1}'].value for i in range(num_terms)]
+            rescaled_coeffs = rescale_poly_coefficients(fitted_coeffs, H_internal)
+            for i, coeff in enumerate(rescaled_coeffs):
+                file.write(f"A{i+1}={coeff:.12e}\n")
+
 def main():
     A1 = None
     A2 = None
+    H_internal = None
 
     # Read data
     data = loadtxt("tempsurfacedata.txt")
@@ -213,6 +297,30 @@ def main():
             model = opal_polynomial_z(r, R, e2, *coeffs)
             return model - z
 
+    elif equation_choice == '6':  # Poly (with automatic normalization)
+        # Calculate optimal internal normalization factor
+        # Use the maximum z value or a reasonable estimate
+        z_max_estimate = np.max(np.abs(z_data))
+        if z_max_estimate == 0:
+            z_max_estimate = np.max(np.abs(r_data)) / 10  # Fallback estimate
+
+        # Set H_internal to scale z to order 1-10 range
+        # This can be overridden in settings if desired
+        H_internal = float(settings.get('H_internal', z_max_estimate))
+
+        print(f"INFO: Using internal normalization H = {H_internal:.6f}")
+        print(f"INFO: This improves numerical conditioning during fitting")
+        print(f"INFO: Coefficients will be automatically rescaled to H=1")
+
+        # Setup polynomial coefficients A1, A2, A3, ..., A13
+        for i in range(num_terms):
+            params.add(f'A{i+1}', value=0.0)
+
+        def objective(params, r, z):
+            coeffs = [params[f'A{i+1}'].value for i in range(num_terms)]
+            model = poly_surface(r, H_internal, *coeffs)
+            return model - z
+
     else:
         print("ERROR: Invalid surface type")
         sys.exit(1)
@@ -251,6 +359,9 @@ def main():
                                     *[result.params[f'A{3 + i}'] for i in range(num_terms)])
         A1 = 2 * R
         A2 = e2 - 1
+    elif equation_choice == '6':
+        fitted_z = poly_surface(r_data, H_internal,
+                               *[result.params[f'A{i+1}'] for i in range(num_terms)])
 
     deviations = fitted_z - z_data
 
@@ -265,7 +376,7 @@ def main():
     bic = n * log(ss_res/n) + k_params * log(n) if ss_res > 0 else float('nan')
 
     # Generate fit report
-    generate_fit_report("FitReport.txt", equation_choice, result, R, H, num_terms, A1, A2)
+    generate_fit_report("FitReport.txt", equation_choice, result, R, H, num_terms, A1, A2, H_internal)
 
     # Write metrics to separate file
     with open("FitMetrics.txt", 'w') as f:

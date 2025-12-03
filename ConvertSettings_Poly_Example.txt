@@ -1,0 +1,45 @@
+# Example ConvertSettings.txt for Poly Surface Fitting with Internal Normalization
+#
+# This example shows how to use the new Poly fitting mode (SurfaceType=6)
+# that automatically uses internal normalization to improve numerical conditioning
+
+# Surface Type: 6 = Poly with internal normalization
+SurfaceType=6
+
+# Radius: Not used for Poly (set to 0)
+Radius=0
+
+# Number of polynomial terms (A1 through A[TermNumber])
+# For example, TermNumber=10 means fit A1, A2, A3, ..., A10
+TermNumber=10
+
+# Optimization Algorithm
+# Options: leastsq (Levenberg-Marquardt, recommended), least_squares, nelder, powell
+OptimizationAlgorithm=leastsq
+
+# Optional: Manually specify internal normalization factor
+# If not specified, H_internal is automatically calculated from data range
+# Recommended: Let the fitter calculate this automatically (comment out this line)
+# H_internal=10.0
+
+# Notes:
+# 1. Create tempsurfacedata.txt with your (r, z) data points
+# 2. Run: python src/surfaceFitter.py
+# 3. Results will be in FitReport.txt (coefficients rescaled to H=1)
+# 4. Metrics will be in FitMetrics.txt
+# 5. Deviations will be in FitDeviations.txt
+
+# Expected Benefits:
+# - Dramatically improved numerical conditioning
+# - Higher-order terms actually contribute to fit
+# - Coefficients have reasonable magnitudes (not 1e-300)
+# - Better convergence and lower RMSE
+# - Automatic rescaling to standard form (H=1)
+
+# Compare this to other surface types:
+# SurfaceType=1  # Even Asphere
+# SurfaceType=2  # Odd Asphere
+# SurfaceType=3  # Opal Universal Z (has H parameter)
+# SurfaceType=4  # Opal Universal U (has H parameter)
+# SurfaceType=5  # Opal Polynomial (no H parameter, can have conditioning issues)
+# SurfaceType=6  # Poly with internal normalization (NEW!)
