@@ -45,8 +45,9 @@ def opal_universal_z(r, R, H, e2, *coeffs):
 def poly_surface(r, H, *coeffs):
     """Pure polynomial surface with internal normalization.
 
-    The surface satisfies: z * Q(z/H) = r² where Q is a polynomial.
-    Q(w) = A1*w + A2*w² + A3*w³ + ... where w = z/H
+    The surface satisfies: P(z) = z * Q(z/H) = r² where Q is a polynomial.
+    Q(w) = A1 + A2*w + A3*w² + ... where w = z/H
+    P(z) = z * (A1 + A2*z/H + A3*z²/H² + ...) = A1*z + A2*z²/H + A3*z³/H² + ...
 
     Args:
         r: Radial coordinate array
@@ -61,18 +62,20 @@ def poly_surface(r, H, *coeffs):
     for iteration in range(max_iterations):
         w = z / H  # Normalized variable
 
-        # Evaluate Q(w) = A1*w + A2*w² + ... using Horner's method
+        # Evaluate Q(w) = A1 + A2*w + A3*w² + ... using Horner's method
+        # Start from highest power and work down
         Q = np.zeros_like(w)
         for i in range(len(coeffs) - 1, -1, -1):
             Q = Q * w + coeffs[i]
-        Q = Q * w  # Multiply by w once more for A1*w term
+        # Now Q = A1 + A2*w + A3*w² + ...
 
-        # Evaluate Q'(w) for Newton-Raphson
+        # Evaluate Q'(w) = A2 + 2*A3*w + 3*A4*w² + ... for Newton-Raphson
         Q_deriv = np.zeros_like(w)
-        for i in range(len(coeffs) - 1, -1, -1):
-            Q_deriv = Q_deriv * w + coeffs[i] * (i + 1)
+        for i in range(len(coeffs) - 1, 0, -1):  # Skip A1 (index 0)
+            Q_deriv = Q_deriv * w + coeffs[i] * i
+        # Now Q_deriv = A2 + 2*A3*w + 3*A4*w² + ...
 
-        # Newton-Raphson: solve z * Q(z/H) - r² = 0
+        # Newton-Raphson: solve P(z) = z * Q(z/H) - r² = 0
         P = z * Q
         P_deriv = Q + z * Q_deriv / H
 
@@ -110,13 +113,16 @@ def opal_universal_u(r, R, H, e2, *coeffs):
 def rescale_poly_coefficients(coeffs, H_internal):
     """Rescale polynomial coefficients from internal H to H=1.
 
-    The Poly equation is: P(z) = z*Q(z) = A1*z + A2*z² + A3*z³ + ... = r²
+    The Poly equation is: P(z) = z * Q(z) where Q(z) = A1 + A2*z + A3*z² + ...
+    This gives: P(z) = A1*z + A2*z² + A3*z³ + ... = r²
 
-    When fitting with normalization H, we use: P(z) = z*Q(z/H) where Q(w) = A1 + A2*w + A3*w² + ...
-    This gives: P(z) = A1*z + A2*z²/H + A3*z³/H² + ...
+    When fitting with normalization H:
+    P(z) = z * Q(z/H) where Q(w) = A1 + A2*w + A3*w² + ... and w = z/H
+    This gives: P(z) = z * (A1 + A2*z/H + A3*z²/H² + ...)
+              = A1*z + A2*z²/H + A3*z³/H² + ...
 
     To convert back to standard form (H=1):
-    A_std[1] = A_fit[1] / H⁰ = A_fit[1]
+    A_std[1] = A_fit[1] / H⁰ = A_fit[1]  (no rescaling)
     A_std[2] = A_fit[2] / H¹
     A_std[3] = A_fit[3] / H²
     Generally: A_std[i] = A_fit[i] / H^(i-1)
