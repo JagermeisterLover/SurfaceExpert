@@ -5,7 +5,7 @@ const { createElement: h } = React;
 import { calculateSurfaceValues } from '../../utils/calculations.js';
 
 const ConversionDialog = ({ selectedSurface, folders, selectedFolder, setFolders, setSelectedSurface, setShowConvert, setShowConvertResults, setConvertResults, c, t }) => {
-    const [targetType, setTargetType] = useState('1'); // 1=Even Asphere, 2=Odd Asphere, 3=Opal UnZ, 4=Opal UnU, 5=Poly
+    const [targetType, setTargetType] = useState('1'); // 1=Even Asphere, 2=Odd Asphere, 3=Opal UnZ, 4=Opal UnU, 5=Opal Poly, 6=Poly (normalized)
     const [algorithm, setAlgorithm] = useState('leastsq');
     const [radius, setRadius] = useState(selectedSurface.parameters['Radius'] || '100');
     const [conicVariable, setConicVariable] = useState(true);
@@ -13,6 +13,7 @@ const ConversionDialog = ({ selectedSurface, folders, selectedFolder, setFolders
     const [e2Variable, setE2Variable] = useState(true);
     const [e2Value, setE2Value] = useState('1');
     const [hValue, setHValue] = useState('1');
+    const [hInternal, setHInternal] = useState(''); // For Poly type 6 - auto if empty
     const [useCoeffs, setUseCoeffs] = useState(true);
     const [numCoeffs, setNumCoeffs] = useState(3);
     const [isRunning, setIsRunning] = useState(false);
@@ -23,6 +24,7 @@ const ConversionDialog = ({ selectedSurface, folders, selectedFolder, setFolders
         if (targetType === '3') return 11; // A3-A13 (11 terms)
         if (targetType === '4') return 11; // A2-A12 (11 terms)
         if (targetType === '5') return 11; // A3-A13 (11 terms)
+        if (targetType === '6') return 11; // A3-A13 (11 terms, A1=2*R, A2=e2-1)
         return 9;
     };
 
@@ -59,6 +61,11 @@ const ConversionDialog = ({ selectedSurface, folders, selectedFolder, setFolders
                 TermNumber: useCoeffs ? String(numCoeffs) : '0',
                 OptimizationAlgorithm: algorithm
             };
+
+            // Add H_internal for Poly type 6 if specified
+            if (targetType === '6' && hInternal.trim() !== '') {
+                settings.H_internal = hInternal;
+            }
 
             // Call conversion via IPC
             const result = await window.electronAPI.runConversion(surfaceData, settings);
@@ -176,7 +183,8 @@ const ConversionDialog = ({ selectedSurface, folders, selectedFolder, setFolders
                     h('option', { value: '2' }, t.surfaceTypes['Odd Asphere']),
                     h('option', { value: '3' }, t.surfaceTypes['Opal Un Z']),
                     h('option', { value: '4' }, t.surfaceTypes['Opal Un U']),
-                    h('option', { value: '5' }, t.surfaceTypes['Poly'])
+                    h('option', { value: '5' }, 'Poly'),
+                    h('option', { value: '6' }, 'Poly (Auto-Normalized)')
                 )
             ),
 
@@ -244,7 +252,7 @@ const ConversionDialog = ({ selectedSurface, folders, selectedFolder, setFolders
             ),
 
             // e2 parameter for Opal and Poly types
-            ['3', '4', '5'].includes(targetType) && h('div', { style: { marginBottom: '20px' } },
+            ['3', '4', '5', '6'].includes(targetType) && h('div', { style: { marginBottom: '20px' } },
                 h('div', {
                     style: { display: 'flex', alignItems: 'center', marginBottom: '8px' }
                 },
@@ -304,6 +312,42 @@ const ConversionDialog = ({ selectedSurface, folders, selectedFolder, setFolders
                         fontSize: '13px'
                     }
                 })
+            ),
+
+            // H_internal parameter for Poly type 6 (optional - auto if empty)
+            targetType === '6' && h('div', { style: { marginBottom: '20px' } },
+                h('label', {
+                    style: {
+                        display: 'block',
+                        fontSize: '13px',
+                        fontWeight: '600',
+                        marginBottom: '8px',
+                        color: c.textDim
+                    }
+                }, 'Internal Normalization H (optional - auto if empty)'),
+                h('input', {
+                    type: 'text',
+                    value: hInternal,
+                    onChange: (e) => setHInternal(e.target.value),
+                    placeholder: 'Auto-calculated from data range',
+                    style: {
+                        width: '100%',
+                        padding: '8px',
+                        backgroundColor: c.bg,
+                        color: c.text,
+                        border: `1px solid ${c.border}`,
+                        borderRadius: '4px',
+                        fontSize: '13px'
+                    }
+                }),
+                h('div', {
+                    style: {
+                        fontSize: '11px',
+                        color: c.textDim,
+                        marginTop: '6px',
+                        fontStyle: 'italic'
+                    }
+                }, 'Improves numerical conditioning. Leave empty for automatic calculation.')
             ),
 
             // Higher order coefficients
