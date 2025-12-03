@@ -44,6 +44,11 @@ class ZMXParser {
                 const type = line.substring(5).trim();
                 currentSurface.type = type;
                 currentSurface.rawType = type;
+
+                // Check for USERSURF polynomial
+                if (type.includes('USERSURF') && type.includes('us_polynomial.dll')) {
+                    currentSurface.type = 'USERSURF_POLYNOMIAL';
+                }
             }
 
             // Parse CURV (curvature - reciprocal is radius)
@@ -287,6 +292,33 @@ class ZMXParser {
                 'Scan Angle': '0',
                 'X Coordinate': '0',
                 'Y Coordinate': '0',
+                'Min Height': '0',
+                'Max Height': String(maxHeight),
+                'Step': '1'
+            };
+        } else if (zmxSurface.type === 'USERSURF_POLYNOMIAL') {
+            // USERSURF us_polynomial.dll surface
+            // CURV = 1/R, so A1 = 2*R = 2/CURV
+            // PARM 1-12 = A2-A13
+            surfaceType = 'Poly';
+
+            // Calculate A1 from curvature: A1 = 2*R = 2/CURV
+            const a1 = zmxSurface.curvature !== 0 ? 2 / zmxSurface.curvature : 0;
+
+            parameters = {
+                'A1': String(a1),
+                'A2': String(zmxSurface.parameters['PARM1'] || 0),
+                'A3': String(zmxSurface.parameters['PARM2'] || 0),
+                'A4': String(zmxSurface.parameters['PARM3'] || 0),
+                'A5': String(zmxSurface.parameters['PARM4'] || 0),
+                'A6': String(zmxSurface.parameters['PARM5'] || 0),
+                'A7': String(zmxSurface.parameters['PARM6'] || 0),
+                'A8': String(zmxSurface.parameters['PARM7'] || 0),
+                'A9': String(zmxSurface.parameters['PARM8'] || 0),
+                'A10': String(zmxSurface.parameters['PARM9'] || 0),
+                'A11': String(zmxSurface.parameters['PARM10'] || 0),
+                'A12': String(zmxSurface.parameters['PARM11'] || 0),
+                'A13': String(zmxSurface.parameters['PARM12'] || 0),
                 'Min Height': '0',
                 'Max Height': String(maxHeight),
                 'Step': '1'

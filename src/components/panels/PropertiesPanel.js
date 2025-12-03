@@ -19,6 +19,7 @@ export const PropertiesPanel = ({
     updateSurfaceType,
     updateParameter,
     onConvert,
+    onFastConvertToPoly,
     wavelength,
     propertiesPanelRef,
     scrollPositionRef,
@@ -327,6 +328,21 @@ export const PropertiesPanel = ({
 
             // Quick Actions
             h(PropertySection, { title: t.properties.actions, c },
+                h('button', {
+                    onClick: onFastConvertToPoly,
+                    style: {
+                        width: '100%',
+                        padding: '8px',
+                        marginBottom: '6px',
+                        backgroundColor: c.accent,
+                        color: 'white',
+                        border: `1px solid ${c.accent}`,
+                        borderRadius: '4px',
+                        cursor: 'pointer',
+                        fontSize: '13px',
+                        fontWeight: '500'
+                    }
+                }, t.buttons.fastConvertToPoly || 'Fast Convert to Poly'),
                 h('button', {
                     onClick: onConvert,
                     style: {
