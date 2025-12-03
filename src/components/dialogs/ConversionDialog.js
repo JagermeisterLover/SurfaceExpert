@@ -24,7 +24,7 @@ const ConversionDialog = ({ selectedSurface, folders, selectedFolder, setFolders
         if (targetType === '3') return 11; // A3-A13 (11 terms)
         if (targetType === '4') return 11; // A2-A12 (11 terms)
         if (targetType === '5') return 11; // A3-A13 (11 terms)
-        if (targetType === '6') return 13; // A1-A13 (13 terms)
+        if (targetType === '6') return 11; // A3-A13 (11 terms, A1=2*R, A2=e2-1)
         return 9;
     };
 
@@ -252,7 +252,7 @@ const ConversionDialog = ({ selectedSurface, folders, selectedFolder, setFolders
             ),
 
             // e2 parameter for Opal and Poly types
-            ['3', '4', '5'].includes(targetType) && h('div', { style: { marginBottom: '20px' } },
+            ['3', '4', '5', '6'].includes(targetType) && h('div', { style: { marginBottom: '20px' } },
                 h('div', {
                     style: { display: 'flex', alignItems: 'center', marginBottom: '8px' }
                 },
