@@ -20,6 +20,7 @@ export const PropertiesPanel = ({
     updateParameter,
     onConvert,
     onFastConvertToPoly,
+    fastConvertProgress,
     wavelength,
     propertiesPanelRef,
     scrollPositionRef,
@@ -330,6 +331,23 @@ export const PropertiesPanel = ({
             h(PropertySection, { title: t.properties.actions, c },
                 h('button', {
                     onClick: onFastConvertToPoly,
+                    disabled: fastConvertProgress !== null,
+                    style: {
+                        width: '100%',
+                        padding: '8px',
+                        marginBottom: '6px',
+                        backgroundColor: fastConvertProgress !== null ? c.textDim : c.accent,
+                        color: 'white',
+                        border: `1px solid ${fastConvertProgress !== null ? c.textDim : c.accent}`,
+                        borderRadius: '4px',
+                        cursor: fastConvertProgress !== null ? 'not-allowed' : 'pointer',
+                        fontSize: '13px',
+                        fontWeight: '500',
+                        opacity: fastConvertProgress !== null ? 0.8 : 1
+                    }
+                }, fastConvertProgress ? `Converting... ${fastConvertProgress}` : (t.buttons.fastConvertToPoly || 'Fast Convert to Poly')),
+                h('button', {
+                    onClick: onConvert,
                     style: {
                         width: '100%',
                         padding: '8px',
@@ -341,20 +359,6 @@ export const PropertiesPanel = ({
                         cursor: 'pointer',
                         fontSize: '13px',
                         fontWeight: '500'
-                    }
-                }, t.buttons.fastConvertToPoly || 'Fast Convert to Poly'),
-                h('button', {
-                    onClick: onConvert,
-                    style: {
-                        width: '100%',
-                        padding: '8px',
-                        marginBottom: '6px',
-                        backgroundColor: c.hover,
-                        color: c.text,
-                        border: `1px solid ${c.border}`,
-                        borderRadius: '4px',
-                        cursor: 'pointer',
-                        fontSize: '13px'
                     }
                 }, t.buttons.convert),
                 h('button', {

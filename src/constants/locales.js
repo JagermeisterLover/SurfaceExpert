@@ -44,6 +44,8 @@ export const locales = {
       plotColorscale: 'Plot Colorscale',
       referenceWavelength: 'Reference Wavelength (nm)',
       wavelengthHelp: 'Used for RMS/P-V error calculations (default: 632.8 nm HeNe laser)',
+      fastConvertThreshold: 'Fast Convert Max Deviation Threshold',
+      fastConvertThresholdHelp: 'Maximum sag deviation for automatic Poly conversion (mm). Default: 0.000001',
       gridSize3D: '3D Plot Grid Size',
       gridSize3DHelp: 'Grid resolution for 3D surface plots',
       gridSize2D: '2D Plot Grid Size',
@@ -389,6 +391,7 @@ export const locales = {
       import: 'Import',
       export: 'Export',
       convert: 'Convert',
+      fastConvertToPoly: 'Fast Convert to Poly',
       normalize: 'Normalize'
     },
 
@@ -445,6 +448,8 @@ export const locales = {
       plotColorscale: 'Цветовая шкала графиков',
       referenceWavelength: 'Опорная длина волны (нм)',
       wavelengthHelp: 'Используется для расчётов ошибок RMS/P-V (по умолчанию: 632.8 нм HeNe лазер)',
+      fastConvertThreshold: 'Порог максимального отклонения для быстрой конвертации',
+      fastConvertThresholdHelp: 'Максимальное отклонение прогиба для автоматической конвертации в Poly (мм). По умолчанию: 0.000001',
       gridSize3D: 'Размер сетки 3D графика',
       gridSize3DHelp: 'Разрешение сетки для 3D графиков поверхностей',
       gridSize2D: 'Размер сетки 2D графика',
@@ -790,7 +795,8 @@ export const locales = {
       import: 'Импорт',
       export: 'Экспорт',
       convert: 'Конвертировать',
-      normalize: 'Нормализовать'
+      normalize: 'Нормализовать',
+      fastConvertToPoly: 'Быстрая конвертация в Poly'
     },
 
     // Уведомление об обновлении
