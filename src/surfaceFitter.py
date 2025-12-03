@@ -190,9 +190,16 @@ def generate_fit_report(filename, equation_choice, result, R, H, num_terms, A1=N
         elif equation_choice == '6':  # Poly (with automatic rescaling)
             file.write("Type=Poly\n")
             file.write(f"# Fitted with internal H={H_internal:.6f}, rescaled to H=1\n")
-            # Get fitted coefficients and rescale them
-            fitted_coeffs = [result.params[f'A{i+1}'].value for i in range(num_terms)]
-            rescaled_coeffs = rescale_poly_coefficients(fitted_coeffs, H_internal)
+            # Construct full coefficient list and rescale
+            e2 = result.params['e2'].value
+            A1_fit = 2 * R  # Fixed, not rescaled
+            A2_fit = e2 - 1  # Fixed relationship
+            higher_coeffs = [result.params[f'A{3 + i}'].value for i in range(num_terms)]
+
+            # Rescale: A1 stays same, A2 through A13 get rescaled by H^(i-1)
+            full_coeffs = [A1_fit, A2_fit] + higher_coeffs
+            rescaled_coeffs = rescale_poly_coefficients(full_coeffs, H_internal)
+
             for i, coeff in enumerate(rescaled_coeffs):
                 file.write(f"A{i+1}={coeff:.12e}\n")
 
@@ -318,22 +325,23 @@ def main():
         print(f"INFO: This improves numerical conditioning during fitting")
         print(f"INFO: Coefficients will be automatically rescaled to H=1")
 
-        # Estimate initial A1 value from linear relationship: A1*z ≈ r²
-        # Use robust estimation from first and last data points
-        A1_estimate = (r_data[0]**2 / z_data[0] + r_data[-1]**2 / z_data[-1]) / 2
+        # Setup parameters like Opal Polynomial but with H normalization
+        # A1 = 2*R (fixed), A2 = e2-1 (variable or fixed), A3-A13 (fitted)
+        if e2_isVariable == 0:
+            params.add('e2', value=e2_value, vary=False)
+        else:
+            params.add('e2', value=1.0, vary=True)
 
-        print(f"INFO: Initial A1 estimate = {A1_estimate:.6e}")
-
-        # Setup polynomial coefficients A1, A2, A3, ..., A13
-        # Use estimated A1 as initial guess, others start at small values
+        # Setup higher order coefficients A3-A13
         for i in range(num_terms):
-            if i == 0:  # A1
-                params.add('A1', value=A1_estimate)
-            else:
-                params.add(f'A{i+1}', value=0.0)
+            params.add(f'A{3 + i}', value=0.0)
 
         def objective(params, r, z):
-            coeffs = [params[f'A{i+1}'].value for i in range(num_terms)]
+            e2 = params['e2'].value
+            # Construct full coefficient list: [A1, A2, A3, ..., A13]
+            A1 = 2 * R
+            A2 = e2 - 1
+            coeffs = [A1, A2] + [params[f'A{3 + i}'].value for i in range(num_terms)]
             model = poly_surface(r, H_internal, *coeffs)
             return model - z
 
@@ -376,8 +384,11 @@ def main():
         A1 = 2 * R
         A2 = e2 - 1
     elif equation_choice == '6':
-        fitted_z = poly_surface(r_data, H_internal,
-                               *[result.params[f'A{i+1}'] for i in range(num_terms)])
+        e2 = result.params['e2'].value
+        A1 = 2 * R
+        A2 = e2 - 1
+        coeffs = [A1, A2] + [result.params[f'A{3 + i}'] for i in range(num_terms)]
+        fitted_z = poly_surface(r_data, H_internal, *coeffs)
 
     deviations = fitted_z - z_data
 
