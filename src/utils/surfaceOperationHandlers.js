@@ -5,6 +5,7 @@
 
 import { normalizeUnZ, convertPolyToUnZ, convertUnZToPoly, invertSurface } from './surfaceTransformations.js';
 import { parseNumber } from './numberParsing.js';
+import { calculateSurfaceValues } from './calculations.js';
 
 /**
  * Handle surface inversion (flip concave/convex)
@@ -226,3 +227,151 @@ export const handleConvertToPoly = (
         console.error('Convert to Poly error:', error);
     }
 };
+
+/**
+ * Fast convert surface to Poly with iterative coefficient addition
+ * Automatically adds higher order coefficients until max deviation threshold is met
+ * @param {Object} selectedSurface - Currently selected surface
+ * @param {Object} selectedFolder - Currently selected folder
+ * @param {Array} folders - All folders
+ * @param {Function} setFolders - State setter for folders
+ * @param {Function} setSelectedSurface - State setter for selected surface
+ * @param {Function} setShowConvertResults - State setter for results dialog visibility
+ * @param {Function} setConvertResults - State setter for conversion results
+ * @param {number} maxDeviationThreshold - Maximum allowed deviation (default: 0.000001 mm)
+ */
+export const handleFastConvertToPoly = async (
+    selectedSurface,
+    selectedFolder,
+    folders,
+    setFolders,
+    setSelectedSurface,
+    setShowConvertResults,
+    setConvertResults,
+    maxDeviationThreshold = 0.000001
+) => {
+    if (!selectedSurface || !selectedFolder) return;
+
+    if (!window.electronAPI || !window.electronAPI.runConversion) {
+        alert('Conversion not available in this environment');
+        return;
+    }
+
+    try {
+        // Generate surface data points
+        const minHeight = parseNumber(selectedSurface.parameters['Min Height']);
+        const maxHeight = parseNumber(selectedSurface.parameters['Max Height']);
+        const points = 100;
+        const surfaceData = [];
+
+        for (let i = 0; i <= points; i++) {
+            const r = minHeight + (maxHeight - minHeight) * i / points;
+            const values = calculateSurfaceValues(r, selectedSurface);
+            surfaceData.push({ r, z: values.sag });
+        }
+
+        // Extract radius from surface parameters (use Radius or A1 depending on surface type)
+        let radius;
+        if (selectedSurface.parameters['Radius']) {
+            radius = selectedSurface.parameters['Radius'];
+        } else if (selectedSurface.parameters['A1']) {
+            // For Poly surfaces, A1 = 2*R, so R = A1/2
+            radius = String(parseNumber(selectedSurface.parameters['A1']) / 2);
+        } else {
+            radius = '100'; // Default fallback
+        }
+
+        // Start with A2 only (e2-1 term), then add A3, A4, etc.
+        // In Python code: TermNumber=0 means A1+A2 only, TermNumber=1 means A1+A2+A3, etc.
+        let numCoeffs = 0; // Start with A1 and A2 only (A2 = e2-1)
+        let bestResult = null;
+        const maxCoeffs = 11; // A3-A13 (11 terms for Poly Auto-Normalized)
+
+        console.log(`Starting fast convert to Poly with threshold: ${maxDeviationThreshold} mm`);
+
+        // Iteratively add coefficients until threshold is met or max coefficients reached
+        while (numCoeffs <= maxCoeffs) {
+            const coeffDesc = numCoeffs === 0 ? 'A1+A2 only' : `A1-A${2+numCoeffs}`;
+            console.log(`Trying with ${coeffDesc}...`);
+
+            // Prepare conversion settings for Poly (Auto-Normalized) - type 6
+            const settings = {
+                SurfaceType: '6', // Poly (Auto-Normalized)
+                Radius: radius,
+                // Note: H is used by type 3/4 but not type 6 (auto-calculated as H_internal)
+                // Pass '1.0' to avoid float conversion error in Python
+                H: '1.0',
+                e2_isVariable: '1', // e2 is variable
+                e2: '1', // Initial value
+                conic_isVariable: '0',
+                conic: '0',
+                TermNumber: String(numCoeffs),
+                OptimizationAlgorithm: 'leastsq' // Fast default algorithm
+            };
+
+            // Call conversion via IPC
+            const result = await window.electronAPI.runConversion(surfaceData, settings);
+
+            if (result.success) {
+                // Calculate max deviation from deviations data
+                const maxDeviation = calculateMaxDeviation(result.deviations);
+                const coeffDescResult = numCoeffs === 0 ? 'A1+A2 only' : `A1-A${2+numCoeffs}`;
+                console.log(`  Max deviation with ${coeffDescResult}: ${maxDeviation.toExponential(6)} mm`);
+
+                bestResult = result;
+
+                // Check if we've met the threshold
+                if (maxDeviation <= maxDeviationThreshold) {
+                    console.log(`✓ Threshold met with ${coeffDescResult}!`);
+                    break;
+                }
+            } else {
+                const coeffDescError = numCoeffs === 0 ? 'A1+A2 only' : `A1-A${2+numCoeffs}`;
+                console.error(`  Conversion failed with ${coeffDescError}:`, result.error);
+                break;
+            }
+
+            numCoeffs++;
+        }
+
+        if (bestResult) {
+            // Store result data including original surface info
+            setConvertResults({
+                ...bestResult,
+                originalSurface: selectedSurface
+            });
+            setShowConvertResults(true);
+        } else {
+            alert('Fast conversion failed: No successful fit was achieved');
+        }
+    } catch (error) {
+        alert('Fast conversion error: ' + error.message);
+        console.error('Fast convert error:', error);
+    }
+};
+
+/**
+ * Calculate maximum absolute deviation from deviations data
+ * @param {string} deviations - Deviations text data from fit results
+ * @returns {number} Maximum absolute deviation
+ */
+function calculateMaxDeviation(deviations) {
+    if (!deviations) return 0;
+
+    const lines = deviations.split('\n');
+    let maxDev = 0;
+
+    for (const line of lines) {
+        if (line.trim() && !line.includes('Height')) { // Skip header
+            const parts = line.trim().split(/\s+/);
+            if (parts.length >= 4) {
+                const deviation = Math.abs(parseFloat(parts[3])); // 4th column is deviation
+                if (!isNaN(deviation)) {
+                    maxDev = Math.max(maxDev, deviation);
+                }
+            }
+        }
+    }
+
+    return maxDev;
+}

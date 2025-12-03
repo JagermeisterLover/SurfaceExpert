@@ -32,7 +32,8 @@
       "Bash(.gitignore)",
       "Bash(git revert:*)",
       "Bash(git restore:*)",
-      "Bash(timeout /t 3)"
+      "Bash(timeout /t 3)",
+      "Bash(timeout /t 5)"
     ],
     "deny": [],
     "ask": []

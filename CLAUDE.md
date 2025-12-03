@@ -77,7 +77,7 @@ SurfaceExpert/
         ├── formatters.js          # Value formatting utilities
         ├── reportGenerator.js     # HTML/PDF report generation with embedded plots
         ├── reportHandlers.js      # Report generation business logic (~157 lines) 🆕
-        ├── surfaceOperationHandlers.js  # Surface transformation handlers (~227 lines) 🆕
+        ├── surfaceOperationHandlers.js  # Surface transformation handlers + fast convert (~376 lines) 🆕
         ├── surfaceTransformations.js    # Pure transformation functions
         └── zmxImportHandlers.js   # ZMX import business logic (~117 lines) 🆕
 ```
@@ -853,7 +853,7 @@ Current cache: Best-fit sphere parameters (Map with JSON key)
 
 1. **ZMX File Import:**
    - Full Zemax ZMX file parser (`zmxParser.js`)
-   - Supports STANDARD, EVENASPH, ODDASPHE, IRREGULA, FZERNSAG surface types
+   - Supports STANDARD, EVENASPH, ODDASPHE, IRREGULA, FZERNSAG, USERSURF us_polynomial.dll surface types
    - Automatic conversion to application surface format
    - Import dialog with surface selection
 
@@ -1077,6 +1077,7 @@ The ZMX parser (`zmxParser.js`) supports the following Zemax surface types:
 3. **ODDASPHE** → Converts to Odd Asphere
 4. **IRREGULA** → Converts to Irregular surface
 5. **FZERNSAG** → Converts to Zernike surface
+6. **USERSURF "us_polynomial.dll"** → Converts to Poly surface
 
 ### ZMX Parameter Mapping
 
@@ -1103,6 +1104,10 @@ The ZMX parser (`zmxParser.js`) supports the following Zemax surface types:
 - XDAT 1: Number of Zernike terms
 - XDAT 2: Normalization radius
 - XDAT 3-39: Z1-Z37 (Zernike coefficients)
+
+**USERSURF "us_polynomial.dll":**
+- CURV: 1/R (curvature), converted to A1 = 2*R = 2/CURV
+- PARM 1-12: A2-A13 polynomial coefficients
 
 ### Usage Workflow
 
@@ -1151,9 +1156,26 @@ Supported algorithms from lmfit:
 
 ---
 
-**Last Updated:** 2025-11-23
-**Version:** 2.5.0 (Phase 1 & 2 Refactoring - Major Architectural Improvements)
+**Last Updated:** 2025-12-03
+**Version:** 2.9.1 (Fast Convert to Poly Feature)
 **Major Changes:**
+- Added "Fast Convert to Poly" button for automatic iterative polynomial fitting
+- Automatically adds higher order coefficients (A3-A13) until deviation threshold is met
+- Configurable max deviation threshold in Settings (default: 0.000001 mm)
+- Iterative algorithm: starts with A1+A2, adds A3, A4, A5... until threshold satisfied
+- Uses Poly (Auto-Normalized) surface type for numerical stability
+- Console logging shows progress and deviation for each iteration
+- Integrated with standard conversion results dialog for user review
+- Settings persistence for threshold value
+
+**Previous Version (2.9.0 - 2025-12-03):**
+- Added support for USERSURF "us_polynomial.dll" surface type in ZMX parser
+- Converts Zemax polynomial surfaces to application Poly surface type
+- CURV field converted to A1 parameter (A1 = 2*R = 2/CURV)
+- PARM 1-12 mapped to A2-A13 polynomial coefficients
+- Full compatibility with Zemax polynomial surface files
+
+**Previous Version (2.5.0 - 2025-11-23):**
 - **🎯 Phase 2:** Extracted business logic handlers into 3 utility modules
   - reportHandlers.js (157 lines): Report generation logic
   - zmxImportHandlers.js (117 lines): ZMX import logic

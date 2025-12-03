@@ -29,7 +29,8 @@ import {
     handleInvertSurface as invertSurfaceHandler,
     handleNormalizeUnZConfirm as normalizeUnZConfirmHandler,
     handleConvertToUnZ as convertToUnZHandler,
-    handleConvertToPoly as convertToPolyHandler
+    handleConvertToPoly as convertToPolyHandler,
+    handleFastConvertToPoly as fastConvertToPolyHandler
 } from './utils/surfaceOperationHandlers.js';
 import { parseNumber } from './utils/numberParsing.js';
 
@@ -102,6 +103,7 @@ const OpticalSurfaceAnalyzer = () => {
     const [gridSize2D, setGridSize2D] = useState(129); // Grid size for 2D plots (odd number, max 257)
     const [theme, setTheme] = useState('Dark Gray (Default)'); // Color theme
     const [locale, setLocaleState] = useState(getCurrentLocale()); // Application locale (en, ru, etc.)
+    const [fastConvertThreshold, setFastConvertThreshold] = useState(0.000001); // Max deviation threshold for fast convert to poly (mm)
     const [contextMenu, setContextMenu] = useState(null);
     const [inputDialog, setInputDialog] = useState(null);
     const [showNormalizeUnZ, setShowNormalizeUnZ] = useState(false);
@@ -233,6 +235,7 @@ const OpticalSurfaceAnalyzer = () => {
                 setGridSize3D(result.settings.gridSize3D || 129);
                 setGridSize2D(result.settings.gridSize2D || 129);
                 setTheme(result.settings.theme || 'Dark Gray (Default)');
+                setFastConvertThreshold(result.settings.fastConvertThreshold || 0.000001);
                 if (result.settings.locale) {
                     setLocaleState(result.settings.locale);
                 }
@@ -248,7 +251,8 @@ const OpticalSurfaceAnalyzer = () => {
                 gridSize3D,
                 gridSize2D,
                 theme,
-                locale
+                locale,
+                fastConvertThreshold
             };
             await window.electronAPI.saveSettings(settings);
         }
@@ -257,7 +261,7 @@ const OpticalSurfaceAnalyzer = () => {
     // Auto-save settings when they change
     useEffect(() => {
         saveSettingsToDisk();
-    }, [colorscale, wavelength, gridSize3D, gridSize2D, theme, locale]);
+    }, [colorscale, wavelength, gridSize3D, gridSize2D, theme, locale, fastConvertThreshold]);
 
     // Update selected surface when it changes in the folders
     useEffect(() => {
@@ -415,6 +419,19 @@ const OpticalSurfaceAnalyzer = () => {
 
     const handleConvertToPoly = () => {
         convertToPolyHandler(selectedSurface, selectedFolder, folders, setFolders, setSelectedSurface);
+    };
+
+    const handleFastConvertToPoly = () => {
+        fastConvertToPolyHandler(
+            selectedSurface,
+            selectedFolder,
+            folders,
+            setFolders,
+            setSelectedSurface,
+            setShowConvertResults,
+            setConvertResults,
+            fastConvertThreshold
+        );
     };
 
     // ============================================
@@ -845,6 +862,8 @@ const OpticalSurfaceAnalyzer = () => {
             setTheme,
             locale,
             setLocale,
+            fastConvertThreshold,
+            setFastConvertThreshold,
             onClose: () => setShowSettings(false),
             c,
             t
@@ -1052,6 +1071,7 @@ const OpticalSurfaceAnalyzer = () => {
                 updateSurfaceType,
                 updateParameter,
                 onConvert: () => setShowConvert(true),
+                onFastConvertToPoly: handleFastConvertToPoly,
                 wavelength,
                 propertiesPanelRef,
                 scrollPositionRef,
