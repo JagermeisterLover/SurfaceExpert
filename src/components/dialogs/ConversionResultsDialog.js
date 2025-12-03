@@ -52,7 +52,8 @@ export const ConversionResultsDialog = ({ convertResults, folders, selectedFolde
                 'A18': String(fitReport.A18 || 0),
                 'A20': String(fitReport.A20 || 0),
                 'Min Height': originalSurface.parameters['Min Height'],
-                'Max Height': originalSurface.parameters['Max Height']
+                'Max Height': originalSurface.parameters['Max Height'],
+                'Step': originalSurface.parameters['Step'] || '1.0'
             };
         } else if (type === 'OA') {
             surfaceType = 'Odd Asphere';
@@ -78,7 +79,8 @@ export const ConversionResultsDialog = ({ convertResults, folders, selectedFolde
                 'A19': String(fitReport.A19 || 0),
                 'A20': String(fitReport.A20 || 0),
                 'Min Height': originalSurface.parameters['Min Height'],
-                'Max Height': originalSurface.parameters['Max Height']
+                'Max Height': originalSurface.parameters['Max Height'],
+                'Step': originalSurface.parameters['Step'] || '1.0'
             };
         } else if (type === 'OUZ') {
             surfaceType = 'Opal Un Z';
@@ -98,7 +100,8 @@ export const ConversionResultsDialog = ({ convertResults, folders, selectedFolde
                 'A12': String(fitReport.A12 || 0),
                 'A13': String(fitReport.A13 || 0),
                 'Min Height': originalSurface.parameters['Min Height'],
-                'Max Height': originalSurface.parameters['Max Height']
+                'Max Height': originalSurface.parameters['Max Height'],
+                'Step': originalSurface.parameters['Step'] || '1.0'
             };
         } else if (type === 'OUU') {
             surfaceType = 'Opal Un U';
@@ -118,9 +121,12 @@ export const ConversionResultsDialog = ({ convertResults, folders, selectedFolde
                 'A11': String(fitReport.A11 || 0),
                 'A12': String(fitReport.A12 || 0),
                 'Min Height': originalSurface.parameters['Min Height'],
-                'Max Height': originalSurface.parameters['Max Height']
+                'Max Height': originalSurface.parameters['Max Height'],
+                'Step': originalSurface.parameters['Step'] || '1.0'
             };
-        } else if (type === 'OP') {
+        } else if (type === 'OP' || type === 'Poly') {
+            // OP = Opal Polynomial, Poly = Poly (Auto-Normalized)
+            // Both create Poly surface type in the application
             surfaceType = 'Poly';
             parameters = {
                 'A1': String(fitReport.A1),
@@ -137,7 +143,8 @@ export const ConversionResultsDialog = ({ convertResults, folders, selectedFolde
                 'A12': String(fitReport.A12 || 0),
                 'A13': String(fitReport.A13 || 0),
                 'Min Height': originalSurface.parameters['Min Height'],
-                'Max Height': originalSurface.parameters['Max Height']
+                'Max Height': originalSurface.parameters['Max Height'],
+                'Step': originalSurface.parameters['Step'] || '1.0'
             };
         }
 
