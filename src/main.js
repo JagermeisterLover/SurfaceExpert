@@ -544,16 +544,35 @@ function setupIpcHandlers() {
 
     try {
       const filePath = result.filePaths[0];
-      // Read file as buffer first to support both UTF-8 and ANSI encodings
+      // Read file as buffer first to support UTF-8, UTF-16, and ANSI encodings
       const buffer = fs.readFileSync(filePath);
 
-      // Try UTF-8 first
-      let content = buffer.toString('utf-8');
+      let content;
 
-      // Check if UTF-8 decoding produced replacement characters (indicating invalid UTF-8)
-      if (content.includes('\uFFFD')) {
-        // Fall back to latin1 (ANSI encoding)
-        content = buffer.toString('latin1');
+      // Check for UTF-16 LE BOM (FF FE)
+      if (buffer.length >= 2 && buffer[0] === 0xFF && buffer[1] === 0xFE) {
+        content = buffer.toString('utf16le');
+      }
+      // Check for UTF-16 BE BOM (FE FF)
+      else if (buffer.length >= 2 && buffer[0] === 0xFE && buffer[1] === 0xFF) {
+        // Node.js doesn't have native utf16be, so we swap bytes manually
+        const utf16leBuffer = Buffer.from(buffer);
+        for (let i = 0; i < utf16leBuffer.length; i += 2) {
+          const temp = utf16leBuffer[i];
+          utf16leBuffer[i] = utf16leBuffer[i + 1];
+          utf16leBuffer[i + 1] = temp;
+        }
+        content = utf16leBuffer.toString('utf16le');
+      }
+      // Try UTF-8
+      else {
+        content = buffer.toString('utf-8');
+
+        // Check if UTF-8 decoding produced replacement characters (indicating invalid UTF-8)
+        if (content.includes('\uFFFD')) {
+          // Fall back to latin1 (ANSI encoding)
+          content = buffer.toString('latin1');
+        }
       }
 
       return { canceled: false, content, filePath };
