@@ -1,6 +1,8 @@
 const { createElement: h } = React;
 const { useState, useEffect, useRef } = React;
 
+import { hasInvalidSymbols, isValidNumberInput } from '../../utils/numberParsing.js';
+
 /**
  * DebouncedInput - Input component that prevents UI freezing during typing
  * Maintains local state and only propagates changes on blur or Enter key
@@ -10,10 +12,12 @@ const { useState, useEffect, useRef } = React;
  * - Press Enter to save and move to next input (if onEnterKey provided)
  * - Immediate save on blur
  * - No auto-save while typing - user stays in control
+ * - Red glow for invalid number inputs (invalid symbols or malformed numbers)
  */
-const DebouncedInput = ({ value, onChange, onBlur, onEnterKey, debounceMs = 500, style, ...props }) => {
+const DebouncedInput = ({ value, onChange, onBlur, onEnterKey, debounceMs = 500, style, validateNumber = true, ...props }) => {
     const [localValue, setLocalValue] = useState(value);
     const [isFocused, setIsFocused] = useState(false);
+    const [isInvalid, setIsInvalid] = useState(false);
     const isNavigatingRef = useRef(false);
 
     // Update local value when prop value changes (external update)
@@ -21,16 +25,33 @@ const DebouncedInput = ({ value, onChange, onBlur, onEnterKey, debounceMs = 500,
     useEffect(() => {
         if (!isFocused) {
             setLocalValue(value);
+            setIsInvalid(false); // Reset validation on external update
         }
     }, [value, isFocused]);
 
     const handleFocus = (e) => {
         setIsFocused(true);
+        setIsInvalid(false); // Clear invalid state when user starts editing
     };
 
     const handleChange = (e) => {
         const newValue = e.target.value;
         setLocalValue(newValue);
+
+        // Validate input in real-time if validation is enabled
+        if (validateNumber) {
+            // Check for invalid symbols first (immediate feedback)
+            if (hasInvalidSymbols(newValue)) {
+                setIsInvalid(true);
+            } else if (newValue.trim() === '') {
+                // Empty is valid (will default to 0)
+                setIsInvalid(false);
+            } else {
+                // Check if it's a valid number or valid partial input
+                setIsInvalid(!isValidNumberInput(newValue));
+            }
+        }
+
         // No auto-save - only save on blur or Enter
     };
 
@@ -77,6 +98,16 @@ const DebouncedInput = ({ value, onChange, onBlur, onEnterKey, debounceMs = 500,
         }
     };
 
+    // Merge styles: add red glow if invalid
+    const inputStyle = {
+        ...style,
+        ...(isInvalid && {
+            boxShadow: '0 0 0 2px rgba(255, 50, 50, 0.5), 0 0 8px rgba(255, 0, 0, 0.3)',
+            borderColor: '#ff3232',
+            transition: 'box-shadow 0.2s ease, border-color 0.2s ease'
+        })
+    };
+
     return h('input', {
         ...props,
         type: 'text',
@@ -85,7 +116,8 @@ const DebouncedInput = ({ value, onChange, onBlur, onEnterKey, debounceMs = 500,
         onChange: handleChange,
         onBlur: handleBlur,
         onKeyDown: handleKeyDown,
-        style: style
+        style: inputStyle,
+        'aria-invalid': isInvalid
     });
 };
 

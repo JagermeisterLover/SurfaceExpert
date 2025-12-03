@@ -5,6 +5,7 @@
 
 import { calculateSurfaceValues, calculateSurfaceMetrics } from './calculations.js';
 import { generateReportData } from './reportGenerator.js';
+import { parseNumber } from './numberParsing.js';
 
 /**
  * Generate plot data arrays for report generation
@@ -12,9 +13,9 @@ import { generateReportData } from './reportGenerator.js';
  * @returns {Object} Plot data arrays (rValues, sagValues, etc.)
  */
 export const generateReportPlotData = (surface) => {
-    const minHeight = parseFloat(surface.parameters['Min Height']) || 0;
-    const maxHeight = parseFloat(surface.parameters['Max Height']) || 25;
-    const step = parseFloat(surface.parameters['Step']) || 1;
+    const minHeight = parseNumber(surface.parameters['Min Height']);
+    const maxHeight = parseNumber(surface.parameters['Max Height']);
+    const step = parseNumber(surface.parameters['Step']);
 
     const rValues = [];
     const sagValues = [];
@@ -27,7 +28,7 @@ export const generateReportPlotData = (surface) => {
         // For non-rotationally symmetric surfaces, use scan angle
         let values;
         if (surface.type === 'Irregular' || surface.type === 'Zernike') {
-            const scanAngle = parseFloat(surface.parameters['Scan Angle']) || 0;
+            const scanAngle = parseNumber(surface.parameters['Scan Angle']);
             const scanAngleRad = scanAngle * Math.PI / 180;
             const x = r * Math.cos(scanAngleRad);
             const y = r * Math.sin(scanAngleRad);

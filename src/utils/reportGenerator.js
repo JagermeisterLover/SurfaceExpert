@@ -5,6 +5,7 @@
 
 import { formatValue, degreesToDMS } from './formatters.js';
 import { getLocale } from '../constants/locales.js';
+import { parseNumber } from './numberParsing.js';
 
 /**
  * Get LaTeX equation for surface type
@@ -557,8 +558,8 @@ export const generateMetricPlots = async (plotData) => {
  * @returns {Promise<string>} Base64 encoded image data
  */
 const generate3DPlotImage = async (surface, plotData, colorscale = 'Jet', gridSize = 65) => {
-    const minHeight = parseFloat(surface.parameters['Min Height']) || 0;
-    const maxHeight = parseFloat(surface.parameters['Max Height']) || 25;
+    const minHeight = parseNumber(surface.parameters['Min Height']);
+    const maxHeight = parseNumber(surface.parameters['Max Height']);
     const size = gridSize;
 
     // Import calculateSurfaceValues dynamically
@@ -653,8 +654,8 @@ const generate3DPlotImage = async (surface, plotData, colorscale = 'Jet', gridSi
  * @returns {Promise<string>} Base64 encoded image data
  */
 const generate2DContourImage = async (surface, plotData, colorscale = 'Jet', gridSize = 129) => {
-    const minHeight = parseFloat(surface.parameters['Min Height']) || 0;
-    const maxHeight = parseFloat(surface.parameters['Max Height']) || 25;
+    const minHeight = parseNumber(surface.parameters['Min Height']);
+    const maxHeight = parseNumber(surface.parameters['Max Height']);
     const size = gridSize;
 
     // Import calculateSurfaceValues dynamically

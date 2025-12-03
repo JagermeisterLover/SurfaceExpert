@@ -2,6 +2,8 @@
 // This module contains helper functions for calculating surface properties
 // Depends on: calculationsWrapper.js (SurfaceCalculations)
 
+import { parseNumber } from './numberParsing.js';
+
 // Cache for best fit sphere parameters to avoid recalculation
 const bfsCache = new Map();
 
@@ -17,7 +19,7 @@ export const getBestFitSphereParams = (surface) => {
         return bfsCache.get(cacheKey);
     }
 
-    const parseParam = (name) => parseFloat(surface.parameters[name]) || 0;
+    const parseParam = (name) => parseNumber(surface.parameters[name]);
     const minHeight = parseParam('Min Height');
     const maxHeight = parseParam('Max Height');
 
@@ -54,7 +56,7 @@ export const getBestFitSphereParams = (surface) => {
  */
 export const calculateSagOnly = (r, surface) => {
     const params = surface.parameters;
-    const parseParam = (name) => parseFloat(params[name]) || 0;
+    const parseParam = (name) => parseNumber(params[name]);
     let sag = 0;
 
     try {
@@ -106,7 +108,7 @@ export const calculateSagOnly = (r, surface) => {
  */
 export const calculateSurfaceValues = (r, surface, x = null, y = null) => {
     const params = surface.parameters;
-    const parseParam = (name) => parseFloat(params[name]) || 0;
+    const parseParam = (name) => parseNumber(params[name]);
 
     let sag = 0, slope = 0, asphericity = 0, aberration = 0;
 
@@ -225,7 +227,7 @@ export const clearBFSCache = () => {
  * @returns {Object} Metrics object with maxSag, maxSlope, maxAngle, etc.
  */
 export const calculateSurfaceMetrics = (surface, wavelengthNm = 632.8) => {
-    const parseParam = (name) => parseFloat(surface.parameters[name]) || 0;
+    const parseParam = (name) => parseNumber(surface.parameters[name]);
     const minHeight = parseParam('Min Height');
     const maxHeight = parseParam('Max Height');
     const step = parseParam('Step') || 1;

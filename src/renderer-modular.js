@@ -31,6 +31,7 @@ import {
     handleConvertToUnZ as convertToUnZHandler,
     handleConvertToPoly as convertToPolyHandler
 } from './utils/surfaceOperationHandlers.js';
+import { parseNumber } from './utils/numberParsing.js';
 
 // UI Components
 import { PropertySection } from './components/ui/PropertySection.js';
@@ -882,7 +883,7 @@ const OpticalSurfaceAnalyzer = () => {
         }),
         // Normalize UnZ Dialog
         showNormalizeUnZ && selectedSurface && h(NormalizeUnZDialog, {
-            currentH: parseFloat(selectedSurface.parameters.H) || 1,
+            currentH: parseNumber(selectedSurface.parameters.H),
             onConfirm: handleNormalizeUnZConfirm,
             onCancel: () => setShowNormalizeUnZ(false),
             c,
