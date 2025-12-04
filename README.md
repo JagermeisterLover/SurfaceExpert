@@ -2,7 +2,7 @@
 
 Desktop application for analyzing and visualizing optical surface characteristics. Built with Electron and React, this tool provides real-time calculation and visualization of optical surface properties for various surface types used in optical design.
 
-![Version](https://img.shields.io/badge/version-2.5.0-blue)
+![Version](https://img.shields.io/badge/version-2.9.1-blue)
 ![License](https://img.shields.io/badge/license-MIT-green)
 
 <img width="1919" height="1023" alt="surfaceexpert" src="https://github.com/user-attachments/assets/dc9274a8-b7ee-4f0c-a657-aee136ecb538" />
