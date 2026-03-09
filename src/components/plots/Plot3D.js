@@ -16,7 +16,7 @@ import { parseNumber } from '../../utils/numberParsing.js';
  * @param {Object} c - Color palette object
  * @param {Object} t - Locale translations object
  */
-export const create3DPlot = (plotRef, selectedSurface, activeTab, colorscale, gridSize = 61, c = null, t = null) => {
+export const create3DPlot = (plotRef, selectedSurface, activeTab, colorscale, gridSize = 61, c = null, t = null, zernikeUnit = 'mm', wavelength = 632.8) => {
     // Default colors if palette not provided
     const colors = c || {
         bg: '#2b2b2b',
@@ -35,7 +35,15 @@ export const create3DPlot = (plotRef, selectedSurface, activeTab, colorscale, gr
     const minHeight = parseNumber(selectedSurface.parameters['Min Height']);
     const maxHeight = parseNumber(selectedSurface.parameters['Max Height']);
     const size = gridSize;
-    const unit = activeTab === 'slope' ? translations.summary.units.rad : translations.summary.units.mm;
+
+    // Zernike unit scaling: waves or mm
+    const isZernike = selectedSurface.type === 'Zernike';
+    const useWaves = isZernike && zernikeUnit === 'waves';
+    const wavelengthMm = wavelength * 1e-6; // nm -> mm
+    const unitScale = useWaves ? (1 / wavelengthMm) : 1;
+    const unit = activeTab === 'slope'
+        ? translations.summary.units.rad
+        : (useWaves ? 'waves' : translations.summary.units.mm);
 
     // Create coordinate arrays
     const x = [], y = [];
@@ -67,7 +75,7 @@ export const create3DPlot = (plotRef, selectedSurface, activeTab, colorscale, gr
                 else if (activeTab === 'aberration') val = values.aberration;
 
                 // Sanitize value to prevent WebGL errors
-                val = sanitizeValue(val);
+                val = sanitizeValue(val) * unitScale;
                 row.push(val);
                 validValues.push(val);
             } else {
@@ -113,25 +121,48 @@ export const create3DPlot = (plotRef, selectedSurface, activeTab, colorscale, gr
                 title: 'X (mm)',
                 range: [-maxHeight, maxHeight],
                 gridcolor: gridColor,
-                zerolinecolor: gridColor
+                zerolinecolor: gridColor,
+                exponentformat: 'none',
+                tickformat: '.4f'
             },
             yaxis: {
                 title: 'Y (mm)',
                 range: [-maxHeight, maxHeight],
                 gridcolor: gridColor,
-                zerolinecolor: gridColor
+                zerolinecolor: gridColor,
+                exponentformat: 'none',
+                tickformat: '.4f'
             },
             zaxis: {
                 title: `${activeTab.charAt(0).toUpperCase() + activeTab.slice(1)} (${unit})`,
                 range: [zMin, zMax],
                 gridcolor: gridColor,
-                zerolinecolor: gridColor
+                zerolinecolor: gridColor,
+                exponentformat: 'none',
+                tickformat: '.7f'
             },
             bgcolor: colors.bg,
-            // For sag tab, use manual aspect ratio to maintain 1:1 scale for X:Y
-            // For other tabs, use cube mode for uniform scaling
+            // Aspect ratio strategy:
+            // - Non-sag tabs: cube (uniform)
+            // - Zernike sag: fixed thin-slab ratio (0.15) matching interferometer-style presentation.
+            //   The true physical ratio (µm Z vs mm XY) would make the surface look like a tall spike.
+            //   Interferometers always compress Z visually so wavefront shape reads clearly.
+            // - Other sag: physical ratio clamped to [0.05, 1].
             aspectmode: activeTab === 'sag' ? 'manual' : 'cube',
-            aspectratio: activeTab === 'sag' ? { x: 1, y: 1, z: (zMax - zMin) / (2 * maxHeight) } : undefined
+            aspectratio: (() => {
+                if (activeTab !== 'sag') return undefined;
+                if (isZernike) {
+                    // Fixed visual thickness regardless of Z range — matches Zygo/Fizeau style
+                    return { x: 1, y: 1, z: 0.15 };
+                }
+                const zRange = (zMax - zMin) || 0;
+                const xyRange = 2 * maxHeight || 1;
+                const ratio = zRange / xyRange;
+                if (!isFinite(ratio) || ratio < 1e-6) {
+                    return { x: 1, y: 1, z: 0.15 };
+                }
+                return { x: 1, y: 1, z: Math.min(Math.max(ratio, 0.05), 1) };
+            })()
         },
         paper_bgcolor: colors.panel,
         plot_bgcolor: colors.panel,

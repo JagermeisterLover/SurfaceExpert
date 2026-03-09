@@ -14,7 +14,7 @@ import { parseNumber } from '../../utils/numberParsing.js';
  * @param {Object} c - Color palette object
  * @param {Object} t - Locale translations object
  */
-export const createCrossSection = (plotRef, selectedSurface, activeTab, c = null, t = null) => {
+export const createCrossSection = (plotRef, selectedSurface, activeTab, c = null, t = null, zernikeUnit = 'mm', wavelength = 632.8) => {
     // Default colors if palette not provided
     const colors = c || {
         bg: '#2b2b2b',
@@ -35,7 +35,14 @@ export const createCrossSection = (plotRef, selectedSurface, activeTab, c = null
     const maxHeight = parseNumber(selectedSurface.parameters['Max Height']);
     const step = parseNumber(selectedSurface.parameters['Step']);
     const x = [], y = [];
-    const unit = activeTab === 'slope' ? translations.summary.units.rad : translations.summary.units.mm;
+
+    const isZernike = selectedSurface.type === 'Zernike';
+    const useWaves = isZernike && zernikeUnit === 'waves';
+    const wavelengthMm = wavelength * 1e-6; // nm -> mm
+    const unitScale = useWaves ? (1 / wavelengthMm) : 1;
+    const unit = activeTab === 'slope'
+        ? translations.summary.units.rad
+        : (useWaves ? 'waves' : translations.summary.units.mm);
 
     // Plot from -maxHeight to +maxHeight (diameter) using step
     // Build array of r values, ensuring we always include minHeight and maxHeight
@@ -71,7 +78,7 @@ export const createCrossSection = (plotRef, selectedSurface, activeTab, c = null
             else if (activeTab === 'aberration') val = values.aberration;
 
             // Sanitize value to prevent WebGL errors
-            val = sanitizeValue(val);
+            val = sanitizeValue(val) * unitScale;
             y.push(val);
         } else {
             y.push(null);
@@ -96,15 +103,20 @@ export const createCrossSection = (plotRef, selectedSurface, activeTab, c = null
             title: 'Radial Distance (mm)',
             zeroline: true,
             gridcolor: gridColor,
-            zerolinecolor: gridColor
+            zerolinecolor: gridColor,
+            exponentformat: 'none',
+            tickformat: '.4f'
         },
         yaxis: {
             title: `${activeTab.charAt(0).toUpperCase() + activeTab.slice(1)} (${unit})`,
-            // For sag tab, maintain 1:1 aspect ratio with radial distance
-            scaleanchor: activeTab === 'sag' ? 'x' : undefined,
-            scaleratio: activeTab === 'sag' ? 1 : undefined,
+            // For sag on non-Zernike: maintain 1:1 aspect with radial distance (physically meaningful)
+            // For Zernike with R=0: tiny sag vs mm-scale X — DON'T force 1:1 or irregularities are invisible
+            scaleanchor: (activeTab === 'sag' && !isZernike) ? 'x' : undefined,
+            scaleratio: (activeTab === 'sag' && !isZernike) ? 1 : undefined,
             gridcolor: gridColor,
-            zerolinecolor: gridColor
+            zerolinecolor: gridColor,
+            exponentformat: 'none',
+            tickformat: '.7f'
         },
         paper_bgcolor: colors.panel,
         plot_bgcolor: colors.bg,
