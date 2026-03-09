@@ -52,6 +52,8 @@ export const locales = {
       gridSize2DHelp: 'Grid resolution for 2D heatmap plots with image-based rendering',
       language: 'Language',
       points: 'points',
+      zernikeUnit: 'Zernike Surface Plot Units',
+      zernikeUnitHelp: 'Display Zernike sag values in mm or in waves using the reference wavelength above',
       close: 'Close'
     },
 
@@ -456,6 +458,8 @@ export const locales = {
       gridSize2DHelp: 'Разрешение сетки для 2D тепловых карт с растровой визуализацией',
       language: 'Язык',
       points: 'точек',
+      zernikeUnit: 'Единицы графиков поверхности Цернике',
+      zernikeUnitHelp: 'Отображать значения прогиба Цернике в мм или в длинах волн (с использованием опорной длины волны)',
       close: 'Закрыть'
     },
 

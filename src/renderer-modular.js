@@ -104,6 +104,7 @@ const OpticalSurfaceAnalyzer = () => {
     const [theme, setTheme] = useState('Dark Gray (Default)'); // Color theme
     const [locale, setLocaleState] = useState(getCurrentLocale()); // Application locale (en, ru, etc.)
     const [fastConvertThreshold, setFastConvertThreshold] = useState(0.000001); // Max deviation threshold for fast convert to poly (mm)
+    const [zernikeUnit, setZernikeUnit] = useState('mm'); // Unit for Zernike surface plots: 'mm' or 'waves'
     const [fastConvertProgress, setFastConvertProgress] = useState(null); // Progress indicator for fast convert (e.g., 'A1+A2', 'A1-A5')
     const [contextMenu, setContextMenu] = useState(null);
     const [inputDialog, setInputDialog] = useState(null);
@@ -237,6 +238,9 @@ const OpticalSurfaceAnalyzer = () => {
                 setGridSize2D(result.settings.gridSize2D || 129);
                 setTheme(result.settings.theme || 'Dark Gray (Default)');
                 setFastConvertThreshold(result.settings.fastConvertThreshold || 0.000001);
+                if (result.settings.zernikeUnit) {
+                    setZernikeUnit(result.settings.zernikeUnit);
+                }
                 if (result.settings.locale) {
                     setLocaleState(result.settings.locale);
                 }
@@ -253,7 +257,8 @@ const OpticalSurfaceAnalyzer = () => {
                 gridSize2D,
                 theme,
                 locale,
-                fastConvertThreshold
+                fastConvertThreshold,
+                zernikeUnit
             };
             await window.electronAPI.saveSettings(settings);
         }
@@ -262,7 +267,7 @@ const OpticalSurfaceAnalyzer = () => {
     // Auto-save settings when they change
     useEffect(() => {
         saveSettingsToDisk();
-    }, [colorscale, wavelength, gridSize3D, gridSize2D, theme, locale, fastConvertThreshold]);
+    }, [colorscale, wavelength, gridSize3D, gridSize2D, theme, locale, fastConvertThreshold, zernikeUnit]);
 
     // Update selected surface when it changes in the folders
     useEffect(() => {
@@ -288,13 +293,13 @@ const OpticalSurfaceAnalyzer = () => {
         if (!selectedSurface) return;
         const c = getPalette(theme);
         if (plotRef.current && activeTab !== 'summary' && activeSubTab === '3d') {
-            create3DPlot(plotRef, selectedSurface, activeTab, colorscale, gridSize3D, c, t);
+            create3DPlot(plotRef, selectedSurface, activeTab, colorscale, gridSize3D, c, t, zernikeUnit, wavelength);
         } else if (plotRef.current && activeTab !== 'summary' && activeSubTab === '2d') {
-            create2DHeatmap(plotRef, selectedSurface, activeTab, colorscale, c, gridSize2D, t);
+            create2DHeatmap(plotRef, selectedSurface, activeTab, colorscale, c, gridSize2D, t, zernikeUnit, wavelength);
         } else if (plotRef.current && activeTab !== 'summary' && activeSubTab === 'cross') {
-            createCrossSection(plotRef, selectedSurface, activeTab, c, t);
+            createCrossSection(plotRef, selectedSurface, activeTab, c, t, zernikeUnit, wavelength);
         }
-    }, [selectedSurface, activeTab, activeSubTab, colorscale, gridSize3D, gridSize2D, theme]);
+    }, [selectedSurface, activeTab, activeSubTab, colorscale, gridSize3D, gridSize2D, theme, zernikeUnit, wavelength]);
 
     // ============================================
     // MENU ACTIONS
@@ -866,6 +871,8 @@ const OpticalSurfaceAnalyzer = () => {
             setLocale,
             fastConvertThreshold,
             setFastConvertThreshold,
+            zernikeUnit,
+            setZernikeUnit,
             onClose: () => setShowSettings(false),
             c,
             t

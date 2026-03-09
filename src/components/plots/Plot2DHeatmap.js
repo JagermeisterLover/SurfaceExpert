@@ -16,7 +16,7 @@ import { parseNumber } from '../../utils/numberParsing.js';
  * @param {number} gridSize - Grid size (odd number to ensure point at 0)
  * @param {Object} t - Locale translations object
  */
-export const create2DHeatmap = (plotRef, selectedSurface, activeTab, colorscale, c, gridSize = 101, t = null) => {
+export const create2DHeatmap = (plotRef, selectedSurface, activeTab, colorscale, c, gridSize = 101, t = null, zernikeUnit = 'mm', wavelength = 632.8) => {
     // Default translations if not provided
     const translations = t || {
         summary: {
@@ -29,6 +29,14 @@ export const create2DHeatmap = (plotRef, selectedSurface, activeTab, colorscale,
     const minHeight = parseNumber(selectedSurface.parameters['Min Height']);
     const maxHeight = parseNumber(selectedSurface.parameters['Max Height']);
     const size = gridSize;
+
+    const isZernike = selectedSurface.type === 'Zernike';
+    const useWaves = isZernike && zernikeUnit === 'waves';
+    const wavelengthMm = wavelength * 1e-6; // nm -> mm
+    const unitScale = useWaves ? (1 / wavelengthMm) : 1;
+    const unit = activeTab === 'slope'
+        ? translations.summary.units.rad
+        : (useWaves ? 'waves' : translations.summary.units.mm);
 
     // Generate coordinate arrays
     const x = [];
@@ -61,7 +69,7 @@ export const create2DHeatmap = (plotRef, selectedSurface, activeTab, colorscale,
                 else if (activeTab === 'aberration') val = values.aberration;
 
                 // Sanitize value to prevent WebGL errors
-                val = sanitizeValue(val);
+                val = sanitizeValue(val) * unitScale;
                 row.push(val);
             } else {
                 row.push(null);
@@ -73,8 +81,6 @@ export const create2DHeatmap = (plotRef, selectedSurface, activeTab, colorscale,
     // Sanitize the entire z array (additional safety check)
     const zSanitized = sanitizeArray2D(z);
 
-    const unit = activeTab === 'slope' ? translations.summary.units.rad : translations.summary.units.mm;
-
     const data = [{
         x: x,
         y: y,
@@ -84,11 +90,13 @@ export const create2DHeatmap = (plotRef, selectedSurface, activeTab, colorscale,
         colorbar: {
             title: `${activeTab}<br>(${unit})`,
             thickness: 15,
-            len: 0.7
+            len: 0.7,
+            exponentformat: 'none',
+            tickformat: '.7f'
         },
         hoverongaps: false,
-        hovertemplate: `X: %{x:.2f} ${translations.summary.units.mm}<br>Y: %{y:.2f} ${translations.summary.units.mm}<br>` +
-                       activeTab + ': %{z:.6f}<extra></extra>'
+        hovertemplate: `X: %{x:.4f} ${translations.summary.units.mm}<br>Y: %{y:.4f} ${translations.summary.units.mm}<br>` +
+                       activeTab + `: %{z:.7f} ${unit}<extra></extra>`
     }];
 
     const gridColor = getGridColor(c);
@@ -101,13 +109,17 @@ export const create2DHeatmap = (plotRef, selectedSurface, activeTab, colorscale,
             scaleratio: 1,
             constrain: 'domain',
             gridcolor: gridColor,
-            zerolinecolor: gridColor
+            zerolinecolor: gridColor,
+            exponentformat: 'none',
+            tickformat: '.4f'
         },
         yaxis: {
             title: 'Y (mm)',
             constrain: 'domain',
             gridcolor: gridColor,
-            zerolinecolor: gridColor
+            zerolinecolor: gridColor,
+            exponentformat: 'none',
+            tickformat: '.4f'
         },
         paper_bgcolor: c.panel,
         plot_bgcolor: c.bg,
