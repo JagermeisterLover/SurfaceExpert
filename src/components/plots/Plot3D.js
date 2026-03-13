@@ -92,14 +92,26 @@ export const create3DPlot = (plotRef, selectedSurface, activeTab, colorscale, gr
     const bounds = getSafeBounds(validValues);
     const zMin = bounds.min;
     const zMax = bounds.max;
+    const zRange = zMax - zMin;
+
+    // Subtract zMin so the surface is baseline-zeroed for the 3D plot.
+    // Without this, a large piston offset (e.g. Z1=1 → ~1580 mm base sag) causes
+    // the color variation (~0.002 mm) to be numerically insignificant relative to
+    // the absolute z values, producing sharp color banding in WebGL.
+    // The z-axis title notes the actual sag offset so information is not lost.
+    const zCentered = zSanitized.map(row =>
+        row.map(val => val !== null ? val - zMin : null)
+    );
 
     const data = [{
         x: x,
         y: y,
-        z: zSanitized,
+        z: zCentered,
         type: 'surface',
         colorscale: colorscale,
         showscale: true,
+        cmin: 0,
+        cmax: zRange,
         contours: {
             z: {
                 show: true,
@@ -134,8 +146,10 @@ export const create3DPlot = (plotRef, selectedSurface, activeTab, colorscale, gr
                 tickformat: '.4f'
             },
             zaxis: {
-                title: `${activeTab.charAt(0).toUpperCase() + activeTab.slice(1)} (${unit})`,
-                range: [zMin, zMax],
+                title: zMin !== 0
+                    ? `${activeTab.charAt(0).toUpperCase() + activeTab.slice(1)} (${unit}, offset ${zMin.toFixed(4)})`
+                    : `${activeTab.charAt(0).toUpperCase() + activeTab.slice(1)} (${unit})`,
+                range: [0, zRange],
                 gridcolor: gridColor,
                 zerolinecolor: gridColor,
                 exponentformat: 'none',

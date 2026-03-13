@@ -230,8 +230,8 @@ class ZMXParser {
             surfaceType = 'Zernike';
 
             // Get key parameters
-            const extrapolate = zmxSurface.parameters['PARM0'] || 0;
-            const numTerms = zmxSurface.parameters['XDAT1'] || 0;
+            // PARM0 = Extrapolate (parsed from ZMX but not stored — unused in SurfaceExpert)
+            // XDAT1 = Number of Terms (parsed from ZMX but not stored — SurfaceExpert always uses Z1-Z37)
             const normRadius = zmxSurface.parameters['XDAT2'] || maxHeight;
             const decenterX = zmxSurface.parameters['PARM9'] || 0;
             const decenterY = zmxSurface.parameters['PARM10'] || 0;
@@ -239,9 +239,7 @@ class ZMXParser {
             parameters = {
                 'Radius': String(radius),
                 'Conic Constant': String(conicConstant),
-                'Extrapolate': String(extrapolate),
                 'Norm Radius': String(normRadius),
-                'Number of Terms': String(numTerms),
                 'A2': String(zmxSurface.parameters['PARM1'] || 0),
                 'A4': String(zmxSurface.parameters['PARM2'] || 0),
                 'A6': String(zmxSurface.parameters['PARM3'] || 0),
