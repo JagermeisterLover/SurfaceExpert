@@ -139,10 +139,12 @@ export const calculateSurfaceValues = (r, surface, x = null, y = null) => {
             const A2 = parseParam('A2'), A4 = parseParam('A4'), A6 = parseParam('A6'), A8 = parseParam('A8');
             const A10 = parseParam('A10'), A12 = parseParam('A12'), A14 = parseParam('A14'), A16 = parseParam('A16');
 
-            // Collect all Zernike coefficients (Z1-Z37)
+            // Collect all Zernike coefficients (Z1-Z37), zeroing out disabled terms
             const coeffs = {};
             for (let i = 1; i <= 37; i++) {
-                coeffs[`Z${i}`] = parseParam(`Z${i}`);
+                const key = `Z${i}`;
+                const enabled = params[`${key}_enabled`] !== 'false';
+                coeffs[key] = enabled ? parseParam(key) : 0;
             }
 
             const xCoord = x !== null ? x : r;

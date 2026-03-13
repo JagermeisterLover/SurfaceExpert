@@ -259,17 +259,10 @@ export const PropertiesPanel = ({
                 surfaceTypes[selectedSurface.type].filter(param => {
                     // Filter out scan & coordinate parameters (they have their own box)
                     if (['Scan Angle', 'X Coordinate', 'Y Coordinate'].includes(param)) return false;
-
-                    // For Zernike surfaces, only show Z1-ZN based on "Number of Terms"
-                    if (selectedSurface.type === 'Zernike' && param.match(/^Z\d+$/)) {
-                        const zNum = parseInt(param.substring(1));
-                        const numTerms = parseInt(selectedSurface.parameters['Number of Terms']) || 0;
-                        return zNum <= numTerms;
-                    }
-
+                    // Zernike Z1-Z37 are rendered separately below with checkboxes
+                    if (selectedSurface.type === 'Zernike' && param.match(/^Z\d+$/)) return false;
                     return true;
                 }).map(param => {
-                    // Get Zernike name if this is a Z parameter
                     const zernName = zernikeNames[param];
                     const labelText = zernName ? `${param} - ${zernName}` : (t.parameters[param] || param);
 
@@ -294,7 +287,74 @@ export const PropertiesPanel = ({
                             }
                         })
                     );
-                })
+                }),
+
+                // Zernike terms Z1–Z37 with per-term enable/disable checkboxes
+                selectedSurface.type === 'Zernike' && h('div', { style: { marginTop: '4px' } },
+                    h('div', {
+                        style: {
+                            fontSize: '11px',
+                            fontWeight: '600',
+                            color: c.textDim,
+                            marginBottom: '8px',
+                            textTransform: 'uppercase',
+                            letterSpacing: '0.3px'
+                        }
+                    }, 'Zernike Coefficients'),
+                    Array.from({ length: 37 }, (_, i) => {
+                        const param = `Z${i + 1}`;
+                        const enabledKey = `${param}_enabled`;
+                        const isEnabled = selectedSurface.parameters[enabledKey] !== 'false';
+                        const labelText = `${param} — ${zernikeNames[param] || param}`;
+
+                        return h('div', {
+                            key: param,
+                            style: {
+                                display: 'flex',
+                                alignItems: 'center',
+                                gap: '6px',
+                                marginBottom: '5px',
+                                opacity: isEnabled ? 1 : 0.45
+                            }
+                        },
+                            h('input', {
+                                type: 'checkbox',
+                                checked: isEnabled,
+                                onChange: (e) => updateParameter(enabledKey, e.target.checked ? 'true' : 'false'),
+                                style: { cursor: 'pointer', flexShrink: 0, accentColor: c.accent }
+                            }),
+                            h('label', {
+                                style: {
+                                    fontSize: '11px',
+                                    color: c.textDim,
+                                    width: '168px',
+                                    flexShrink: 0,
+                                    cursor: 'pointer',
+                                    userSelect: 'none'
+                                },
+                                onClick: () => updateParameter(enabledKey, isEnabled ? 'false' : 'true')
+                            }, labelText),
+                            h(DebouncedInput, {
+                                value: selectedSurface.parameters[param] || '0',
+                                onChange: (value) => updateParameter(param, value),
+                                onEnterKey: () => handleEnterKeyNavigation(param),
+                                debounceMs: 300,
+                                disabled: !isEnabled,
+                                style: {
+                                    flex: 1,
+                                    padding: '4px 6px',
+                                    backgroundColor: isEnabled ? c.bg : c.panel,
+                                    color: isEnabled ? c.text : c.textDim,
+                                    border: `1px solid ${c.border}`,
+                                    borderRadius: '3px',
+                                    fontSize: '12px',
+                                    textAlign: 'right',
+                                    minWidth: 0
+                                }
+                            })
+                        );
+                    })
+                )
             ),
 
             // Calculated Metrics
