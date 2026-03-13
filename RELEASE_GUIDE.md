@@ -76,8 +76,11 @@ Every release includes two executables:
 # Bump version, commit, tag, and push in one go
 VERSION="2.7.3"
 
-# Update package.json version first, then:
-git add package.json
+# Update package.json version (edits the file in place)
+npm version $VERSION --no-git-tag-version
+
+# Commit, tag, and push
+git add package.json package-lock.json
 git commit -m "Release v$VERSION"
 git tag "v$VERSION"
 git push origin main
