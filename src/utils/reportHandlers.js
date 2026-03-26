@@ -24,7 +24,7 @@ export const generateReportPlotData = (surface) => {
     const aberrationValues = [];
     const angleValues = [];
 
-    for (let r = minHeight; r <= maxHeight; r += step) {
+    for (let r = minHeight; r < maxHeight; r += step) {
         // For non-rotationally symmetric surfaces, use scan angle
         let values;
         if (surface.type === 'Irregular' || surface.type === 'Zernike') {
@@ -38,6 +38,26 @@ export const generateReportPlotData = (surface) => {
         }
 
         rValues.push(r);
+        sagValues.push(values.sag);
+        slopeValues.push(values.slope);
+        asphericityValues.push(values.asphericity);
+        aberrationValues.push(values.aberration);
+        angleValues.push(values.angle);
+    }
+
+    // Always include maxHeight endpoint (mirrors SummaryView/DataView behavior)
+    {
+        let values;
+        if (surface.type === 'Irregular' || surface.type === 'Zernike') {
+            const scanAngle = parseNumber(surface.parameters['Scan Angle']);
+            const scanAngleRad = scanAngle * Math.PI / 180;
+            const x = maxHeight * Math.cos(scanAngleRad);
+            const y = maxHeight * Math.sin(scanAngleRad);
+            values = calculateSurfaceValues(maxHeight, surface, x, y);
+        } else {
+            values = calculateSurfaceValues(maxHeight, surface);
+        }
+        rValues.push(maxHeight);
         sagValues.push(values.sag);
         slopeValues.push(values.slope);
         asphericityValues.push(values.asphericity);
