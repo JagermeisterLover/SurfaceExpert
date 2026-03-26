@@ -129,7 +129,8 @@ export const locales = {
       subtabs: {
         '3d': '3D',
         '2d': '2D',
-        crossSection: 'Cross-Section'
+        crossSection: 'Cross-Section',
+        data: 'Data'
       },
 
       // Plot labels
@@ -533,7 +534,8 @@ export const locales = {
       subtabs: {
         '3d': '3D',
         '2d': '2D',
-        crossSection: 'Сечение'
+        crossSection: 'Сечение',
+        data: 'Данные'
       },
 
       // Подписи графиков
