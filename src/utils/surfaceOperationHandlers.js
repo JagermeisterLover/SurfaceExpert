@@ -3,7 +3,7 @@
 // ============================================
 // Business logic for surface transformation operations
 
-import { normalizeUnZ, convertPolyToUnZ, convertUnZToPoly, invertSurface } from './surfaceTransformations.js';
+import { normalizeUnZ, convertPolyToUnZ, convertUnZToPoly, invertSurface, flipZernikeAroundX, flipZernikeAroundY, flipZernikeAroundZ } from './surfaceTransformations.js';
 import { parseNumber } from './numberParsing.js';
 import { calculateSurfaceValues } from './calculations.js';
 
@@ -386,4 +386,102 @@ function calculateMaxDeviation(deviations) {
     }
 
     return maxDev;
+}
+
+// ============================================
+// Zernike Flip Handlers
+// ============================================
+
+const addFlippedZernikeSurface = (selectedSurface, selectedFolder, folders, setFolders, setSelectedSurface, flippedParams, suffix) => {
+    const newSurface = {
+        id: Date.now(),
+        name: `${selectedSurface.name} (${suffix})`,
+        type: 'Zernike',
+        color: selectedSurface.color,
+        parameters: flippedParams
+    };
+
+    const updatedFolders = folders.map(folder => {
+        if (folder.id === selectedFolder.id) {
+            return { ...folder, surfaces: [...folder.surfaces, newSurface] };
+        }
+        return folder;
+    });
+
+    setFolders(updatedFolders);
+    setSelectedSurface(newSurface);
+
+    if (window.electronAPI && window.electronAPI.saveSurface) {
+        window.electronAPI.saveSurface(selectedFolder.name, newSurface);
+    }
+};
+
+/**
+ * Flip Zernike surface around X-axis (y → -y) and create a new surface.
+ */
+export const handleFlipZernikeX = (selectedSurface, selectedFolder, folders, setFolders, setSelectedSurface) => {
+    if (!selectedSurface || selectedSurface.type !== 'Zernike' || !selectedFolder) return;
+    try {
+        const flipped = flipZernikeAroundX(selectedSurface.parameters);
+        addFlippedZernikeSurface(selectedSurface, selectedFolder, folders, setFolders, setSelectedSurface, flipped, 'flipped around X');
+    } catch (error) {
+        alert(`Error flipping surface around X: ${error.message}`);
+        console.error('Flip X error:', error);
+    }
+};
+
+/**
+ * Flip Zernike surface around Y-axis (x → -x) and create a new surface.
+ */
+export const handleFlipZernikeY = (selectedSurface, selectedFolder, folders, setFolders, setSelectedSurface) => {
+    if (!selectedSurface || selectedSurface.type !== 'Zernike' || !selectedFolder) return;
+    try {
+        const flipped = flipZernikeAroundY(selectedSurface.parameters);
+        addFlippedZernikeSurface(selectedSurface, selectedFolder, folders, setFolders, setSelectedSurface, flipped, 'flipped around Y');
+    } catch (error) {
+        alert(`Error flipping surface around Y: ${error.message}`);
+        console.error('Flip Y error:', error);
+    }
+};
+
+/**
+ * Flip Zernike surface around Z-axis (x → -x, y → -y) and create a new surface.
+ */
+export const handleFlipZernikeZ = (selectedSurface, selectedFolder, folders, setFolders, setSelectedSurface) => {
+    if (!selectedSurface || selectedSurface.type !== 'Zernike' || !selectedFolder) return;
+    try {
+        const flipped = flipZernikeAroundZ(selectedSurface.parameters);
+        addFlippedZernikeSurface(selectedSurface, selectedFolder, folders, setFolders, setSelectedSurface, flipped, 'flipped around Z');
+    } catch (error) {
+        alert(`Error flipping surface around Z: ${error.message}`);
+        console.error('Flip Z error:', error);
+    }
+};
+
+/**
+ * Copy all Zernike coefficients Z1-Z37 to clipboard as tab-separated values.
+ */
+export const handleCopyZernikeCoefficients = (selectedSurface) => {
+    if (!selectedSurface || selectedSurface.type !== 'Zernike') return;
+    const values = Array.from({ length: 37 }, (_, i) => {
+        const key = `Z${i + 1}`;
+        return selectedSurface.parameters[key] || '0';
+    });
+    const text = values.join('\t');
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+        navigator.clipboard.writeText(text).catch(() => fallbackCopy(text));
+    } else {
+        fallbackCopy(text);
+    }
+};
+
+function fallbackCopy(text) {
+    const el = document.createElement('textarea');
+    el.value = text;
+    el.style.position = 'fixed';
+    el.style.opacity = '0';
+    document.body.appendChild(el);
+    el.select();
+    document.execCommand('copy');
+    document.body.removeChild(el);
 }
