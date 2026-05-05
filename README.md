@@ -14,10 +14,10 @@ Desktop application for analyzing and visualizing optical surface characteristic
 - **Sphere** - Simple spherical surfaces
 - **Even Asphere** - Standard aspheric surfaces with even polynomial terms
 - **Odd Asphere** - Aspheric surfaces with odd and even polynomial terms
-- **Zernike** - Zernike Standard Sag surfaces (FZERNSAG) with up to 37 terms
+- **Zernike** - Zernike Fringe Sag surfaces (FZERNSAG) with up to 37 terms
 - **Irregular** - IRREGULA surface type with coordinate transformations
-- **Opal Un U** - Specialized iterative optical surfaces
-- **Opal Un Z** - Newton-Raphson iterative solver surfaces
+- **Opal Un U** - higher order surfaces from OPAL software
+- **Opal Un Z** - higher order surfaces from OPAL software
 - **Poly** - Pure polynomial surfaces
 
 ### Calculated Metrics
@@ -26,12 +26,12 @@ Desktop application for analyzing and visualizing optical surface characteristic
 - **Slope (dz/dr)** - First derivative of sag
 - **Angle** - Slope converted to degrees
 - **Asphericity** - Deviation from best-fit sphere
-- **Aberration of Normals** - Optical aberration metric
+- **Aberration of Normals** - useful for null lens design (shows deviation from sphere)
 - **Best Fit Sphere** - Optimal fitting sphere radius
 - **Paraxial F/#** - Paraxial focal ratio
 - **Working F/#** - Effective focal ratio based on max slope
-- **RMS Error** - Root Mean Square wavefront error (Zernike/Irregular)
-- **P-V Error** - Peak-to-Valley wavefront error (Zernike/Irregular)
+- **RMS Error** - Root Mean Square error (Zernike/Irregular)
+- **P-V Error** - Peak-to-Valley error (Zernike/Irregular)
 
 ### Visualization Tools
 
@@ -53,8 +53,6 @@ Desktop application for analyzing and visualizing optical surface characteristic
   - Complete parameter documentation
   - Summary metrics and data tables
 - **Folder Organization** - Hierarchical organization for managing multiple surfaces
-- **Settings Persistence** - Customizable colorscales, wavelength, and grid sizes
-- **Modern UI** - Custom title bar and menu bar with dark theme
 
 ## Installation
 
@@ -123,11 +121,10 @@ Outputs will be in the `dist/` directory:
 1. **File → Import ZMX File** (or `Ctrl+O`)
 2. Select your `.zmx` file
 3. Choose which surfaces to import
-4. Surfaces are automatically converted and added to your project
 
 ### Exporting Reports
 
-Generate professional reports with all calculations and plots:
+Generate reports with all calculations and plots:
 
 - **HTML Report**: `Ctrl+E` or File → Export HTML Report
 - **PDF Report**: `Ctrl+P` or File → Export PDF Report
@@ -148,25 +145,9 @@ Access settings via `Ctrl+,` or View → Settings:
 
 ### Surface Fitting
 
-Fit experimental data to surface equations:
+Fit sag data to surface equations (installation of python with lmfit library is required)
 
-1. Prepare data in `tempsurfacedata.txt` (r, z pairs)
-2. Configure `ConvertSettings.txt` with fitting parameters
-3. Run Python fitter: `python src/surfaceFitter.py`
-4. Review results in `FitReport.txt` and `FitMetrics.txt`
 
-## Keyboard Shortcuts
-
-| Shortcut | Action |
-|----------|--------|
-| `Ctrl+N` | New Surface |
-| `Ctrl+Shift+A` | Add Surface |
-| `Delete` | Remove Surface |
-| `F5` | Recalculate All |
-| `Ctrl+E` | Export HTML Report |
-| `Ctrl+P` | Export PDF Report |
-| `Ctrl+,` | Settings |
-| `Ctrl+Shift+I` | Toggle DevTools |
 
 ## Technical Details
 
@@ -179,69 +160,7 @@ Fit experimental data to surface equations:
 - **Language**: Pure JavaScript (ES6 modules, no TypeScript, no transpilation)
 - **Styling**: Inline styles with dark theme color palette
 
-### Project Structure
 
-```
-SurfaceExpert/
-├── src/
-│   ├── main.js                    # Electron main process
-│   ├── preload.js                 # Context isolation bridge
-│   ├── renderer-modular.js        # React application
-│   ├── calculationsWrapper.js     # Surface calculation engine
-│   ├── zmxParser.js               # Zemax ZMX file parser
-│   ├── calculations.py            # Python reference implementation
-│   ├── surfaceFitter.py           # Surface equation fitter
-│   ├── index.html                 # Entry point HTML
-│   ├── styles.css                 # Global CSS styles
-│   ├── components/                # React components (19 files)
-│   │   ├── TitleBar.js
-│   │   ├── MenuBar.js
-│   │   ├── Icons.js
-│   │   ├── dialogs/               # Modal dialogs (7 files)
-│   │   ├── plots/                 # Plot generators (3 files)
-│   │   ├── ui/                    # UI components (4 files)
-│   │   └── views/                 # View components (2 files)
-│   ├── constants/                 # Application constants (3 files)
-│   │   ├── surfaceTypes.js
-│   │   ├── colorscales.js
-│   │   └── colorPalettes.js
-│   └── utils/                     # Utility functions (3 files)
-│       ├── calculations.js
-│       ├── formatters.js
-│       └── reportGenerator.js
-├── package.json
-├── requirements.txt
-├── README.md                       # This file
-└── CLAUDE.md                       # Developer documentation
-```
-
-### Performance Characteristics
-
-- **3D Plots**: 60×60 grid (3,600 calculations) - adjustable
-- **2D Contour**: 100×100 grid (10,000 calculations) - adjustable
-- **Cross-Section**: 100 points
-- **Best-Fit Sphere Caching**: Automatic caching for faster asphericity calculations
-
-## Development
-
-### Development Mode
-
-Run with DevTools enabled:
-```bash
-npm run dev
-```
-
-### Code Organization
-
-The application uses a modular ES6 architecture with clear separation of concerns:
-
-- **Components**: Reusable React UI components
-- **Constants**: Surface type definitions and configuration
-- **Utils**: Pure utility functions for calculations and formatting
-- **Dialogs**: Modal dialogs for user interactions
-- **Plots**: Plotly visualization generators
-
-### Testing
 
 Manual testing checklist and test files:
 - `test_irregular.html` - Test suite for Irregular surface calculations
@@ -257,30 +176,6 @@ Manual testing checklist and test files:
 5. Push to your fork: `git push origin feature/my-feature`
 6. Create a Pull Request
 
-See `CLAUDE.md` for detailed developer documentation.
-
-## Recent Updates
-
-### Version 2.4.0 (2025-11-23)
-- Custom title bar and menu bar for modern UI
-- Settings persistence (colorscale, wavelength, grid sizes)
-- NormalizeUnZDialog for Opal Un Z surface transformations
-- Improved component modularity
-
-### Version 2.3.0 (2025-11-20)
-- RMS and P-V wavefront error calculations for Zernike and Irregular surfaces
-- Wavelength setting for error calculations
-- Enhanced report visualization
-
-### Version 2.2.0 (2025-11-18)
-- HTML and PDF report generation
-- Modular ES6 architecture
-- DebouncedInput component for better UX
-
-### Version 2.1.0 (2025-11)
-- ZMX file import support
-- Surface fitting with Python/lmfit
-- Folder organization system
 
 ## License
 
@@ -297,7 +192,3 @@ For bug reports and feature requests, please create an issue on the project repo
 - Surface fitting using lmfit library
 - Mathematical formulations based on Zemax optical design software conventions
 
----
-
-**Version**: 2.4.0
-**Last Updated**: November 2025
