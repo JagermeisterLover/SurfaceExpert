@@ -237,3 +237,71 @@ export const invertSurface = (surfaceType, parameters) => {
 
     return result;
 };
+
+/**
+ * Zernike azimuthal symmetry map:
+ *   m=0 (spherical): Z1,Z4,Z9,Z16,Z25,Z36,Z37
+ *   m=1 cos(X): Z2,Z7,Z14,Z23,Z34   sin(Y): Z3,Z8,Z15,Z24,Z35
+ *   m=2 cos(X): Z5,Z12,Z21,Z32      sin(Y): Z6,Z13,Z22,Z33
+ *   m=3 cos(X): Z10,Z19,Z30         sin(Y): Z11,Z20,Z31
+ *   m=4 cos(X): Z17,Z28             sin(Y): Z18,Z29
+ *   m=5 cos(X): Z26                 sin(Y): Z27
+ */
+
+/**
+ * Flip Zernike surface around X-axis (y → -y, θ → -θ).
+ * Negates all sine (Y) azimuthal terms; cosine (X) and spherical terms unchanged.
+ * Radius of curvature is NOT modified.
+ *
+ * @param {Object} parameters - Current Zernike surface parameters
+ * @returns {Object} Parameters with flipped Zernike coefficients
+ */
+export const flipZernikeAroundX = (parameters) => {
+    const result = { ...parameters };
+    [3, 6, 8, 11, 13, 15, 18, 20, 22, 24, 27, 29, 31, 33, 35].forEach(n => {
+        const key = `Z${n}`;
+        if (result[key] !== undefined) result[key] = changeSign(result[key]);
+    });
+    return result;
+};
+
+/**
+ * Flip Zernike surface around Y-axis (x → -x, θ → π-θ).
+ * Odd-m cosine (X) terms negated; even-m sine (Y) terms negated.
+ * Radius of curvature is NOT modified.
+ *
+ * @param {Object} parameters - Current Zernike surface parameters
+ * @returns {Object} Parameters with flipped Zernike coefficients
+ */
+export const flipZernikeAroundY = (parameters) => {
+    const result = { ...parameters };
+    // odd-m X terms: m=1(Z2,Z7,Z14,Z23,Z34), m=3(Z10,Z19,Z30), m=5(Z26)
+    [2, 7, 10, 14, 19, 23, 26, 30, 34].forEach(n => {
+        const key = `Z${n}`;
+        if (result[key] !== undefined) result[key] = changeSign(result[key]);
+    });
+    // even-m Y terms: m=2(Z6,Z13,Z22,Z33), m=4(Z18,Z29)
+    [6, 13, 18, 22, 29, 33].forEach(n => {
+        const key = `Z${n}`;
+        if (result[key] !== undefined) result[key] = changeSign(result[key]);
+    });
+    return result;
+};
+
+/**
+ * Flip Zernike surface around Z-axis (θ → θ+π, x→-x and y→-y simultaneously).
+ * All odd-m terms (both X and Y) are negated; even-m and spherical terms unchanged.
+ * Radius of curvature is NOT modified.
+ *
+ * @param {Object} parameters - Current Zernike surface parameters
+ * @returns {Object} Parameters with flipped Zernike coefficients
+ */
+export const flipZernikeAroundZ = (parameters) => {
+    const result = { ...parameters };
+    // odd-m: m=1(Z2,Z3,Z7,Z8,Z14,Z15,Z23,Z24,Z34,Z35), m=3(Z10,Z11,Z19,Z20,Z30,Z31), m=5(Z26,Z27)
+    [2, 3, 7, 8, 10, 11, 14, 15, 19, 20, 23, 24, 26, 27, 30, 31, 34, 35].forEach(n => {
+        const key = `Z${n}`;
+        if (result[key] !== undefined) result[key] = changeSign(result[key]);
+    });
+    return result;
+};

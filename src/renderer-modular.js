@@ -30,7 +30,11 @@ import {
     handleNormalizeUnZConfirm as normalizeUnZConfirmHandler,
     handleConvertToUnZ as convertToUnZHandler,
     handleConvertToPoly as convertToPolyHandler,
-    handleFastConvertToPoly as fastConvertToPolyHandler
+    handleFastConvertToPoly as fastConvertToPolyHandler,
+    handleFlipZernikeX as flipZernikeXHandler,
+    handleFlipZernikeY as flipZernikeYHandler,
+    handleFlipZernikeZ as flipZernikeZHandler,
+    handleCopyZernikeCoefficients as copyZernikeCoefficientsHandler
 } from './utils/surfaceOperationHandlers.js';
 import { parseNumber } from './utils/numberParsing.js';
 
@@ -425,6 +429,22 @@ const OpticalSurfaceAnalyzer = () => {
 
     const handleConvertToPoly = () => {
         convertToPolyHandler(selectedSurface, selectedFolder, folders, setFolders, setSelectedSurface);
+    };
+
+    const handleFlipX = () => {
+        flipZernikeXHandler(selectedSurface, selectedFolder, folders, setFolders, setSelectedSurface);
+    };
+
+    const handleFlipY = () => {
+        flipZernikeYHandler(selectedSurface, selectedFolder, folders, setFolders, setSelectedSurface);
+    };
+
+    const handleFlipZ = () => {
+        flipZernikeZHandler(selectedSurface, selectedFolder, folders, setFolders, setSelectedSurface);
+    };
+
+    const handleCopyCoefficients = () => {
+        copyZernikeCoefficientsHandler(selectedSurface);
     };
 
     const handleFastConvertToPoly = () => {
@@ -1093,6 +1113,10 @@ const OpticalSurfaceAnalyzer = () => {
                 handleNormalizeUnZ,
                 handleConvertToUnZ,
                 handleConvertToPoly,
+                handleFlipX,
+                handleFlipY,
+                handleFlipZ,
+                handleCopyCoefficients,
                 c,
                 t
             })

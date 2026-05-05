@@ -13,7 +13,7 @@ const { createElement: h } = React;
  * @param {Function} props.onConvertToPoly - Callback for UnZ → Poly conversion
  * @param {Object} props.c - Color scheme object
  */
-export const SurfaceActionButtons = ({ surface, onInvert, onNormalizeUnZ, onConvertToUnZ, onConvertToPoly, c, t }) => {
+export const SurfaceActionButtons = ({ surface, onInvert, onNormalizeUnZ, onConvertToUnZ, onConvertToPoly, onFlipX, onFlipY, onFlipZ, onCopyCoefficients, c, t }) => {
     const buttonStyle = {
         padding: '8px 16px',
         backgroundColor: c.accent,
@@ -69,7 +69,40 @@ export const SurfaceActionButtons = ({ surface, onInvert, onNormalizeUnZ, onConv
             title: 'Convert this Poly surface to Opal Un Z'
         }, t.properties.convertToUnZ),
 
-        // Convert to Poly button - shown only for Opal Un Z
+        // Flip and Copy buttons - shown only for Zernike
+        surface.type === 'Zernike' && h('button', {
+            onClick: onFlipX,
+            style: buttonStyle,
+            onMouseEnter: (e) => e.target.style.backgroundColor = '#3a7bc8',
+            onMouseLeave: (e) => e.target.style.backgroundColor = c.accent,
+            title: 'Create a new surface with Zernike coefficients mirrored about the X-axis (y → -y)'
+        }, 'Flip around X'),
+
+        surface.type === 'Zernike' && h('button', {
+            onClick: onFlipY,
+            style: buttonStyle,
+            onMouseEnter: (e) => e.target.style.backgroundColor = '#3a7bc8',
+            onMouseLeave: (e) => e.target.style.backgroundColor = c.accent,
+            title: 'Create a new surface with Zernike coefficients mirrored about the Y-axis (x → -x)'
+        }, 'Flip around Y'),
+
+        surface.type === 'Zernike' && h('button', {
+            onClick: onFlipZ,
+            style: buttonStyle,
+            onMouseEnter: (e) => e.target.style.backgroundColor = '#3a7bc8',
+            onMouseLeave: (e) => e.target.style.backgroundColor = c.accent,
+            title: 'Create a new surface with Zernike coefficients rotated 180° about the Z-axis (x → -x, y → -y)'
+        }, 'Flip around Z'),
+
+        surface.type === 'Zernike' && h('button', {
+            onClick: onCopyCoefficients,
+            style: buttonStyle,
+            onMouseEnter: (e) => e.target.style.backgroundColor = '#3a7bc8',
+            onMouseLeave: (e) => e.target.style.backgroundColor = c.accent,
+            title: 'Copy Z1-Z37 values as tab-separated text for pasting into Excel'
+        }, 'Copy Coefficients'),
+
+                // Convert to Poly button - shown only for Opal Un Z
         surface.type === 'Opal Un Z' && h('button', {
             onClick: onConvertToPoly,
             style: buttonStyle,

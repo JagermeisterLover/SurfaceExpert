@@ -32,6 +32,10 @@ export const PropertiesPanel = ({
     handleNormalizeUnZ,
     handleConvertToUnZ,
     handleConvertToPoly,
+    handleFlipX,
+    handleFlipY,
+    handleFlipZ,
+    handleCopyCoefficients,
     c,
     t
 }) => {
@@ -383,6 +387,10 @@ export const PropertiesPanel = ({
                 onNormalizeUnZ: handleNormalizeUnZ,
                 onConvertToUnZ: handleConvertToUnZ,
                 onConvertToPoly: handleConvertToPoly,
+                onFlipX: handleFlipX,
+                onFlipY: handleFlipY,
+                onFlipZ: handleFlipZ,
+                onCopyCoefficients: handleCopyCoefficients,
                 c,
                 t
             }),
