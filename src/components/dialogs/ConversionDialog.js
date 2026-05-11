@@ -1,11 +1,11 @@
-const { useState } = React;
+const { useState, useEffect } = React;
 const { createElement: h } = React;
 
 // Import calculateSurfaceValues from utils
 import { calculateSurfaceValues } from '../../utils/calculations.js';
 import { parseNumber } from '../../utils/numberParsing.js';
 
-const ConversionDialog = ({ selectedSurface, folders, selectedFolder, setFolders, setSelectedSurface, setShowConvert, setShowConvertResults, setConvertResults, c, t }) => {
+const ConversionDialog = ({ selectedSurface, folders, selectedFolder, setFolders, setSelectedSurface, setShowConvert, setShowConvertResults, setConvertResults, fitterEngine, c, t }) => {
     const [targetType, setTargetType] = useState('1'); // 1=Even Asphere, 2=Odd Asphere, 3=Opal UnZ, 4=Opal UnU, 5=Opal Poly, 6=Poly (normalized)
     const [algorithm, setAlgorithm] = useState('leastsq');
     const [radius, setRadius] = useState(selectedSurface.parameters['Radius'] || '100');
@@ -18,6 +18,14 @@ const ConversionDialog = ({ selectedSurface, folders, selectedFolder, setFolders
     const [useCoeffs, setUseCoeffs] = useState(true);
     const [numCoeffs, setNumCoeffs] = useState(3);
     const [isRunning, setIsRunning] = useState(false);
+
+    // JS engine only supports Levenberg-Marquardt (leastsq).
+    // If user switches engine, snap algorithm back to leastsq.
+    useEffect(() => {
+        if (fitterEngine !== 'python' && algorithm !== 'leastsq') {
+            setAlgorithm('leastsq');
+        }
+    }, [fitterEngine]);
 
     const getMaxCoeffs = () => {
         if (targetType === '1') return 9; // A4-A20 (9 terms)
@@ -149,10 +157,16 @@ const ConversionDialog = ({ selectedSurface, folders, selectedFolder, setFolders
                         fontSize: '13px'
                     }
                 },
-                    h('option', { value: 'leastsq' }, t.dialogs.conversion.algorithms.leastsq),
-                    h('option', { value: 'least_squares' }, t.dialogs.conversion.algorithms.least_squares),
-                    h('option', { value: 'nelder' }, t.dialogs.conversion.algorithms.nelder),
-                    h('option', { value: 'powell' }, t.dialogs.conversion.algorithms.powell)
+                    // JS engine only implements Levenberg-Marquardt (leastsq).
+                    // The other lmfit methods are Python-only.
+                    fitterEngine === 'python'
+                        ? [
+                            h('option', { key: 'leastsq', value: 'leastsq' }, t.dialogs.conversion.algorithms.leastsq),
+                            h('option', { key: 'least_squares', value: 'least_squares' }, t.dialogs.conversion.algorithms.least_squares),
+                            h('option', { key: 'nelder', value: 'nelder' }, t.dialogs.conversion.algorithms.nelder),
+                            h('option', { key: 'powell', value: 'powell' }, t.dialogs.conversion.algorithms.powell)
+                          ]
+                        : h('option', { key: 'leastsq', value: 'leastsq' }, t.dialogs.conversion.algorithms.leastsq)
                 )
             ),
 

@@ -6,6 +6,10 @@
  * Same API as the Python script's IPC contract:
  *   fitSurface(surfaceData, settings)
  *     -> { success, fitReport, metrics, deviations, stdout }
+ *
+ * Per-parameter scaling is applied internally so the optimizer always works on
+ * O(1) values. Without this, coefficients spanning 10² … 10⁻¹⁵ make the default
+ * library defaults (gradientDifference=0.1, errorTolerance=1e-3) useless.
  */
 
 const { levenbergMarquardt } = require('ml-levenberg-marquardt');
@@ -158,6 +162,127 @@ function floatSetting(settings, key, fallback) {
   return Number.isNaN(n) ? fallback : n;
 }
 
+/**
+ * Estimate a sane scale for each free parameter so the optimizer sees O(1) values.
+ *
+ * The strategy is per-surface-type because each polynomial term contributes to
+ * z differently:
+ *  - EA, OA: term is A_n * r^n        → scale = zMax / rMax^n
+ *  - Opal Z: term is A_n * w^n, w=z/H  → scale = zMax * H^n / zMax^n
+ *  - Opal U: term is A_n * w^n, w=r²/H² → scale = zMax * H^(2n) / rMax^(2n)
+ *  - Opal P: term is A_n * z^n (z·Q(z)=r²) → scale = rMax² / zMax^n
+ *  - Poly (auto-norm): internal norm makes all coefs ~ rMax²/zMax
+ *  - Shape (k, e2): scale = 1
+ */
+function scaleFromSpec(spec, ctx) {
+  const { rMax, zMax, R, H, H_internal } = ctx;
+  switch (spec.kind) {
+    case 'shape':
+      return 1;
+    case 'r-power': {
+      const n = spec.power;
+      const s = zMax / Math.pow(Math.max(rMax, 1e-12), n);
+      return Number.isFinite(s) && s > 0 ? s : 1e-30;
+    }
+    case 'opal-z-power': {
+      const n = spec.power;
+      const s = zMax * Math.pow(H, n) / Math.pow(Math.max(zMax, 1e-12), n);
+      return Number.isFinite(s) && s !== 0 ? s : 1;
+    }
+    case 'opal-u-power': {
+      const n = spec.power;
+      const s = zMax * Math.pow(H, 2 * n) / Math.pow(Math.max(rMax, 1e-12), 2 * n);
+      return Number.isFinite(s) && s !== 0 ? s : 1;
+    }
+    case 'opal-p-power': {
+      const n = spec.power;
+      const s = (rMax * rMax) / Math.pow(Math.max(zMax, 1e-12), n);
+      return Number.isFinite(s) && s !== 0 ? s : 1;
+    }
+    case 'poly-internal': {
+      // Internal Q-coefficients live on H_internal-normalized variable; scale ~ rMax²/zMax
+      const s = (rMax * rMax) / Math.max(zMax, 1e-12);
+      return Number.isFinite(s) && s !== 0 ? s : 1;
+    }
+    default:
+      return 1;
+  }
+}
+
+/**
+ * Compute weighted SSE for given parameters (same metric the library uses).
+ */
+function sseFor(rArr, zArr, modelFn, params) {
+  const f = modelFn(params);
+  let s = 0;
+  for (let i = 0; i < rArr.length; i++) {
+    const d = zArr[i] - f(rArr[i]);
+    s += d * d;
+  }
+  return s;
+}
+
+/**
+ * Run Levenberg-Marquardt with per-parameter scaling so the optimizer always
+ * sees O(1) parameter magnitudes regardless of the surface model.
+ *
+ * The library only terminates on absolute SSE threshold, never on relative
+ * improvement — so we drive it in chunks and break when SSE stops shrinking.
+ * That mirrors lmfit's ftol behavior and gives a meaningful iteration count.
+ */
+function fitWithScaling(rArr, zArr, initialValues, scales, modelFn, maxIterations) {
+  const chunkSize = 100;
+  const relTol = 1e-12;  // chunks must reduce SSE by more than this fraction to keep going
+
+  let curParams = initialValues.slice();
+  let bestParams = curParams.slice();
+  let bestSse = sseFor(rArr, zArr, modelFn, curParams);
+  let totalIter = 0;
+
+  while (totalIter < maxIterations) {
+    const remaining = Math.min(chunkSize, maxIterations - totalIter);
+    const scaledInitial = curParams.map((v, i) => v / scales[i]);
+    const scaledModelFn = (sparams) => modelFn(sparams.map((sp, i) => sp * scales[i]));
+
+    const result = levenbergMarquardt(
+      { x: rArr, y: zArr },
+      scaledModelFn,
+      {
+        damping: 1e-3,
+        initialValues: scaledInitial,
+        gradientDifference: 1e-6,
+        centralDifference: true,
+        improvementThreshold: 1e-6,
+        maxIterations: remaining,
+        errorTolerance: 1e-30,
+      }
+    );
+
+    totalIter += result.iterations;
+    const newParams = result.parameterValues.map((sp, i) => sp * scales[i]);
+    const newSse = sseFor(rArr, zArr, modelFn, newParams);
+
+    // Track global best
+    if (newSse < bestSse) {
+      const relImprovement = (bestSse - newSse) / Math.max(bestSse, 1e-30);
+      bestSse = newSse;
+      bestParams = newParams;
+      // Stop if a full chunk produced negligible improvement
+      if (result.iterations >= remaining && relImprovement < relTol) break;
+    } else {
+      // No improvement this chunk — LM has stagnated
+      break;
+    }
+
+    // The library may stop early if it hit its absolute tolerance
+    if (result.iterations < remaining) break;
+
+    curParams = newParams;
+  }
+
+  return { parameterValues: bestParams, iterations: totalIter };
+}
+
 // ---------- Main fit entrypoint ----------
 
 /**
@@ -192,15 +317,26 @@ function fitSurface(surfaceData, settings) {
     );
   }
 
-  let initialValues = [];
+  const rMax = Math.max(...rArr.map(Math.abs), 1e-12);
+  const zMax = Math.max(...zArr.map(Math.abs), 1e-12);
+
+  const initialValues = [];
+  const paramSpecs = [];
   let modelFn;          // (params) => (r) => z
   let extractFitReport; // (params) => {Type, ...}
   let H_internal = null;
 
   if (equationChoice === '1') {
     // Even Asphere
-    if (conicIsVariable) initialValues.push(-1.0);
-    for (let i = 0; i < numTerms; i++) initialValues.push(0.0);
+    if (conicIsVariable) {
+      initialValues.push(-1.0);
+      paramSpecs.push({ kind: 'shape', name: 'k' });
+    }
+    for (let i = 0; i < numTerms; i++) {
+      const power = 4 + 2 * i;
+      initialValues.push(0.0);
+      paramSpecs.push({ kind: 'r-power', power, name: `A${power}` });
+    }
 
     modelFn = (params) => (r) => {
       let idx = 0;
@@ -218,8 +354,15 @@ function fitSurface(surfaceData, settings) {
     };
   } else if (equationChoice === '2') {
     // Odd Asphere
-    if (conicIsVariable) initialValues.push(-1.0);
-    for (let i = 0; i < numTerms; i++) initialValues.push(0.0);
+    if (conicIsVariable) {
+      initialValues.push(-1.0);
+      paramSpecs.push({ kind: 'shape', name: 'k' });
+    }
+    for (let i = 0; i < numTerms; i++) {
+      const power = 3 + i;
+      initialValues.push(0.0);
+      paramSpecs.push({ kind: 'r-power', power, name: `A${power}` });
+    }
 
     modelFn = (params) => (r) => {
       let idx = 0;
@@ -237,8 +380,15 @@ function fitSurface(surfaceData, settings) {
     };
   } else if (equationChoice === '3') {
     // Opal Universal Z
-    if (e2IsVariable) initialValues.push(1.0);
-    for (let i = 0; i < numTerms; i++) initialValues.push(0.0);
+    if (e2IsVariable) {
+      initialValues.push(1.0);
+      paramSpecs.push({ kind: 'shape', name: 'e2' });
+    }
+    for (let i = 0; i < numTerms; i++) {
+      const power = 3 + i;
+      initialValues.push(0.0);
+      paramSpecs.push({ kind: 'opal-z-power', power, name: `A${power}` });
+    }
 
     modelFn = (params) => (r) => {
       let idx = 0;
@@ -256,8 +406,15 @@ function fitSurface(surfaceData, settings) {
     };
   } else if (equationChoice === '4') {
     // Opal Universal U
-    if (e2IsVariable) initialValues.push(1.0);
-    for (let i = 0; i < numTerms; i++) initialValues.push(0.0);
+    if (e2IsVariable) {
+      initialValues.push(1.0);
+      paramSpecs.push({ kind: 'shape', name: 'e2' });
+    }
+    for (let i = 0; i < numTerms; i++) {
+      const power = 2 + i;
+      initialValues.push(0.0);
+      paramSpecs.push({ kind: 'opal-u-power', power, name: `A${power}` });
+    }
 
     modelFn = (params) => (r) => {
       let idx = 0;
@@ -275,8 +432,15 @@ function fitSurface(surfaceData, settings) {
     };
   } else if (equationChoice === '5') {
     // Opal Polynomial
-    if (e2IsVariable) initialValues.push(1.0);
-    for (let i = 0; i < numTerms; i++) initialValues.push(0.0);
+    if (e2IsVariable) {
+      initialValues.push(1.0);
+      paramSpecs.push({ kind: 'shape', name: 'e2' });
+    }
+    for (let i = 0; i < numTerms; i++) {
+      const power = 3 + i;
+      initialValues.push(0.0);
+      paramSpecs.push({ kind: 'opal-p-power', power, name: `A${power}` });
+    }
 
     modelFn = (params) => (r) => {
       let idx = 0;
@@ -296,9 +460,8 @@ function fitSurface(surfaceData, settings) {
     };
   } else if (equationChoice === '6') {
     // Poly (Auto-Normalized)
-    const zMaxEstimate = Math.max(...zArr.map(Math.abs));
-    const fallback = Math.max(...rArr.map(Math.abs)) / 10;
-    const autoH = zMaxEstimate > 0 ? zMaxEstimate : fallback;
+    const fallback = rMax / 10;
+    const autoH = zMax > 1e-12 ? zMax : fallback;
     H_internal = settings.H_internal !== undefined && String(settings.H_internal).trim() !== ''
       ? floatSetting(settings, 'H_internal', autoH)
       : autoH;
@@ -307,8 +470,14 @@ function fitSurface(surfaceData, settings) {
     stdoutLines.push('INFO: This improves numerical conditioning during fitting');
     stdoutLines.push('INFO: Coefficients will be automatically rescaled to H=1');
 
-    if (e2IsVariable) initialValues.push(1.0);
-    for (let i = 0; i < numTerms; i++) initialValues.push(0.0);
+    if (e2IsVariable) {
+      initialValues.push(1.0);
+      paramSpecs.push({ kind: 'shape', name: 'e2' });
+    }
+    for (let i = 0; i < numTerms; i++) {
+      initialValues.push(0.0);
+      paramSpecs.push({ kind: 'poly-internal', name: `A${3 + i}` });
+    }
 
     modelFn = (params) => (r) => {
       let idx = 0;
@@ -339,24 +508,22 @@ function fitSurface(surfaceData, settings) {
   // Run optimization (skip if no free parameters)
   let fittedParams = initialValues.slice();
   let iterations = 0;
-  let converged = true;
+  const maxIterations = 2000;
 
   if (initialValues.length > 0) {
-    const maxIterations = 200;
-    const fit = levenbergMarquardt(
-      { x: rArr, y: zArr },
-      modelFn,
-      {
-        damping: 1.5,
-        initialValues,
-        gradientDifference: 1e-6,
-        maxIterations,
-        errorTolerance: 1e-12,
+    const ctx = { rMax, zMax, R, H, H_internal };
+    const scales = paramSpecs.map((spec, i) => {
+      const s = scaleFromSpec(spec, ctx);
+      // Shape params can have non-zero initial; bias scale by |initial| if larger
+      if (spec.kind === 'shape' && Math.abs(initialValues[i]) > 1) {
+        return Math.abs(initialValues[i]);
       }
-    );
-    fittedParams = fit.parameterValues;
-    iterations = fit.iterations;
-    converged = iterations < maxIterations;
+      return s;
+    });
+
+    const result = fitWithScaling(rArr, zArr, initialValues, scales, modelFn, maxIterations);
+    fittedParams = result.parameterValues;
+    iterations = result.iterations;
   } else {
     stdoutLines.push('INFO: No free parameters; evaluating model directly');
   }
@@ -381,6 +548,14 @@ function fitSurface(surfaceData, settings) {
   const chiSquare = ssRes;
   const reducedChiSquare = n > kParams ? ssRes / (n - kParams) : NaN;
 
+  // Success heuristic: either the library terminated early (rare with our settings)
+  // OR the fit is "good" (rmse small compared to data range). The latter mirrors
+  // what users actually care about — a converged-but-mediocre fit is still useful.
+  const converged = iterations < maxIterations;
+  const relativeRmse = rmse / Math.max(zMax, 1e-15);
+  const goodFit = relativeRmse < 1e-3;
+  const success = converged || goodFit;
+
   const fitReport = extractFitReport(fittedParams);
   const metrics = {
     RMSE: rmse,
@@ -390,7 +565,7 @@ function fitSurface(surfaceData, settings) {
     Chi_square: chiSquare,
     Reduced_chi_square: reducedChiSquare,
     Iterations: iterations,
-    Success: converged,
+    Success: success,
   };
 
   const deviationsText = rArr.map((r, i) =>
