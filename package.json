@@ -27,6 +27,7 @@
     "rcedit": "^5.0.2"
   },
   "dependencies": {
+    "ml-levenberg-marquardt": "^5.0.1",
     "react": "^18.2.0",
     "react-dom": "^18.2.0"
   },

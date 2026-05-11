@@ -109,6 +109,7 @@ const OpticalSurfaceAnalyzer = () => {
     const [locale, setLocaleState] = useState(getCurrentLocale()); // Application locale (en, ru, etc.)
     const [fastConvertThreshold, setFastConvertThreshold] = useState(0.000001); // Max deviation threshold for fast convert to poly (mm)
     const [zernikeUnit, setZernikeUnit] = useState('mm'); // Unit for Zernike surface plots: 'mm' or 'waves'
+    const [fitterEngine, setFitterEngine] = useState('js'); // Curve fitter engine: 'js' (default) or 'python' (legacy)
     const [fastConvertProgress, setFastConvertProgress] = useState(null); // Progress indicator for fast convert (e.g., 'A1+A2', 'A1-A5')
     const [contextMenu, setContextMenu] = useState(null);
     const [inputDialog, setInputDialog] = useState(null);
@@ -245,6 +246,9 @@ const OpticalSurfaceAnalyzer = () => {
                 if (result.settings.zernikeUnit) {
                     setZernikeUnit(result.settings.zernikeUnit);
                 }
+                if (result.settings.fitterEngine === 'python' || result.settings.fitterEngine === 'js') {
+                    setFitterEngine(result.settings.fitterEngine);
+                }
                 if (result.settings.locale) {
                     setLocaleState(result.settings.locale);
                 }
@@ -262,7 +266,8 @@ const OpticalSurfaceAnalyzer = () => {
                 theme,
                 locale,
                 fastConvertThreshold,
-                zernikeUnit
+                zernikeUnit,
+                fitterEngine
             };
             await window.electronAPI.saveSettings(settings);
         }
@@ -271,7 +276,7 @@ const OpticalSurfaceAnalyzer = () => {
     // Auto-save settings when they change
     useEffect(() => {
         saveSettingsToDisk();
-    }, [colorscale, wavelength, gridSize3D, gridSize2D, theme, locale, fastConvertThreshold, zernikeUnit]);
+    }, [colorscale, wavelength, gridSize3D, gridSize2D, theme, locale, fastConvertThreshold, zernikeUnit, fitterEngine]);
 
     // Update selected surface when it changes in the folders
     useEffect(() => {
@@ -893,6 +898,8 @@ const OpticalSurfaceAnalyzer = () => {
             setFastConvertThreshold,
             zernikeUnit,
             setZernikeUnit,
+            fitterEngine,
+            setFitterEngine,
             onClose: () => setShowSettings(false),
             c,
             t
