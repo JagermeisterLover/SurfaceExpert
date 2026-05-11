@@ -45,7 +45,7 @@ Desktop application for analyzing and visualizing optical surface characteristic
 
 - **Zemax ZMX Import** - Import surfaces from Zemax optical design files
   - Supports STANDARD, EVENASPH, ODDASPHE, IRREGULA, FZERNSAG surface types
-- **Surface Fitting** - Python-based curve fitting with lmfit library
+- **Surface Fitting** - native javascript module for curve fitting or legacy Python-based curve fitting with lmfit library
   - Fit data points to various surface equations
   - Statistical metrics: RMSE, R², AIC, BIC, Chi-square
 - **Report Generation** - Export professional HTML and PDF reports
