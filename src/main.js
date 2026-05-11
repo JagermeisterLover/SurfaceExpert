@@ -1,6 +1,7 @@
 const { app, BrowserWindow, Menu, dialog, ipcMain, shell } = require('electron');
 const path = require('path');
 const fs = require('fs');
+const { fitSurface: jsFitSurface } = require('./surfaceFitterJs');
 
 // Always use portable mode: store userData next to the exe
 // This works for restricted environments where AppData is not writable
@@ -581,103 +582,15 @@ function setupIpcHandlers() {
     }
   });
 
-  // Handler for running surface conversion
+  // Handler for running surface conversion (engine: 'js' default, 'python' legacy)
   ipcMain.handle('run-conversion', async (event, surfaceData, settings) => {
-    const { spawn } = require('child_process');
-    // Use userData directory for temp files (works in portable mode next to exe)
-    const tempDir = userDataPath;
+    const engine = readFitterEngine(settingsPath);
+    log(`Running conversion with engine: ${engine}`);
 
-    try {
-      // Write surface data to temp file
-      const dataContent = surfaceData.map(p => `${p.r}\t${p.z}`).join('\n');
-      fs.writeFileSync(path.join(tempDir, 'tempsurfacedata.txt'), dataContent);
-
-      // Write settings to file (temporary, will be deleted after reading)
-      const settingsContent = Object.keys(settings).map(key => `${key}=${settings[key]}`).join('\n');
-      fs.writeFileSync(path.join(tempDir, 'ConvertSettings.txt'), settingsContent);
-
-      // Spawn Python process
-      const pythonPath = process.platform === 'win32' ? 'python' : 'python3';
-
-      // Handle Python script path for asar packaging
-      let scriptPath;
-      if (app.isPackaged) {
-        // Extract Python script to userData directory for asar-packed builds
-        const extractedScriptPath = path.join(userDataPath, 'surfaceFitter.py');
-        const originalScriptPath = path.join(__dirname, 'surfaceFitter.py');
-
-        // Copy script if it doesn't exist or is outdated
-        if (!fs.existsSync(extractedScriptPath)) {
-          fs.copyFileSync(originalScriptPath, extractedScriptPath);
-        }
-        scriptPath = extractedScriptPath;
-      } else {
-        // Development mode - use script directly
-        scriptPath = path.join(__dirname, 'surfaceFitter.py');
-      }
-
-      return new Promise((resolve, reject) => {
-        const python = spawn(pythonPath, [scriptPath], {
-          cwd: tempDir
-        });
-
-        let stdout = '';
-        let stderr = '';
-
-        python.stdout.on('data', (data) => {
-          stdout += data.toString();
-        });
-
-        python.stderr.on('data', (data) => {
-          stderr += data.toString();
-        });
-
-        python.on('close', (code) => {
-          if (code !== 0) {
-            reject(new Error(`Python script failed: ${stderr}`));
-            return;
-          }
-
-          try {
-            // Read fit report
-            const fitReportPath = path.join(tempDir, 'FitReport.txt');
-            const fitReportContent = fs.readFileSync(fitReportPath, 'utf-8');
-            const fitReport = parseFitReport(fitReportContent);
-
-            // Read metrics
-            const metricsPath = path.join(tempDir, 'FitMetrics.txt');
-            const metricsContent = fs.readFileSync(metricsPath, 'utf-8');
-            const metrics = parseMetrics(metricsContent);
-
-            // Read deviations
-            const deviationsPath = path.join(tempDir, 'FitDeviations.txt');
-            const deviations = fs.readFileSync(deviationsPath, 'utf-8');
-
-            // Delete temporary files
-            fs.unlinkSync(path.join(tempDir, 'ConvertSettings.txt'));
-            fs.unlinkSync(fitReportPath);
-            fs.unlinkSync(metricsPath);
-            fs.unlinkSync(deviationsPath);
-            fs.unlinkSync(path.join(tempDir, 'tempsurfacedata.txt'));
-
-            resolve({
-              success: true,
-              fitReport,
-              metrics,
-              deviations,
-              stdout
-            });
-          } catch (error) {
-            reject(new Error(`Failed to read results: ${error.message}`));
-          }
-        });
-      });
-    } catch (error) {
-      return {
-        success: false,
-        error: error.message
-      };
+    if (engine === 'python') {
+      return runConversionPython(surfaceData, settings, userDataPath);
     }
+    return runConversionJs(surfaceData, settings);
   });
 
   // Handler for saving conversion results
@@ -797,6 +710,145 @@ function setupIpcHandlers() {
       return { success: false, error: error.message };
     }
   });
+}
+
+function readFitterEngine(settingsPath) {
+  try {
+    if (fs.existsSync(settingsPath)) {
+      const settings = JSON.parse(fs.readFileSync(settingsPath, 'utf-8'));
+      if (settings.fitterEngine === 'python') return 'python';
+    }
+  } catch (err) {
+    log(`readFitterEngine: failed to read ${settingsPath}: ${err.message}`);
+  }
+  return 'js';
+}
+
+async function runConversionJs(surfaceData, settings) {
+  try {
+    const result = jsFitSurface(surfaceData, settings);
+    return result;
+  } catch (error) {
+    return { success: false, error: error.message };
+  }
+}
+
+function runConversionPython(surfaceData, settings, tempDir) {
+  const { spawn } = require('child_process');
+
+  try {
+    // Write surface data to temp file
+    const dataContent = surfaceData.map(p => `${p.r}\t${p.z}`).join('\n');
+    fs.writeFileSync(path.join(tempDir, 'tempsurfacedata.txt'), dataContent);
+
+    // Write settings to file (temporary, will be deleted after reading)
+    const settingsContent = Object.keys(settings).map(key => `${key}=${settings[key]}`).join('\n');
+    fs.writeFileSync(path.join(tempDir, 'ConvertSettings.txt'), settingsContent);
+
+    const pythonPath = process.platform === 'win32' ? 'python' : 'python3';
+
+    // Handle Python script path for asar packaging
+    let scriptPath;
+    if (app.isPackaged) {
+      const extractedScriptPath = path.join(tempDir, 'surfaceFitter.py');
+      const originalScriptPath = path.join(__dirname, 'surfaceFitter.py');
+      if (!fs.existsSync(extractedScriptPath)) {
+        fs.copyFileSync(originalScriptPath, extractedScriptPath);
+      }
+      scriptPath = extractedScriptPath;
+    } else {
+      scriptPath = path.join(__dirname, 'surfaceFitter.py');
+    }
+
+    return new Promise((resolve) => {
+      let python;
+      try {
+        python = spawn(pythonPath, [scriptPath], { cwd: tempDir });
+      } catch (spawnErr) {
+        resolve(buildPythonError(spawnErr.message));
+        return;
+      }
+
+      let stdout = '';
+      let stderr = '';
+      let resolved = false;
+
+      python.on('error', (err) => {
+        if (resolved) return;
+        resolved = true;
+        resolve(buildPythonError(err.message));
+      });
+
+      python.stdout.on('data', (data) => { stdout += data.toString(); });
+      python.stderr.on('data', (data) => { stderr += data.toString(); });
+
+      python.on('close', (code) => {
+        if (resolved) return;
+        resolved = true;
+
+        if (code !== 0) {
+          resolve(buildPythonError(stderr || `Exit code ${code}`, stdout));
+          return;
+        }
+
+        try {
+          const fitReportPath = path.join(tempDir, 'FitReport.txt');
+          const fitReportContent = fs.readFileSync(fitReportPath, 'utf-8');
+          const fitReport = parseFitReport(fitReportContent);
+
+          const metricsPath = path.join(tempDir, 'FitMetrics.txt');
+          const metricsContent = fs.readFileSync(metricsPath, 'utf-8');
+          const metrics = parseMetrics(metricsContent);
+
+          const deviationsPath = path.join(tempDir, 'FitDeviations.txt');
+          const deviations = fs.readFileSync(deviationsPath, 'utf-8');
+
+          // Delete temporary files
+          fs.unlinkSync(path.join(tempDir, 'ConvertSettings.txt'));
+          fs.unlinkSync(fitReportPath);
+          fs.unlinkSync(metricsPath);
+          fs.unlinkSync(deviationsPath);
+          fs.unlinkSync(path.join(tempDir, 'tempsurfacedata.txt'));
+
+          resolve({ success: true, fitReport, metrics, deviations, stdout });
+        } catch (error) {
+          resolve({ success: false, error: `Failed to read Python fitter results: ${error.message}` });
+        }
+      });
+    });
+  } catch (error) {
+    return Promise.resolve({ success: false, error: error.message });
+  }
+}
+
+// Build a friendly error when the Python fitter cannot run
+function buildPythonError(message, stdout) {
+  const combined = `${message || ''}\n${stdout || ''}`;
+  // Detect missing python interpreter
+  if (/ENOENT/i.test(message) || /not recognized as an internal/i.test(combined) ||
+      /command not found/i.test(combined) || /No such file or directory/i.test(message)) {
+    return {
+      success: false,
+      pythonMissing: true,
+      error: 'Python is not installed or not on PATH. Install Python 3 and run `pip install -r requirements.txt`, or switch the Fitter Engine to JavaScript in Settings.'
+    };
+  }
+  // Detect missing lmfit / numpy
+  if (/No module named ['"]?lmfit/i.test(combined) || /ModuleNotFoundError.*lmfit/i.test(combined)) {
+    return {
+      success: false,
+      pythonLibMissing: true,
+      error: 'Python lmfit library is missing. Run `pip install -r requirements.txt`, or switch the Fitter Engine to JavaScript in Settings.'
+    };
+  }
+  if (/No module named ['"]?numpy/i.test(combined) || /ModuleNotFoundError.*numpy/i.test(combined)) {
+    return {
+      success: false,
+      pythonLibMissing: true,
+      error: 'Python numpy library is missing. Run `pip install -r requirements.txt`, or switch the Fitter Engine to JavaScript in Settings.'
+    };
+  }
+  return { success: false, error: `Python fitter failed: ${message}` };
 }
 
 function parseFitReport(content) {

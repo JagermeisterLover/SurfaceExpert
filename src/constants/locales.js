@@ -54,6 +54,10 @@ export const locales = {
       points: 'points',
       zernikeUnit: 'Zernike Surface Plot Units',
       zernikeUnitHelp: 'Display Zernike sag values in mm or in waves using the reference wavelength above',
+      fitterEngine: 'Curve Fitter Engine',
+      fitterEngineJs: 'JavaScript (default, no Python required)',
+      fitterEnginePython: 'Python lmfit (legacy)',
+      fitterEngineHelp: 'JS is built-in and recommended. Python requires Python 3 + lmfit (pip install -r requirements.txt).',
       close: 'Close'
     },
 
@@ -459,6 +463,10 @@ export const locales = {
       points: 'точек',
       zernikeUnit: 'Единицы графиков поверхности Цернике',
       zernikeUnitHelp: 'Отображать значения прогиба Цернике в мм или в длинах волн (с использованием опорной длины волны)',
+      fitterEngine: 'Движок аппроксимации',
+      fitterEngineJs: 'JavaScript (по умолчанию, Python не нужен)',
+      fitterEnginePython: 'Python lmfit (устаревший)',
+      fitterEngineHelp: 'JS встроен и рекомендуется. Для Python нужен Python 3 + lmfit (pip install -r requirements.txt).',
       close: 'Закрыть'
     },
 
