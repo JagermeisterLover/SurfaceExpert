@@ -922,6 +922,7 @@ const OpticalSurfaceAnalyzer = () => {
             setShowConvert,
             setShowConvertResults,
             setConvertResults,
+            fitterEngine,
             c,
             t
         }),
