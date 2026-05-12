@@ -36,10 +36,10 @@ export const colorscales = [
 // Zygo colorscale: interferogram-style gradient (blue → green → yellow → red)
 // Blue occupies 0.00–0.25 (~25% of range); remaining stops compressed into 0.25–1.00
 const ZYGO_COLORSCALE = [
-    [0.000, '#002fd0'],
-    [0.125, '#0000ff'],
-    [0.250, '#00b34c'],
-    [0.299, '#00b34c'],
+    [0.000, '#0000ff'],
+    [0.125, '#0003fc'],
+    [0.200, '#003ac5'],
+    [0.299, '#007887'],
     [0.348, '#00cb34'],
     [0.397, '#00ea15'],
     [0.446, '#00f906'],
