@@ -81,6 +81,10 @@ export const locales = {
       normalize: 'Normalize Un Z',
       convertToUnZ: 'Convert to Un Z',
       convertToPoly: 'Convert to Poly',
+      flipX: 'Flip around X',
+      flipY: 'Flip around Y',
+      flipZ: 'Flip around Z',
+      copyCoefficients: 'Copy Coefficients',
 
       // Metrics
       paraxialFNum: 'Paraxial F/#',
@@ -490,6 +494,10 @@ export const locales = {
       normalize: 'Нормализовать H',
       convertToUnZ: 'Конвертировать в Универсальное от Z',
       convertToPoly: 'Конвертировать в Полином',
+      flipX: 'Отразить по X',
+      flipY: 'Отразить по Y',
+      flipZ: 'Отразить по Z',
+      copyCoefficients: 'Копировать коэффициенты',
 
       // Метрики
       paraxialFNum: 'Параксиальное F/#',
