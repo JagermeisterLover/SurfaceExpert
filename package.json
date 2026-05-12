@@ -1,6 +1,6 @@
 {
   "name": "surface-expert",
-  "version": "3.0.0",
+  "version": "3.0.1",
   "description": "SurfaceExpert - Optical Surface Analysis Desktop Application",
   "main": "src/main.js",
   "scripts": {

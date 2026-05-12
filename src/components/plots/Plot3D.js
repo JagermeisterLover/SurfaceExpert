@@ -5,6 +5,7 @@ import { calculateSurfaceValues } from '../../utils/calculations.js';
 import { sanitizeValue, sanitizeArray2D, getSafeBounds, safePlotlyNewPlot } from '../../utils/dataSanitization.js';
 import { getGridColor } from '../../constants/colorPalettes.js';
 import { parseNumber } from '../../utils/numberParsing.js';
+import { resolveColorscale } from '../../constants/colorscales.js';
 
 /**
  * Create 3D surface plot
@@ -108,7 +109,7 @@ export const create3DPlot = (plotRef, selectedSurface, activeTab, colorscale, gr
         y: y,
         z: zCentered,
         type: 'surface',
-        colorscale: colorscale,
+        colorscale: resolveColorscale(colorscale),
         showscale: true,
         cmin: 0,
         cmax: zRange,

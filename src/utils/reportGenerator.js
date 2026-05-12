@@ -6,6 +6,7 @@
 import { formatValue, degreesToDMS } from './formatters.js';
 import { getLocale } from '../constants/locales.js';
 import { parseNumber } from './numberParsing.js';
+import { resolveColorscale } from '../constants/colorscales.js';
 
 /**
  * Get LaTeX equation for surface type
@@ -617,7 +618,7 @@ const generate3DPlotImage = async (surface, plotData, colorscale = 'Jet', gridSi
         y: y,
         z: z,
         type: 'surface',
-        colorscale: colorscale,
+        colorscale: resolveColorscale(colorscale),
         showscale: true,
         contours: {
             z: {
@@ -703,7 +704,7 @@ const generate2DContourImage = async (surface, plotData, colorscale = 'Jet', gri
         y: y,
         z: z,
         type: 'heatmap',
-        colorscale: colorscale,
+        colorscale: resolveColorscale(colorscale),
         colorbar: {
             title: 'Sag (mm)',
             thickness: 15,
