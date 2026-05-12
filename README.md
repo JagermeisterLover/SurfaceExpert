@@ -2,7 +2,7 @@
 
 Desktop application for analyzing and visualizing optical surface characteristics. Built with Electron and React.
 
-![Version](https://img.shields.io/badge/version-2.9.1-blue)
+![Version](https://img.shields.io/badge/version-3.0.0-blue)
 ![License](https://img.shields.io/badge/license-MIT-green)
 
 <img width="1919" height="1023" alt="surfaceexpert" src="https://github.com/user-attachments/assets/dc9274a8-b7ee-4f0c-a657-aee136ecb538" />
@@ -45,7 +45,7 @@ Desktop application for analyzing and visualizing optical surface characteristic
 
 - **Zemax ZMX Import** - Import surfaces from Zemax optical design files
   - Supports STANDARD, EVENASPH, ODDASPHE, IRREGULA, FZERNSAG surface types
-- **Surface Fitting** - Python-based curve fitting with lmfit library
+- **Surface Fitting** - native javascript module for curve fitting or legacy Python-based curve fitting with lmfit library
   - Fit data points to various surface equations
   - Statistical metrics: RMSE, R², AIC, BIC, Chi-square
 - **Report Generation** - Export professional HTML and PDF reports
