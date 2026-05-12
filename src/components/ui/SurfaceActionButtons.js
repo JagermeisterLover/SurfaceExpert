@@ -76,7 +76,7 @@ export const SurfaceActionButtons = ({ surface, onInvert, onNormalizeUnZ, onConv
             onMouseEnter: (e) => e.target.style.backgroundColor = '#3a7bc8',
             onMouseLeave: (e) => e.target.style.backgroundColor = c.accent,
             title: 'Create a new surface with Zernike coefficients mirrored about the X-axis (y → -y)'
-        }, 'Flip around X'),
+        }, t.properties.flipX),
 
         surface.type === 'Zernike' && h('button', {
             onClick: onFlipY,
@@ -84,7 +84,7 @@ export const SurfaceActionButtons = ({ surface, onInvert, onNormalizeUnZ, onConv
             onMouseEnter: (e) => e.target.style.backgroundColor = '#3a7bc8',
             onMouseLeave: (e) => e.target.style.backgroundColor = c.accent,
             title: 'Create a new surface with Zernike coefficients mirrored about the Y-axis (x → -x)'
-        }, 'Flip around Y'),
+        }, t.properties.flipY),
 
         surface.type === 'Zernike' && h('button', {
             onClick: onFlipZ,
@@ -92,7 +92,7 @@ export const SurfaceActionButtons = ({ surface, onInvert, onNormalizeUnZ, onConv
             onMouseEnter: (e) => e.target.style.backgroundColor = '#3a7bc8',
             onMouseLeave: (e) => e.target.style.backgroundColor = c.accent,
             title: 'Create a new surface with Zernike coefficients rotated 180° about the Z-axis (x → -x, y → -y)'
-        }, 'Flip around Z'),
+        }, t.properties.flipZ),
 
         surface.type === 'Zernike' && h('button', {
             onClick: onCopyCoefficients,
@@ -100,7 +100,7 @@ export const SurfaceActionButtons = ({ surface, onInvert, onNormalizeUnZ, onConv
             onMouseEnter: (e) => e.target.style.backgroundColor = '#3a7bc8',
             onMouseLeave: (e) => e.target.style.backgroundColor = c.accent,
             title: 'Copy Z1-Z37 values as tab-separated text for pasting into Excel'
-        }, 'Copy Coefficients'),
+        }, t.properties.copyCoefficients),
 
                 // Convert to Poly button - shown only for Opal Un Z
         surface.type === 'Opal Un Z' && h('button', {
