@@ -337,7 +337,7 @@ function setupIpcHandlers() {
         return {
           success: true,
           settings: {
-            colorscale: 'Jet',
+            colorscale: 'Zygo',
             wavelength: 632.8,
             gridSize3D: 129,
             gridSize2D: 129,
@@ -346,12 +346,12 @@ function setupIpcHandlers() {
         };
       }
     } catch (err) {
-      console.error('Error loading settings:', err);
+      console.error('Error loading settings:');
       return {
         success: false,
         error: err.message,
         settings: {
-          colorscale: 'Jet',
+          colorscale: 'Zygo',
           wavelength: 632.8,
           gridSize3D: 129,
           gridSize2D: 129,

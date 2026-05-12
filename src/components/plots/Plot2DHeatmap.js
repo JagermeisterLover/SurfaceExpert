@@ -5,6 +5,7 @@ import { calculateSurfaceValues } from '../../utils/calculations.js';
 import { sanitizeValue, sanitizeArray2D, safePlotlyNewPlot } from '../../utils/dataSanitization.js';
 import { getGridColor } from '../../constants/colorPalettes.js';
 import { parseNumber } from '../../utils/numberParsing.js';
+import { resolveColorscale } from '../../constants/colorscales.js';
 
 /**
  * Create 2D heatmap
@@ -86,7 +87,7 @@ export const create2DHeatmap = (plotRef, selectedSurface, activeTab, colorscale,
         y: y,
         z: zSanitized,
         type: 'heatmap',
-        colorscale: colorscale,
+        colorscale: resolveColorscale(colorscale),
         colorbar: {
             title: `${activeTab}<br>(${unit})`,
             thickness: 15,

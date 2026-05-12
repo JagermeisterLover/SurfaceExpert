@@ -101,7 +101,7 @@ const OpticalSurfaceAnalyzer = () => {
     const [showConvert, setShowConvert] = useState(false);
     const [showConvertResults, setShowConvertResults] = useState(false);
     const [convertResults, setConvertResults] = useState(null);
-    const [colorscale, setColorscale] = useState('Jet');
+    const [colorscale, setColorscale] = useState('Zygo');
     const [wavelength, setWavelength] = useState(632.8); // Reference wavelength in nm for RMS/PV calculations
     const [gridSize3D, setGridSize3D] = useState(129); // Grid size for 3D plots (odd number, max 257)
     const [gridSize2D, setGridSize2D] = useState(129); // Grid size for 2D plots (odd number, max 257)
@@ -237,7 +237,7 @@ const OpticalSurfaceAnalyzer = () => {
         if (window.electronAPI && window.electronAPI.loadSettings) {
             const result = await window.electronAPI.loadSettings();
             if (result.success && result.settings) {
-                setColorscale(result.settings.colorscale || 'Jet');
+                setColorscale(result.settings.colorscale || 'Zygo');
                 setWavelength(result.settings.wavelength || 632.8);
                 setGridSize3D(result.settings.gridSize3D || 129);
                 setGridSize2D(result.settings.gridSize2D || 129);
