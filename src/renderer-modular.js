@@ -7,6 +7,7 @@ import { PropertiesPanel } from './components/panels/PropertiesPanel.js';
 import { SurfacesPanel } from './components/panels/SurfacesPanel.js';
 import { VisualizationPanel } from './components/panels/VisualizationPanel.js';
 import { SettingsModal } from './components/dialogs/SettingsModal.js';
+import { ContextMenu } from './components/dialogs/ContextMenu.js';
 import { InputDialog } from './components/dialogs/InputDialog.js';
 import { AboutDialog } from './components/dialogs/AboutDialog.js';
 
@@ -50,7 +51,7 @@ const App = () => {
             const result = await window.electronAPI.loadFolders();
             if (result.success) {
                 setFolders(result.folders);
-                if (result.folders.length > 0 && (result.folders[0].items || []).length > 0) {
+                if (result.folders.length > 0 && result.folders[0].items.length > 0) {
                     setSelectedItem(result.folders[0].items[0]);
                     setSelectedFolder(result.folders[0]);
                 } else if (result.folders.length > 0) {
@@ -82,10 +83,17 @@ const App = () => {
 
     const addItem = async () => {
         if (!selectedFolder) return;
-        const newItem = { id: Date.now().toString(), name: `Item ${Date.now()}`, data: {} };
-        const updatedFolders = folders.map(f =>
-            f.id === selectedFolder.id ? { ...f, items: [...(f.items || []), newItem] } : f
-        );
+        const newItem = {
+            id: Date.now().toString(),
+            name: `Item ${Date.now()}`,
+            data: {}
+        };
+        const updatedFolders = folders.map(f => {
+            if (f.id === selectedFolder.id) {
+                return { ...f, items: [...f.items, newItem] };
+            }
+            return f;
+        });
         setFolders(updatedFolders);
         setSelectedItem(newItem);
         if (window.electronAPI && window.electronAPI.saveItem) {
@@ -94,18 +102,18 @@ const App = () => {
     };
 
     const removeSelectedItems = async () => {
-        const toRemove = selectedItems.length > 0 ? selectedItems : (selectedItem ? [selectedItem] : []);
-        if (toRemove.length === 0) return;
+        if (selectedItems.length === 0 && !selectedItem) return;
+        const toRemove = selectedItems.length > 0 ? selectedItems : [selectedItem];
         const updatedFolders = folders.map(folder => ({
             ...folder,
-            items: (folder.items || []).filter(item => !toRemove.find(r => r.id === item.id))
+            items: folder.items.filter(item => !toRemove.find(r => r.id === item.id))
         }));
         setFolders(updatedFolders);
         setSelectedItem(null);
         setSelectedItems([]);
         if (window.electronAPI && window.electronAPI.deleteItem) {
             for (const item of toRemove) {
-                const folder = folders.find(f => (f.items || []).some(s => s.id === item.id));
+                const folder = folders.find(f => f.items.some(s => s.id === item.id));
                 if (folder) await window.electronAPI.deleteItem(folder.name, item.name);
             }
         }
@@ -116,14 +124,14 @@ const App = () => {
             title: 'New Folder',
             defaultValue: 'New Folder',
             validate: (name) => {
-                if (!name || !name.trim()) return t.dialogs.folder.folderNameEmpty;
-                if (folders.some(f => f.name.toLowerCase() === name.trim().toLowerCase())) return t.dialogs.folder.folderExists;
+                if (!name || !name.trim()) return 'Folder name cannot be empty';
+                if (folders.some(f => f.name.toLowerCase() === name.trim().toLowerCase())) return 'A folder with this name already exists';
                 return '';
             },
             onConfirm: async (name) => {
                 if (name && name.trim()) {
                     const newFolder = { id: name.trim(), name: name.trim(), expanded: true, items: [] };
-                    setFolders(prev => [...prev, newFolder]);
+                    setFolders([...folders, newFolder]);
                     setSelectedFolder(newFolder);
                     if (window.electronAPI && window.electronAPI.createFolder) {
                         await window.electronAPI.createFolder(name.trim());
@@ -139,7 +147,8 @@ const App = () => {
         const folder = folders.find(f => f.id === folderId);
         if (!folder) return;
         const oldName = folder.name;
-        setFolders(folders.map(f => f.id === folderId ? { ...f, id: newName, name: newName } : f));
+        const updatedFolders = folders.map(f => f.id === folderId ? { ...f, id: newName, name: newName } : f);
+        setFolders(updatedFolders);
         if (selectedFolder?.id === folderId) setSelectedFolder({ ...folder, id: newName, name: newName });
         if (window.electronAPI && window.electronAPI.renameFolder) {
             await window.electronAPI.renameFolder(oldName, newName);
@@ -172,7 +181,7 @@ const App = () => {
             );
             setSelectedItem(item);
         } else if (event && event.shiftKey && lastClickedItem) {
-            const allItems = folders.flatMap(f => f.items || []);
+            const allItems = folders.flatMap(f => f.items);
             const lastIdx = allItems.findIndex(s => s.id === lastClickedItem.id);
             const currIdx = allItems.findIndex(s => s.id === item.id);
             const [start, end] = lastIdx < currIdx ? [lastIdx, currIdx] : [currIdx, lastIdx];
@@ -209,9 +218,20 @@ const App = () => {
         h(MenuBar, { c, onMenuAction: handleMenuAction, t }),
         h('div', { style: { display: 'flex', flex: 1, overflow: 'hidden' } },
             h(SurfacesPanel, {
-                folders, selectedFolder, selectedItem, selectedItems,
-                handleItemClick, setSelectedFolder, toggleFolderExpanded,
-                addItem, removeSelectedItems, setContextMenu, setInputDialog, addFolder, c, t
+                folders,
+                selectedFolder,
+                selectedItem,
+                selectedItems,
+                handleItemClick,
+                setSelectedFolder,
+                toggleFolderExpanded,
+                addItem,
+                removeSelectedItems,
+                setContextMenu,
+                setInputDialog,
+                addFolder,
+                c,
+                t
             }),
             h(VisualizationPanel, { activeTab, setActiveTab, c }),
             h(PropertiesPanel, { selectedItem, c })
@@ -236,7 +256,8 @@ const App = () => {
                     style: { padding: '10px 16px', cursor: 'pointer', fontSize: '13px', borderBottom: `1px solid ${c.border}` },
                     onClick: (e) => {
                         e.stopPropagation();
-                        const { id: targetId, name: targetName } = contextMenu.target;
+                        const targetId = contextMenu.target.id;
+                        const targetName = contextMenu.target.name;
                         setContextMenu(null);
                         setInputDialog({
                             title: t.dialogs.contextMenu.renameFolder,
@@ -248,10 +269,7 @@ const App = () => {
                                     return t.dialogs.folder.folderExists;
                                 return '';
                             },
-                            onConfirm: (name) => {
-                                if (name && name.trim()) renameFolder(targetId, name.trim());
-                                setInputDialog(null);
-                            },
+                            onConfirm: (name) => { if (name && name.trim()) renameFolder(targetId, name.trim()); setInputDialog(null); },
                             onCancel: () => setInputDialog(null)
                         });
                     },
@@ -260,16 +278,8 @@ const App = () => {
                 }, t.dialogs.contextMenu.rename),
                 h('div', {
                     key: 'delete',
-                    style: {
-                        padding: '10px 16px',
-                        cursor: folders.length > 1 ? 'pointer' : 'not-allowed',
-                        fontSize: '13px',
-                        color: folders.length > 1 ? '#e94560' : c.textDim
-                    },
-                    onClick: () => {
-                        if (folders.length > 1) removeFolder(contextMenu.target.id);
-                        setContextMenu(null);
-                    },
+                    style: { padding: '10px 16px', cursor: folders.length > 1 ? 'pointer' : 'not-allowed', fontSize: '13px', color: folders.length > 1 ? '#e94560' : c.textDim },
+                    onClick: () => { if (folders.length > 1) removeFolder(contextMenu.target.id); setContextMenu(null); },
                     onMouseEnter: (e) => { if (folders.length > 1) e.currentTarget.style.backgroundColor = c.hover; },
                     onMouseLeave: (e) => e.currentTarget.style.backgroundColor = 'transparent'
                 }, t.dialogs.contextMenu.deleteFolder)
@@ -280,7 +290,7 @@ const App = () => {
                     onClick: () => { removeSelectedItems(); setContextMenu(null); },
                     onMouseEnter: (e) => e.currentTarget.style.backgroundColor = c.hover,
                     onMouseLeave: (e) => e.currentTarget.style.backgroundColor = 'transparent'
-                }, t.dialogs.contextMenu.deleteItem)
+                }, t.dialogs.contextMenu.deleteItem || 'Delete Item')
             ]
         ),
         messageNotification && h(MessageNotification, {

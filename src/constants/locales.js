@@ -36,6 +36,10 @@ const en = {
     folder: {
       folderNameEmpty: 'Folder name cannot be empty',
       folderExists: 'A folder with this name already exists'
+    },
+    input: {
+      ok: 'OK',
+      cancel: 'Cancel'
     }
   }
 };
