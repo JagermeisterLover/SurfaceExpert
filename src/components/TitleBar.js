@@ -3,7 +3,7 @@
  * Replaces the default OS title bar with minimize, maximize, and close buttons
  */
 
-export function TitleBar({ c, onWindowControl }) {
+export function TitleBar({ c }) {
   const [isMaximized, setIsMaximized] = React.useState(false);
 
   React.useEffect(() => {
@@ -19,15 +19,15 @@ export function TitleBar({ c, onWindowControl }) {
   }, []);
 
   const handleMinimize = () => {
-    onWindowControl('minimize');
+    if (window.electronAPI && window.electronAPI.windowControl) window.electronAPI.windowControl('minimize');
   };
 
   const handleMaximize = () => {
-    onWindowControl('maximize');
+    if (window.electronAPI && window.electronAPI.windowControl) window.electronAPI.windowControl('maximize');
   };
 
   const handleClose = () => {
-    onWindowControl('close');
+    if (window.electronAPI && window.electronAPI.windowControl) window.electronAPI.windowControl('close');
   };
 
   return React.createElement('div', {
@@ -56,7 +56,7 @@ export function TitleBar({ c, onWindowControl }) {
         fontFamily: 'system-ui, -apple-system, sans-serif',
         letterSpacing: '0.3px'
       }
-    }, 'SurfaceExpert'),
+    }, 'OptiLayer'),
 
     // Right side - Window controls
     React.createElement('div', {
