@@ -35,6 +35,8 @@ export const PropertiesPanel = ({
     handleFlipX,
     handleFlipY,
     handleFlipZ,
+    handleRotate90CCW,
+    handleRotate90CW,
     handleCopyCoefficients,
     c,
     t
@@ -390,6 +392,8 @@ export const PropertiesPanel = ({
                 onFlipX: handleFlipX,
                 onFlipY: handleFlipY,
                 onFlipZ: handleFlipZ,
+                onRotate90CCW: handleRotate90CCW,
+                onRotate90CW: handleRotate90CW,
                 onCopyCoefficients: handleCopyCoefficients,
                 c,
                 t
