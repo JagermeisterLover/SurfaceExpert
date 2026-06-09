@@ -3,7 +3,7 @@
 // ============================================
 // Business logic for surface transformation operations
 
-import { normalizeUnZ, convertPolyToUnZ, convertUnZToPoly, invertSurface, flipZernikeAroundX, flipZernikeAroundY, flipZernikeAroundZ } from './surfaceTransformations.js';
+import { normalizeUnZ, convertPolyToUnZ, convertUnZToPoly, invertSurface, flipZernikeAroundX, flipZernikeAroundY, flipZernikeAroundZ, rotateZernikeBy90CCW, rotateZernikeBy90CW } from './surfaceTransformations.js';
 import { parseNumber } from './numberParsing.js';
 import { calculateSurfaceValues } from './calculations.js';
 
@@ -455,6 +455,34 @@ export const handleFlipZernikeZ = (selectedSurface, selectedFolder, folders, set
     } catch (error) {
         alert(`Error flipping surface around Z: ${error.message}`);
         console.error('Flip Z error:', error);
+    }
+};
+
+/**
+ * Rotate Zernike surface 90° CCW and create a new surface.
+ */
+export const handleRotateZernike90CCW = (selectedSurface, selectedFolder, folders, setFolders, setSelectedSurface) => {
+    if (!selectedSurface || selectedSurface.type !== 'Zernike' || !selectedFolder) return;
+    try {
+        const rotated = rotateZernikeBy90CCW(selectedSurface.parameters);
+        addFlippedZernikeSurface(selectedSurface, selectedFolder, folders, setFolders, setSelectedSurface, rotated, 'rotated 90° CCW');
+    } catch (error) {
+        alert(`Error rotating surface 90° CCW: ${error.message}`);
+        console.error('Rotate 90° CCW error:', error);
+    }
+};
+
+/**
+ * Rotate Zernike surface 90° CW and create a new surface.
+ */
+export const handleRotateZernike90CW = (selectedSurface, selectedFolder, folders, setFolders, setSelectedSurface) => {
+    if (!selectedSurface || selectedSurface.type !== 'Zernike' || !selectedFolder) return;
+    try {
+        const rotated = rotateZernikeBy90CW(selectedSurface.parameters);
+        addFlippedZernikeSurface(selectedSurface, selectedFolder, folders, setFolders, setSelectedSurface, rotated, 'rotated 90° CW');
+    } catch (error) {
+        alert(`Error rotating surface 90° CW: ${error.message}`);
+        console.error('Rotate 90° CW error:', error);
     }
 };
 

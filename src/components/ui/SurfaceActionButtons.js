@@ -13,7 +13,7 @@ const { createElement: h } = React;
  * @param {Function} props.onConvertToPoly - Callback for UnZ → Poly conversion
  * @param {Object} props.c - Color scheme object
  */
-export const SurfaceActionButtons = ({ surface, onInvert, onNormalizeUnZ, onConvertToUnZ, onConvertToPoly, onFlipX, onFlipY, onFlipZ, onCopyCoefficients, c, t }) => {
+export const SurfaceActionButtons = ({ surface, onInvert, onNormalizeUnZ, onConvertToUnZ, onConvertToPoly, onFlipX, onFlipY, onFlipZ, onRotate90CCW, onRotate90CW, onCopyCoefficients, c, t }) => {
     const buttonStyle = {
         padding: '8px 16px',
         backgroundColor: c.accent,
@@ -93,6 +93,22 @@ export const SurfaceActionButtons = ({ surface, onInvert, onNormalizeUnZ, onConv
             onMouseLeave: (e) => e.target.style.backgroundColor = c.accent,
             title: 'Create a new surface with Zernike coefficients rotated 180° about the Z-axis (x → -x, y → -y)'
         }, t.properties.flipZ),
+
+        surface.type === 'Zernike' && h('button', {
+            onClick: onRotate90CCW,
+            style: buttonStyle,
+            onMouseEnter: (e) => e.target.style.backgroundColor = '#3a7bc8',
+            onMouseLeave: (e) => e.target.style.backgroundColor = c.accent,
+            title: 'Create a new surface with Zernike coefficients rotated 90° counter-clockwise'
+        }, t.properties.rotate90CCW),
+
+        surface.type === 'Zernike' && h('button', {
+            onClick: onRotate90CW,
+            style: buttonStyle,
+            onMouseEnter: (e) => e.target.style.backgroundColor = '#3a7bc8',
+            onMouseLeave: (e) => e.target.style.backgroundColor = c.accent,
+            title: 'Create a new surface with Zernike coefficients rotated 90° clockwise'
+        }, t.properties.rotate90CW),
 
         surface.type === 'Zernike' && h('button', {
             onClick: onCopyCoefficients,

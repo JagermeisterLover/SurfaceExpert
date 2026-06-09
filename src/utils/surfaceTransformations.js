@@ -305,3 +305,95 @@ export const flipZernikeAroundZ = (parameters) => {
     });
     return result;
 };
+
+/**
+ * Rotate Zernike surface 90° CCW (θ → θ - π/2).
+ * Each azimuthal order m picks up a phase shift of mπ/2, mixing cos/sin pairs.
+ *
+ * m=0: unchanged
+ * m=1,5 (mπ/2 = π/2): new_cos = -old_sin, new_sin = old_cos
+ * m=2   (mπ/2 = π):   both cos and sin negated
+ * m=3   (mπ/2 = 3π/2): new_cos = old_sin, new_sin = -old_cos
+ * m=4   (mπ/2 = 2π):  unchanged
+ *
+ * @param {Object} parameters - Current Zernike surface parameters
+ * @returns {Object} Parameters rotated 90° CCW
+ */
+export const rotateZernikeBy90CCW = (parameters) => {
+    const result = { ...parameters };
+
+    // m=1 pairs: (Z2,Z3),(Z7,Z8),(Z14,Z15),(Z23,Z24),(Z34,Z35) → new_cos=-old_sin, new_sin=old_cos
+    [[2,3],[7,8],[14,15],[23,24],[34,35]].forEach(([c, s]) => {
+        const kc = `Z${c}`, ks = `Z${s}`;
+        const oldCos = result[kc], oldSin = result[ks];
+        if (oldCos !== undefined) result[kc] = changeSign(oldSin);
+        if (oldSin !== undefined) result[ks] = oldCos;
+    });
+
+    // m=2: all negated
+    [5, 6, 12, 13, 21, 22, 32, 33].forEach(n => {
+        const key = `Z${n}`;
+        if (result[key] !== undefined) result[key] = changeSign(result[key]);
+    });
+
+    // m=3 pairs: (Z10,Z11),(Z19,Z20),(Z30,Z31) → new_cos=old_sin, new_sin=-old_cos
+    [[10,11],[19,20],[30,31]].forEach(([c, s]) => {
+        const kc = `Z${c}`, ks = `Z${s}`;
+        const oldCos = result[kc], oldSin = result[ks];
+        if (oldCos !== undefined) result[kc] = oldSin;
+        if (oldSin !== undefined) result[ks] = changeSign(oldCos);
+    });
+
+    // m=5 pair: (Z26,Z27) → same rule as m=1
+    const oldZ26 = result['Z26'], oldZ27 = result['Z27'];
+    if (oldZ26 !== undefined) result['Z26'] = changeSign(oldZ27);
+    if (oldZ27 !== undefined) result['Z27'] = oldZ26;
+
+    return result;
+};
+
+/**
+ * Rotate Zernike surface 90° CW (θ → θ + π/2).
+ * Inverse of rotateZernikeBy90CCW.
+ *
+ * m=0: unchanged
+ * m=1,5 (mπ/2 = π/2): new_cos = old_sin, new_sin = -old_cos
+ * m=2   (mπ/2 = π):   both cos and sin negated
+ * m=3   (mπ/2 = 3π/2): new_cos = -old_sin, new_sin = old_cos
+ * m=4   (mπ/2 = 2π):  unchanged
+ *
+ * @param {Object} parameters - Current Zernike surface parameters
+ * @returns {Object} Parameters rotated 90° CW
+ */
+export const rotateZernikeBy90CW = (parameters) => {
+    const result = { ...parameters };
+
+    // m=1 pairs: new_cos=old_sin, new_sin=-old_cos
+    [[2,3],[7,8],[14,15],[23,24],[34,35]].forEach(([c, s]) => {
+        const kc = `Z${c}`, ks = `Z${s}`;
+        const oldCos = result[kc], oldSin = result[ks];
+        if (oldCos !== undefined) result[kc] = oldSin;
+        if (oldSin !== undefined) result[ks] = changeSign(oldCos);
+    });
+
+    // m=2: all negated
+    [5, 6, 12, 13, 21, 22, 32, 33].forEach(n => {
+        const key = `Z${n}`;
+        if (result[key] !== undefined) result[key] = changeSign(result[key]);
+    });
+
+    // m=3 pairs: new_cos=-old_sin, new_sin=old_cos
+    [[10,11],[19,20],[30,31]].forEach(([c, s]) => {
+        const kc = `Z${c}`, ks = `Z${s}`;
+        const oldCos = result[kc], oldSin = result[ks];
+        if (oldCos !== undefined) result[kc] = changeSign(oldSin);
+        if (oldSin !== undefined) result[ks] = oldCos;
+    });
+
+    // m=5 pair: same rule as m=1
+    const oldZ26 = result['Z26'], oldZ27 = result['Z27'];
+    if (oldZ26 !== undefined) result['Z26'] = oldZ27;
+    if (oldZ27 !== undefined) result['Z27'] = changeSign(oldZ26);
+
+    return result;
+};
