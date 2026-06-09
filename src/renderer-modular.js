@@ -34,6 +34,8 @@ import {
     handleFlipZernikeX as flipZernikeXHandler,
     handleFlipZernikeY as flipZernikeYHandler,
     handleFlipZernikeZ as flipZernikeZHandler,
+    handleRotateZernike90CCW as rotateZernike90CCWHandler,
+    handleRotateZernike90CW as rotateZernike90CWHandler,
     handleCopyZernikeCoefficients as copyZernikeCoefficientsHandler
 } from './utils/surfaceOperationHandlers.js';
 import { parseNumber } from './utils/numberParsing.js';
@@ -446,6 +448,14 @@ const OpticalSurfaceAnalyzer = () => {
 
     const handleFlipZ = () => {
         flipZernikeZHandler(selectedSurface, selectedFolder, folders, setFolders, setSelectedSurface);
+    };
+
+    const handleRotate90CCW = () => {
+        rotateZernike90CCWHandler(selectedSurface, selectedFolder, folders, setFolders, setSelectedSurface);
+    };
+
+    const handleRotate90CW = () => {
+        rotateZernike90CWHandler(selectedSurface, selectedFolder, folders, setFolders, setSelectedSurface);
     };
 
     const handleCopyCoefficients = () => {
@@ -1124,6 +1134,8 @@ const OpticalSurfaceAnalyzer = () => {
                 handleFlipX,
                 handleFlipY,
                 handleFlipZ,
+                handleRotate90CCW,
+                handleRotate90CW,
                 handleCopyCoefficients,
                 c,
                 t

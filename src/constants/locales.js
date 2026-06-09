@@ -84,6 +84,8 @@ export const locales = {
       flipX: 'Flip around X',
       flipY: 'Flip around Y',
       flipZ: 'Flip around Z',
+      rotate90CCW: 'Rotate 90° CCW',
+      rotate90CW: 'Rotate 90° CW',
       copyCoefficients: 'Copy Coefficients',
 
       // Metrics
@@ -497,6 +499,8 @@ export const locales = {
       flipX: 'Отразить по X',
       flipY: 'Отразить по Y',
       flipZ: 'Отразить по Z',
+      rotate90CCW: 'Повернуть 90° ПЧС',
+      rotate90CW: 'Повернуть 90° ЧС',
       copyCoefficients: 'Копировать коэффициенты',
 
       // Метрики
