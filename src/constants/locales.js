@@ -842,16 +842,16 @@ export const availableLocales = [
 ];
 
 // Get locale strings for a given locale code
-export function getLocale(localeCode = 'en') {
-  return locales[localeCode] || locales.en;
+export function getLocale(localeCode = 'ru') {
+  return locales[localeCode] || locales.ru;
 }
 
-// Get current locale from localStorage or default to English
+// Get current locale from localStorage or default to Russian
 export function getCurrentLocale() {
   try {
-    return localStorage.getItem('surfaceexpert-locale') || 'en';
+    return localStorage.getItem('surfaceexpert-locale') || 'ru';
   } catch {
-    return 'en';
+    return 'ru';
   }
 }
 

@@ -98,8 +98,8 @@ const getSurfaceNotes = (surfaceType) => {
  * Generate complete HTML report for a surface
  */
 export const generateHTMLReport = (surface, plotData, summaryMetrics, plotImages, t = null) => {
-    // Use provided locale or default to English
-    const locale = t || getLocale('en');
+    // Use provided locale or fall back to the application default
+    const locale = t || getLocale();
 
     const timestamp = new Date().toLocaleString();
     const equation = getSurfaceEquation(surface.type);

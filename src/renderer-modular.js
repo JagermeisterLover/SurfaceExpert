@@ -296,6 +296,16 @@ const OpticalSurfaceAnalyzer = () => {
         }
     }, [folders]);
 
+    // Scrollbars are styled in CSS, which cannot read the palette object,
+    // so the active colors are mirrored onto :root as custom properties.
+    useEffect(() => {
+        const c = getPalette(theme);
+        const root = document.documentElement.style;
+        root.setProperty('--scrollbar-track', c.bg);
+        root.setProperty('--scrollbar-thumb', c.border);
+        root.setProperty('--scrollbar-thumb-hover', c.textDim);
+    }, [theme]);
+
     // ============================================
     // PLOT UPDATE EFFECTS
     // ============================================

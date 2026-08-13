@@ -35,17 +35,19 @@ button:active {
     height: 10px;
 }
 
+/* Colors are published as custom properties by the renderer whenever the
+   active palette changes; the fallbacks match the default dark palette. */
 ::-webkit-scrollbar-track {
-    background: #2b2b2b;
+    background: var(--scrollbar-track, #2b2b2b);
 }
 
 ::-webkit-scrollbar-thumb {
-    background: #454545;
+    background: var(--scrollbar-thumb, #454545);
     border-radius: 5px;
 }
 
 ::-webkit-scrollbar-thumb:hover {
-    background: #555555;
+    background: var(--scrollbar-thumb-hover, #555555);
 }
 
 @keyframes menuFadeIn {

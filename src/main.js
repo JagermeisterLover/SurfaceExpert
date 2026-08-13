@@ -245,7 +245,7 @@ function setupIpcHandlers() {
     return new Promise((resolve) => {
       const options = {
         hostname: 'api.github.com',
-        path: '/repos/JagermeisterLover/SurfaceExpert/releases/latest',
+        path: '/repos/aai2k/SurfaceExpert/releases/latest',
         method: 'GET',
         headers: {
           'User-Agent': 'SurfaceExpert',
@@ -289,8 +289,8 @@ function setupIpcHandlers() {
                 latestVersion: latestVersion,
                 releaseDate: release.published_at,
                 releaseNotes: release.body || '',
-                downloadUrl: 'https://github.com/JagermeisterLover/SurfaceExpert/releases',
-                releasesUrl: `https://github.com/JagermeisterLover/SurfaceExpert/releases/tag/${release.tag_name}`
+                downloadUrl: 'https://github.com/aai2k/SurfaceExpert/releases',
+                releasesUrl: `https://github.com/aai2k/SurfaceExpert/releases/tag/${release.tag_name}`
               });
             } else {
               resolve({ available: false, currentVersion: currentVersion });
@@ -341,7 +341,8 @@ function setupIpcHandlers() {
             wavelength: 632.8,
             gridSize3D: 129,
             gridSize2D: 129,
-            theme: 'Dark Gray (Default)'
+            theme: 'Dark Gray (Default)',
+            locale: 'ru'
           }
         };
       }
@@ -355,7 +356,8 @@ function setupIpcHandlers() {
           wavelength: 632.8,
           gridSize3D: 129,
           gridSize2D: 129,
-          theme: 'Dark Gray (Default)'
+          theme: 'Dark Gray (Default)',
+          locale: 'ru'
         }
       };
     }

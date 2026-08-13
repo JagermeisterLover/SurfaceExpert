@@ -43,12 +43,12 @@ git push origin v2.7.3
 ```
 
 ### Step 4: Wait for the build
-- Go to: `https://github.com/JagermeisterLover/SurfaceExpert/actions`
+- Go to: `https://github.com/aai2k/SurfaceExpert/actions`
 - Watch the "Build Windows App" workflow
 - Build takes ~5 minutes
 
 ### Step 5: Release is ready!
-- Go to: `https://github.com/JagermeisterLover/SurfaceExpert/releases`
+- Go to: `https://github.com/aai2k/SurfaceExpert/releases`
 - Your new release `v2.7.3` will be available with:
   - ✅ **SurfaceExpert Setup 2.7.3.exe** (NSIS installer)
   - ✅ **SurfaceExpert-2.7.3-Portable.exe** (Portable executable)

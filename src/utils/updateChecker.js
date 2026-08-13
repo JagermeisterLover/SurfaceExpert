@@ -3,7 +3,7 @@
  * Checks GitHub releases for new versions
  */
 
-const GITHUB_REPO = 'JagermeisterLover/SurfaceExpert';
+const GITHUB_REPO = 'aai2k/SurfaceExpert';
 const GITHUB_API_URL = `https://api.github.com/repos/${GITHUB_REPO}/releases/latest`;
 const GITHUB_RELEASES_URL = `https://github.com/${GITHUB_REPO}/releases`;
 
