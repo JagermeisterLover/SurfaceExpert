@@ -37,18 +37,10 @@ jobs:
         env:
           CSC_IDENTITY_AUTO_DISCOVERY: false
 
-      - name: Upload Windows artifacts
-        uses: actions/upload-artifact@v4
-        with:
-          name: SurfaceExpert-Windows
-          path: |
-            dist/*.exe
-          # The installer is ~174 MB. Actions storage is metered in GB-hours
-          # against a 500 MB account-wide allowance shared by every repository,
-          # so a long retention here blocks uploads elsewhere. Tagged releases
-          # are the durable copy; this artifact only needs to outlive the run.
-          retention-days: 3
-
+      # No build artifact is uploaded. Every run here is a tagged release, so
+      # the release assets below are already the durable copy; a second copy of
+      # a ~174 MB installer only eats into the 500 MB account-wide Actions
+      # storage allowance shared by every repository.
       - name: Create GitHub Release
         if: startsWith(github.ref, 'refs/tags/v')
         uses: softprops/action-gh-release@v2
