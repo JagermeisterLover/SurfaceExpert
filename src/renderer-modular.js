@@ -384,7 +384,7 @@ const OpticalSurfaceAnalyzer = () => {
     // ============================================
 
     const handleImportZMX = async () => {
-        await zmxImportHandler(setZmxSurfaces, setShowZMXImport);
+        await zmxImportHandler(setZmxSurfaces, setShowZMXImport, t);
     };
 
     const handleImportSelectedSurfaces = (selectedIndices) => {
@@ -421,7 +421,7 @@ const OpticalSurfaceAnalyzer = () => {
     // ============================================
 
     const handleInvertSurface = () => {
-        invertSurfaceHandler(selectedSurface, selectedFolder, folders, setFolders);
+        invertSurfaceHandler(selectedSurface, selectedFolder, folders, setFolders, t);
     };
 
     const handleNormalizeUnZ = () => {
@@ -436,36 +436,37 @@ const OpticalSurfaceAnalyzer = () => {
             selectedFolder,
             folders,
             setFolders,
-            setShowNormalizeUnZ
+            setShowNormalizeUnZ,
+            t
         );
     };
 
     const handleConvertToUnZ = () => {
-        convertToUnZHandler(selectedSurface, selectedFolder, folders, setFolders, setSelectedSurface);
+        convertToUnZHandler(selectedSurface, selectedFolder, folders, setFolders, setSelectedSurface, t);
     };
 
     const handleConvertToPoly = () => {
-        convertToPolyHandler(selectedSurface, selectedFolder, folders, setFolders, setSelectedSurface);
+        convertToPolyHandler(selectedSurface, selectedFolder, folders, setFolders, setSelectedSurface, t);
     };
 
     const handleFlipX = () => {
-        flipZernikeXHandler(selectedSurface, selectedFolder, folders, setFolders, setSelectedSurface);
+        flipZernikeXHandler(selectedSurface, selectedFolder, folders, setFolders, setSelectedSurface, t);
     };
 
     const handleFlipY = () => {
-        flipZernikeYHandler(selectedSurface, selectedFolder, folders, setFolders, setSelectedSurface);
+        flipZernikeYHandler(selectedSurface, selectedFolder, folders, setFolders, setSelectedSurface, t);
     };
 
     const handleFlipZ = () => {
-        flipZernikeZHandler(selectedSurface, selectedFolder, folders, setFolders, setSelectedSurface);
+        flipZernikeZHandler(selectedSurface, selectedFolder, folders, setFolders, setSelectedSurface, t);
     };
 
     const handleRotate90CCW = () => {
-        rotateZernike90CCWHandler(selectedSurface, selectedFolder, folders, setFolders, setSelectedSurface);
+        rotateZernike90CCWHandler(selectedSurface, selectedFolder, folders, setFolders, setSelectedSurface, t);
     };
 
     const handleRotate90CW = () => {
-        rotateZernike90CWHandler(selectedSurface, selectedFolder, folders, setFolders, setSelectedSurface);
+        rotateZernike90CWHandler(selectedSurface, selectedFolder, folders, setFolders, setSelectedSurface, t);
     };
 
     const handleCopyCoefficients = () => {
@@ -482,7 +483,8 @@ const OpticalSurfaceAnalyzer = () => {
             setShowConvertResults,
             setConvertResults,
             fastConvertThreshold,
-            setFastConvertProgress
+            setFastConvertProgress,
+            t
         );
     };
 
@@ -753,11 +755,11 @@ const OpticalSurfaceAnalyzer = () => {
             try {
                 const result = await window.electronAPI.createFolder(name);
                 if (!result.success) {
-                    alert(result.error || 'Failed to create folder');
+                    alert(result.error || t.messages.errors.folderCreate);
                     return;
                 }
             } catch (error) {
-                alert('Error creating folder: ' + error.message);
+                alert(`${t.messages.errors.folderCreate}: ${error.message}`);
                 return;
             }
         }
@@ -839,11 +841,11 @@ const OpticalSurfaceAnalyzer = () => {
             try {
                 const result = await window.electronAPI.renameFolder(folder.name, newName);
                 if (!result.success) {
-                    alert(result.error || 'Failed to rename folder');
+                    alert(result.error || t.messages.errors.folderRename);
                     return;
                 }
             } catch (error) {
-                alert('Error renaming folder: ' + error.message);
+                alert(`${t.messages.errors.folderRename}: ${error.message}`);
                 return;
             }
         }

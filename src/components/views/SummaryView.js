@@ -100,7 +100,7 @@ export const SummaryView = ({ selectedSurface, wavelength = 632.8, c, t }) => {
     return h('div', { style: { padding: '20px' } },
         // Single-point sag section for non-rotationally symmetric surfaces
         isNonRotSymmetric && h('div', { style: { marginBottom: '30px' } },
-            h('h3', { style: { marginBottom: '15px', fontSize: '16px' } }, 'Single Point Calculation'),
+            h('h3', { style: { marginBottom: '15px', fontSize: '16px' } }, t.summary.singlePointCalculation),
             h('table', {
                 style: {
                     width: '100%',

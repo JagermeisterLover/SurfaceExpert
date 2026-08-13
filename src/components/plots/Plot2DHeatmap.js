@@ -37,7 +37,7 @@ export const create2DHeatmap = (plotRef, selectedSurface, activeTab, colorscale,
     const unitScale = useWaves ? (1 / wavelengthMm) : 1;
     const unit = activeTab === 'slope'
         ? translations.summary.units.rad
-        : (useWaves ? 'waves' : translations.summary.units.mm);
+        : (useWaves ? (translations.summary.units.waves || 'waves') : translations.summary.units.mm);
 
     // Generate coordinate arrays
     const x = [];
@@ -82,18 +82,47 @@ export const create2DHeatmap = (plotRef, selectedSurface, activeTab, colorscale,
     // Sanitize the entire z array (additional safety check)
     const zSanitized = sanitizeArray2D(z);
 
+    const metricLabel = t?.visualization?.tabs?.[activeTab]
+        || activeTab.charAt(0).toUpperCase() + activeTab.slice(1);
+
+    // Tick precision follows the magnitude of the range being shown, so that a
+    // wavefront in waves does not print seven meaningless decimals while a sag
+    // of a few microns still resolves.
+    let zLo = Infinity, zHi = -Infinity;
+    for (const row of zSanitized) {
+        for (const v of row) {
+            if (v === null) continue;
+            if (v < zLo) zLo = v;
+            if (v > zHi) zHi = v;
+        }
+    }
+    const zSpan = (zHi > zLo) ? (zHi - zLo) : 0;
+    const barTickFormat = zSpan >= 100 ? '.0f'
+        : zSpan >= 1 ? '.2f'
+        : zSpan >= 0.01 ? '.4f'
+        : '.7f';
+
     const data = [{
         x: x,
         y: y,
         z: zSanitized,
         type: 'heatmap',
         colorscale: resolveColorscale(colorscale),
+        // Kept short and anchored below centre so the bar clears the modebar,
+        // which Plotly pins to the top-right corner of the plot area.
         colorbar: {
-            title: `${activeTab}<br>(${unit})`,
-            thickness: 15,
-            len: 0.7,
+            // Plotly 3 requires the object form; a bare string is ignored.
+            title: { text: unit, font: { size: 11 } },
+            thickness: 12,
+            len: 0.62,
+            y: 0.44,
+            yanchor: 'middle',
+            tickfont: { size: 10 },
+            bgcolor: 'rgba(0,0,0,0)',
+            borderwidth: 0,
+            outlinewidth: 0,
             exponentformat: 'none',
-            tickformat: '.7f'
+            tickformat: barTickFormat
         },
         hoverongaps: false,
         hovertemplate: `X: %{x:.4f} ${translations.summary.units.mm}<br>Y: %{y:.4f} ${translations.summary.units.mm}<br>` +
@@ -103,9 +132,9 @@ export const create2DHeatmap = (plotRef, selectedSurface, activeTab, colorscale,
     const gridColor = getGridColor(c);
 
     const layout = {
-        title: `${activeTab.charAt(0).toUpperCase() + activeTab.slice(1)} Heatmap`,
+        title: { text: `${metricLabel} ${t?.visualization?.heatmap || 'Heatmap'}` },
         xaxis: {
-            title: 'X (mm)',
+            title: { text: t?.visualization?.xMm || 'X (mm)' },
             scaleanchor: 'y',
             scaleratio: 1,
             constrain: 'domain',
@@ -115,7 +144,7 @@ export const create2DHeatmap = (plotRef, selectedSurface, activeTab, colorscale,
             tickformat: '.4f'
         },
         yaxis: {
-            title: 'Y (mm)',
+            title: { text: t?.visualization?.yMm || 'Y (mm)' },
             constrain: 'domain',
             gridcolor: gridColor,
             zerolinecolor: gridColor,

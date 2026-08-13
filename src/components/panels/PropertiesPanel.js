@@ -169,7 +169,7 @@ export const PropertiesPanel = ({
             ),
 
             // Parameters
-            h(PropertySection, { title: "Parameters", c },
+            h(PropertySection, { title: t.properties.parameters, c },
                 h('div', {
                     style: {
                         padding: '10px',
@@ -306,7 +306,7 @@ export const PropertiesPanel = ({
                             textTransform: 'uppercase',
                             letterSpacing: '0.3px'
                         }
-                    }, 'Zernike Coefficients'),
+                    }, t.properties.zernikeCoefficients),
                     Array.from({ length: 37 }, (_, i) => {
                         const param = `Z${i + 1}`;
                         const enabledKey = `${param}_enabled`;
@@ -376,10 +376,10 @@ export const PropertiesPanel = ({
                 selectedSurface.type !== 'Zernike' && selectedSurface.type !== 'Irregular' && h(PropertyRow, { label: t.properties.maxAsphGradient, value: metrics.maxAsphGradient, editable: false, c }),
                 selectedSurface.type !== 'Zernike' && selectedSurface.type !== 'Irregular' && h(PropertyRow, { label: t.properties.bestFitSphere, value: metrics.bestFitSphere, editable: false, c }),
                 // RMS and P-V error for Zernike and Irregular surfaces
-                (selectedSurface.type === 'Zernike' || selectedSurface.type === 'Irregular') && metrics.rmsError && h(PropertyRow, { label: `${t.properties.rmsError} (mm)`, value: metrics.rmsError.mm, editable: false, c }),
-                (selectedSurface.type === 'Zernike' || selectedSurface.type === 'Irregular') && metrics.rmsError && h(PropertyRow, { label: `${t.properties.rmsError} (waves)`, value: metrics.rmsError.waves, editable: false, c }),
-                (selectedSurface.type === 'Zernike' || selectedSurface.type === 'Irregular') && metrics.pvError && h(PropertyRow, { label: `${t.properties.pvError} (mm)`, value: metrics.pvError.mm, editable: false, c }),
-                (selectedSurface.type === 'Zernike' || selectedSurface.type === 'Irregular') && metrics.pvError && h(PropertyRow, { label: `${t.properties.pvError} (waves)`, value: metrics.pvError.waves, editable: false, c })
+                (selectedSurface.type === 'Zernike' || selectedSurface.type === 'Irregular') && metrics.rmsError && h(PropertyRow, { label: `${t.properties.rmsError} (${t.summary.units.mm})`, value: metrics.rmsError.mm, editable: false, c }),
+                (selectedSurface.type === 'Zernike' || selectedSurface.type === 'Irregular') && metrics.rmsError && h(PropertyRow, { label: `${t.properties.rmsError} (${t.summary.units.waves})`, value: metrics.rmsError.waves, editable: false, c }),
+                (selectedSurface.type === 'Zernike' || selectedSurface.type === 'Irregular') && metrics.pvError && h(PropertyRow, { label: `${t.properties.pvError} (${t.summary.units.mm})`, value: metrics.pvError.mm, editable: false, c }),
+                (selectedSurface.type === 'Zernike' || selectedSurface.type === 'Irregular') && metrics.pvError && h(PropertyRow, { label: `${t.properties.pvError} (${t.summary.units.waves})`, value: metrics.pvError.waves, editable: false, c })
             ),
 
             // Surface Transformation Actions

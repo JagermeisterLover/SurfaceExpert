@@ -48,7 +48,7 @@ export const SurfaceActionButtons = ({ surface, onInvert, onNormalizeUnZ, onConv
             style: buttonStyle,
             onMouseEnter: (e) => e.target.style.backgroundColor = '#3a7bc8',
             onMouseLeave: (e) => e.target.style.backgroundColor = c.accent,
-            title: 'Flip the surface by inverting parameter signs'
+            title: t.properties.tooltips.invert
         }, t.properties.invert),
 
         // Normalize to H button - shown only for Opal Un Z
@@ -57,7 +57,7 @@ export const SurfaceActionButtons = ({ surface, onInvert, onNormalizeUnZ, onConv
             style: buttonStyle,
             onMouseEnter: (e) => e.target.style.backgroundColor = '#3a7bc8',
             onMouseLeave: (e) => e.target.style.backgroundColor = c.accent,
-            title: 'Normalize coefficients to a new H value'
+            title: t.properties.tooltips.normalize
         }, t.properties.normalize),
 
         // Convert to UnZ button - shown only for Poly
@@ -66,7 +66,7 @@ export const SurfaceActionButtons = ({ surface, onInvert, onNormalizeUnZ, onConv
             style: buttonStyle,
             onMouseEnter: (e) => e.target.style.backgroundColor = '#3a7bc8',
             onMouseLeave: (e) => e.target.style.backgroundColor = c.accent,
-            title: 'Convert this Poly surface to Opal Un Z'
+            title: t.properties.tooltips.convertToUnZ
         }, t.properties.convertToUnZ),
 
         // Flip and Copy buttons - shown only for Zernike
@@ -75,7 +75,7 @@ export const SurfaceActionButtons = ({ surface, onInvert, onNormalizeUnZ, onConv
             style: buttonStyle,
             onMouseEnter: (e) => e.target.style.backgroundColor = '#3a7bc8',
             onMouseLeave: (e) => e.target.style.backgroundColor = c.accent,
-            title: 'Create a new surface with Zernike coefficients mirrored about the X-axis (y → -y)'
+            title: t.properties.tooltips.flipX
         }, t.properties.flipX),
 
         surface.type === 'Zernike' && h('button', {
@@ -83,7 +83,7 @@ export const SurfaceActionButtons = ({ surface, onInvert, onNormalizeUnZ, onConv
             style: buttonStyle,
             onMouseEnter: (e) => e.target.style.backgroundColor = '#3a7bc8',
             onMouseLeave: (e) => e.target.style.backgroundColor = c.accent,
-            title: 'Create a new surface with Zernike coefficients mirrored about the Y-axis (x → -x)'
+            title: t.properties.tooltips.flipY
         }, t.properties.flipY),
 
         surface.type === 'Zernike' && h('button', {
@@ -91,7 +91,7 @@ export const SurfaceActionButtons = ({ surface, onInvert, onNormalizeUnZ, onConv
             style: buttonStyle,
             onMouseEnter: (e) => e.target.style.backgroundColor = '#3a7bc8',
             onMouseLeave: (e) => e.target.style.backgroundColor = c.accent,
-            title: 'Create a new surface with Zernike coefficients rotated 180° about the Z-axis (x → -x, y → -y)'
+            title: t.properties.tooltips.flipZ
         }, t.properties.flipZ),
 
         surface.type === 'Zernike' && h('button', {
@@ -99,7 +99,7 @@ export const SurfaceActionButtons = ({ surface, onInvert, onNormalizeUnZ, onConv
             style: buttonStyle,
             onMouseEnter: (e) => e.target.style.backgroundColor = '#3a7bc8',
             onMouseLeave: (e) => e.target.style.backgroundColor = c.accent,
-            title: 'Create a new surface with Zernike coefficients rotated 90° counter-clockwise'
+            title: t.properties.tooltips.rotate90CCW
         }, t.properties.rotate90CCW),
 
         surface.type === 'Zernike' && h('button', {
@@ -107,7 +107,7 @@ export const SurfaceActionButtons = ({ surface, onInvert, onNormalizeUnZ, onConv
             style: buttonStyle,
             onMouseEnter: (e) => e.target.style.backgroundColor = '#3a7bc8',
             onMouseLeave: (e) => e.target.style.backgroundColor = c.accent,
-            title: 'Create a new surface with Zernike coefficients rotated 90° clockwise'
+            title: t.properties.tooltips.rotate90CW
         }, t.properties.rotate90CW),
 
         surface.type === 'Zernike' && h('button', {
@@ -115,7 +115,7 @@ export const SurfaceActionButtons = ({ surface, onInvert, onNormalizeUnZ, onConv
             style: buttonStyle,
             onMouseEnter: (e) => e.target.style.backgroundColor = '#3a7bc8',
             onMouseLeave: (e) => e.target.style.backgroundColor = c.accent,
-            title: 'Copy Z1-Z37 values as tab-separated text for pasting into Excel'
+            title: t.properties.tooltips.copyCoefficients
         }, t.properties.copyCoefficients),
 
                 // Convert to Poly button - shown only for Opal Un Z
@@ -124,7 +124,7 @@ export const SurfaceActionButtons = ({ surface, onInvert, onNormalizeUnZ, onConv
             style: buttonStyle,
             onMouseEnter: (e) => e.target.style.backgroundColor = '#3a7bc8',
             onMouseLeave: (e) => e.target.style.backgroundColor = c.accent,
-            title: 'Convert this UnZ surface to Poly'
+            title: t.properties.tooltips.convertToPoly
         }, t.properties.convertToPoly)
     );
 };

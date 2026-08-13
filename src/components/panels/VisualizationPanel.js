@@ -120,7 +120,7 @@ export const VisualizationPanel = ({
                         fontSize: '16px'
                     }
                 },
-                    h('div', null, 'Select a surface or create a new one')
+                    h('div', null, t.visualization.emptyState)
                 ) :
                 activeTab === 'summary' ?
                     h(SummaryView, { selectedSurface, wavelength, c, t }) :

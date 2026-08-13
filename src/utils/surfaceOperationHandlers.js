@@ -6,6 +6,10 @@
 import { normalizeUnZ, convertPolyToUnZ, convertUnZToPoly, invertSurface, flipZernikeAroundX, flipZernikeAroundY, flipZernikeAroundZ, rotateZernikeBy90CCW, rotateZernikeBy90CW } from './surfaceTransformations.js';
 import { parseNumber } from './numberParsing.js';
 import { calculateSurfaceValues } from './calculations.js';
+import { getLocale, getCurrentLocale } from '../constants/locales.js';
+
+// Failure notices for handlers called without an explicit locale object.
+const errorsFor = (t) => (t || getLocale(getCurrentLocale())).messages.errors;
 
 /**
  * Handle surface inversion (flip concave/convex)
@@ -14,7 +18,7 @@ import { calculateSurfaceValues } from './calculations.js';
  * @param {Array} folders - All folders
  * @param {Function} setFolders - State setter for folders
  */
-export const handleInvertSurface = (selectedSurface, selectedFolder, folders, setFolders) => {
+export const handleInvertSurface = (selectedSurface, selectedFolder, folders, setFolders, t = null) => {
     if (!selectedSurface || !selectedFolder) return;
 
     try {
@@ -43,7 +47,7 @@ export const handleInvertSurface = (selectedSurface, selectedFolder, folders, se
             window.electronAPI.saveSurface(selectedFolder.name, updatedSurface);
         }
     } catch (error) {
-        alert(`Error inverting surface: ${error.message}`);
+        alert(`${errorsFor(t).surfaceInvert}: ${error.message}`);
         console.error('Invert error:', error);
     }
 };
@@ -63,7 +67,8 @@ export const handleNormalizeUnZConfirm = (
     selectedFolder,
     folders,
     setFolders,
-    setShowNormalizeUnZ
+    setShowNormalizeUnZ,
+    t = null
 ) => {
     if (!selectedSurface || !selectedFolder) return;
 
@@ -107,7 +112,7 @@ export const handleNormalizeUnZConfirm = (
             window.electronAPI.saveSurface(selectedFolder.name, updatedSurface);
         }
     } catch (error) {
-        alert(`Error normalizing surface: ${error.message}`);
+        alert(`${errorsFor(t).surfaceNormalize}: ${error.message}`);
         console.error('Normalize error:', error);
     }
 };
@@ -125,7 +130,8 @@ export const handleConvertToUnZ = (
     selectedFolder,
     folders,
     setFolders,
-    setSelectedSurface
+    setSelectedSurface,
+    t = null
 ) => {
     if (!selectedSurface || selectedSurface.type !== 'Poly' || !selectedFolder) return;
 
@@ -165,7 +171,7 @@ export const handleConvertToUnZ = (
             window.electronAPI.saveSurface(selectedFolder.name, newSurface);
         }
     } catch (error) {
-        alert(`Error converting to UnZ: ${error.message}`);
+        alert(`${errorsFor(t).convertToUnZ}: ${error.message}`);
         console.error('Convert to UnZ error:', error);
     }
 };
@@ -183,7 +189,8 @@ export const handleConvertToPoly = (
     selectedFolder,
     folders,
     setFolders,
-    setSelectedSurface
+    setSelectedSurface,
+    t = null
 ) => {
     if (!selectedSurface || selectedSurface.type !== 'Opal Un Z' || !selectedFolder) return;
 
@@ -223,7 +230,7 @@ export const handleConvertToPoly = (
             window.electronAPI.saveSurface(selectedFolder.name, newSurface);
         }
     } catch (error) {
-        alert(`Error converting to Poly: ${error.message}`);
+        alert(`${errorsFor(t).convertToPoly}: ${error.message}`);
         console.error('Convert to Poly error:', error);
     }
 };
@@ -250,12 +257,13 @@ export const handleFastConvertToPoly = async (
     setShowConvertResults,
     setConvertResults,
     maxDeviationThreshold = 0.000001,
-    setProgress = null
+    setProgress = null,
+    t = null
 ) => {
     if (!selectedSurface || !selectedFolder) return;
 
     if (!window.electronAPI || !window.electronAPI.runConversion) {
-        alert('Conversion not available in this environment');
+        alert(errorsFor(t).conversionUnavailable);
         return;
     }
 
@@ -349,10 +357,10 @@ export const handleFastConvertToPoly = async (
             });
             setShowConvertResults(true);
         } else {
-            alert('Fast conversion failed: No successful fit was achieved');
+            alert(errorsFor(t).fastConvertNoFit);
         }
     } catch (error) {
-        alert('Fast conversion error: ' + error.message);
+        alert(`${errorsFor(t).fastConvertError}: ${error.message}`);
         console.error('Fast convert error:', error);
     } finally {
         // Reset progress indicator when done
@@ -419,13 +427,13 @@ const addFlippedZernikeSurface = (selectedSurface, selectedFolder, folders, setF
 /**
  * Flip Zernike surface around X-axis (y → -y) and create a new surface.
  */
-export const handleFlipZernikeX = (selectedSurface, selectedFolder, folders, setFolders, setSelectedSurface) => {
+export const handleFlipZernikeX = (selectedSurface, selectedFolder, folders, setFolders, setSelectedSurface, t = null) => {
     if (!selectedSurface || selectedSurface.type !== 'Zernike' || !selectedFolder) return;
     try {
         const flipped = flipZernikeAroundX(selectedSurface.parameters);
         addFlippedZernikeSurface(selectedSurface, selectedFolder, folders, setFolders, setSelectedSurface, flipped, 'flipped around X');
     } catch (error) {
-        alert(`Error flipping surface around X: ${error.message}`);
+        alert(`${errorsFor(t).flipX}: ${error.message}`);
         console.error('Flip X error:', error);
     }
 };
@@ -433,13 +441,13 @@ export const handleFlipZernikeX = (selectedSurface, selectedFolder, folders, set
 /**
  * Flip Zernike surface around Y-axis (x → -x) and create a new surface.
  */
-export const handleFlipZernikeY = (selectedSurface, selectedFolder, folders, setFolders, setSelectedSurface) => {
+export const handleFlipZernikeY = (selectedSurface, selectedFolder, folders, setFolders, setSelectedSurface, t = null) => {
     if (!selectedSurface || selectedSurface.type !== 'Zernike' || !selectedFolder) return;
     try {
         const flipped = flipZernikeAroundY(selectedSurface.parameters);
         addFlippedZernikeSurface(selectedSurface, selectedFolder, folders, setFolders, setSelectedSurface, flipped, 'flipped around Y');
     } catch (error) {
-        alert(`Error flipping surface around Y: ${error.message}`);
+        alert(`${errorsFor(t).flipY}: ${error.message}`);
         console.error('Flip Y error:', error);
     }
 };
@@ -447,13 +455,13 @@ export const handleFlipZernikeY = (selectedSurface, selectedFolder, folders, set
 /**
  * Flip Zernike surface around Z-axis (x → -x, y → -y) and create a new surface.
  */
-export const handleFlipZernikeZ = (selectedSurface, selectedFolder, folders, setFolders, setSelectedSurface) => {
+export const handleFlipZernikeZ = (selectedSurface, selectedFolder, folders, setFolders, setSelectedSurface, t = null) => {
     if (!selectedSurface || selectedSurface.type !== 'Zernike' || !selectedFolder) return;
     try {
         const flipped = flipZernikeAroundZ(selectedSurface.parameters);
         addFlippedZernikeSurface(selectedSurface, selectedFolder, folders, setFolders, setSelectedSurface, flipped, 'flipped around Z');
     } catch (error) {
-        alert(`Error flipping surface around Z: ${error.message}`);
+        alert(`${errorsFor(t).flipZ}: ${error.message}`);
         console.error('Flip Z error:', error);
     }
 };
@@ -461,13 +469,13 @@ export const handleFlipZernikeZ = (selectedSurface, selectedFolder, folders, set
 /**
  * Rotate Zernike surface 90° CCW and create a new surface.
  */
-export const handleRotateZernike90CCW = (selectedSurface, selectedFolder, folders, setFolders, setSelectedSurface) => {
+export const handleRotateZernike90CCW = (selectedSurface, selectedFolder, folders, setFolders, setSelectedSurface, t = null) => {
     if (!selectedSurface || selectedSurface.type !== 'Zernike' || !selectedFolder) return;
     try {
         const rotated = rotateZernikeBy90CCW(selectedSurface.parameters);
         addFlippedZernikeSurface(selectedSurface, selectedFolder, folders, setFolders, setSelectedSurface, rotated, 'rotated 90° CCW');
     } catch (error) {
-        alert(`Error rotating surface 90° CCW: ${error.message}`);
+        alert(`${errorsFor(t).rotate90CCW}: ${error.message}`);
         console.error('Rotate 90° CCW error:', error);
     }
 };
@@ -475,13 +483,13 @@ export const handleRotateZernike90CCW = (selectedSurface, selectedFolder, folder
 /**
  * Rotate Zernike surface 90° CW and create a new surface.
  */
-export const handleRotateZernike90CW = (selectedSurface, selectedFolder, folders, setFolders, setSelectedSurface) => {
+export const handleRotateZernike90CW = (selectedSurface, selectedFolder, folders, setFolders, setSelectedSurface, t = null) => {
     if (!selectedSurface || selectedSurface.type !== 'Zernike' || !selectedFolder) return;
     try {
         const rotated = rotateZernikeBy90CW(selectedSurface.parameters);
         addFlippedZernikeSurface(selectedSurface, selectedFolder, folders, setFolders, setSelectedSurface, rotated, 'rotated 90° CW');
     } catch (error) {
-        alert(`Error rotating surface 90° CW: ${error.message}`);
+        alert(`${errorsFor(t).rotate90CW}: ${error.message}`);
         console.error('Rotate 90° CW error:', error);
     }
 };

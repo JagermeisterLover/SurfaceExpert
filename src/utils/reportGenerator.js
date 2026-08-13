@@ -333,13 +333,13 @@ const generateMetricsTable = (metrics, surfaceType, locale) => {
         if (metrics.rmsError) {
             metricsList.push(
                 { label: `${locale.properties.rmsError} (${locale.summary.units.mm})`, value: `${formatValue(metrics.rmsError.mm)} ${locale.summary.units.mm}` },
-                { label: `${locale.properties.rmsError} (waves)`, value: formatValue(metrics.rmsError.waves) + ' λ' }
+                { label: `${locale.properties.rmsError} (${locale.summary.units.waves})`, value: formatValue(metrics.rmsError.waves) + ' λ' }
             );
         }
         if (metrics.pvError) {
             metricsList.push(
                 { label: `${locale.properties.pvError} (${locale.summary.units.mm})`, value: `${formatValue(metrics.pvError.mm)} ${locale.summary.units.mm}` },
-                { label: `${locale.properties.pvError} (waves)`, value: formatValue(metrics.pvError.waves) + ' λ' }
+                { label: `${locale.properties.pvError} (${locale.summary.units.waves})`, value: formatValue(metrics.pvError.waves) + ' λ' }
             );
         }
     }
@@ -516,8 +516,8 @@ export const generateMetricPlots = async (plotData) => {
         document.body.appendChild(plotDiv);
 
         const layout = {
-            xaxis: { title: 'Radial Coordinate (mm)', showgrid: true },
-            yaxis: { title: yaxis, showgrid: true },
+            xaxis: { title: { text: 'Radial Coordinate (mm)' }, showgrid: true },
+            yaxis: { title: { text: yaxis }, showgrid: true },
             margin: { l: 60, r: 30, t: 30, b: 50 },
             paper_bgcolor: '#fff',
             plot_bgcolor: '#f9f9f9'
@@ -631,9 +631,9 @@ const generate3DPlotImage = async (surface, plotData, colorscale = 'Jet', gridSi
     }], {
         scene: {
             camera: { eye: { x: 1.5, y: 1.5, z: 1.5 } },
-            xaxis: { title: 'X (mm)', range: [-maxHeight, maxHeight] },
-            yaxis: { title: 'Y (mm)', range: [-maxHeight, maxHeight] },
-            zaxis: { title: 'Sag (mm)', range: [zMin, zMax] },
+            xaxis: { title: { text: 'X (mm)' }, range: [-maxHeight, maxHeight] },
+            yaxis: { title: { text: 'Y (mm)' }, range: [-maxHeight, maxHeight] },
+            zaxis: { title: { text: 'Sag (mm)' }, range: [zMin, zMax] },
             // Manual aspect ratio: 1:1 for X:Y, Z scaled to sag range
             aspectmode: 'manual',
             aspectratio: { x: 1, y: 1, z: (zMax - zMin) / (2 * maxHeight) }
@@ -706,14 +706,14 @@ const generate2DContourImage = async (surface, plotData, colorscale = 'Jet', gri
         type: 'heatmap',
         colorscale: resolveColorscale(colorscale),
         colorbar: {
-            title: 'Sag (mm)',
+            title: { text: 'Sag (mm)' },
             thickness: 15,
             len: 0.7
         },
         hoverongaps: false
     }], {
-        xaxis: { title: 'X (mm)', scaleanchor: 'y', scaleratio: 1, constrain: 'domain' },
-        yaxis: { title: 'Y (mm)', constrain: 'domain' },
+        xaxis: { title: { text: 'X (mm)' }, scaleanchor: 'y', scaleratio: 1, constrain: 'domain' },
+        yaxis: { title: { text: 'Y (mm)' }, constrain: 'domain' },
         margin: { l: 60, r: 120, t: 30, b: 60 }
     }, { displayModeBar: false });
 

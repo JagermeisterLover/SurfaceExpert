@@ -54,6 +54,8 @@ export const locales = {
       points: 'points',
       zernikeUnit: 'Zernike Surface Plot Units',
       zernikeUnitHelp: 'Display Zernike sag values in mm or in waves using the reference wavelength above',
+      zernikeUnitMm: 'Millimeters (mm)',
+      zernikeUnitWaves: 'Waves (λ)',
       fitterEngine: 'Curve Fitter Engine',
       fitterEngineJs: 'JavaScript (default, no Python required)',
       fitterEnginePython: 'Python lmfit (legacy)',
@@ -69,6 +71,7 @@ export const locales = {
       name: 'Name',
       type: 'Type',
       color: 'Color',
+      parameters: 'Parameters',
       universalParameters: 'Universal Parameters',
       surfaceSpecificParameters: 'Surface-Specific Parameters',
       calculatedMetrics: 'Calculated Metrics',
@@ -87,6 +90,21 @@ export const locales = {
       rotate90CCW: 'Rotate 90° CCW',
       rotate90CW: 'Rotate 90° CW',
       copyCoefficients: 'Copy Coefficients',
+      zernikeCoefficients: 'Zernike Coefficients',
+
+      // Hover text for the action buttons above
+      tooltips: {
+        invert: 'Flip the surface by inverting parameter signs',
+        normalize: 'Normalize coefficients to a new H value',
+        convertToUnZ: 'Convert this Poly surface to Opal Un Z',
+        convertToPoly: 'Convert this UnZ surface to Poly',
+        flipX: 'Create a new surface with Zernike coefficients mirrored about the X-axis (y → -y)',
+        flipY: 'Create a new surface with Zernike coefficients mirrored about the Y-axis (x → -x)',
+        flipZ: 'Create a new surface with Zernike coefficients rotated 180° about the Z-axis (x → -x, y → -y)',
+        rotate90CCW: 'Create a new surface with Zernike coefficients rotated 90° counter-clockwise',
+        rotate90CW: 'Create a new surface with Zernike coefficients rotated 90° clockwise',
+        copyCoefficients: 'Copy Z1-Z37 values as tab-separated text for pasting into Excel'
+      },
 
       // Metrics
       paraxialFNum: 'Paraxial F/#',
@@ -144,6 +162,11 @@ export const locales = {
       },
 
       // Plot labels
+      emptyState: 'Select a surface or create a new one',
+      heatmap: 'Heatmap',
+      offset: 'offset',
+      xMm: 'X (mm)',
+      yMm: 'Y (mm)',
       radialCoordinate: 'Radial Coordinate (mm)',
       sagMm: 'Sag (mm)',
       slopeRad: 'Slope (rad)',
@@ -226,6 +249,10 @@ export const locales = {
         normalizationFactorH: 'Normalization Factor H',
         useHigherOrderCoeffs: 'Use Higher Order Coefficients',
         numberOfCoeffs: 'Number of Coefficients',
+        autoNormalized: 'Auto-Normalized',
+        internalNormalizationH: 'Internal Normalization H (optional - auto if empty)',
+        internalNormalizationHPlaceholder: 'Auto-calculated from data range',
+        internalNormalizationHHelp: 'Improves numerical conditioning. Leave empty for automatic calculation.',
         algorithms: {
           leastsq: 'Least Squares (Levenberg-Marquardt)',
           least_squares: 'Least Squares (Trust Region)',
@@ -307,6 +334,7 @@ export const locales = {
       surfaceType: 'Surface Type',
       parameters: 'Parameters',
       detailedAnalysis: 'Detailed Analysis',
+      singlePointCalculation: 'Single Point Calculation',
       radiusMm: 'Radius (mm)',
       minHeightMm: 'Min Height (mm)',
       maxHeightMm: 'Max Height (mm)',
@@ -327,7 +355,8 @@ export const locales = {
         mm: 'mm',
         rad: 'rad',
         deg: '°',
-        perMm: '/mm'
+        perMm: '/mm',
+        waves: 'waves'
       },
 
       // Table headers
@@ -386,7 +415,38 @@ export const locales = {
       calculationError: 'Error calculating values',
       invalidParameters: 'Invalid parameters',
       operationSuccessful: 'Operation completed successfully',
-      operationFailed: 'Operation failed'
+      operationFailed: 'Operation failed',
+
+      // Failure notices. Those ending in a colon are followed by the
+      // underlying error text supplied by the caller.
+      errors: {
+        unknown: 'Unknown error',
+        folderCreate: 'Error creating folder',
+        folderRename: 'Error renaming folder',
+        fileDialogUnavailable: 'File dialog not available',
+        fileOpen: 'Error opening file',
+        zmxParse: 'Error parsing ZMX file',
+        selectSurfaceForReport: 'Please select a surface from the list to generate a report.\n\nClick on a surface in the left sidebar to select it.',
+        reportExportUnavailable: 'Report export not available - please check Electron API',
+        pdfExportUnavailable: 'PDF export not available - please check Electron API',
+        reportSave: 'Error saving report',
+        reportGenerate: 'Error generating report',
+        pdfSave: 'Error saving PDF',
+        pdfGenerate: 'Error generating PDF',
+        surfaceInvert: 'Error inverting surface',
+        surfaceNormalize: 'Error normalizing surface',
+        convertToUnZ: 'Error converting to UnZ',
+        convertToPoly: 'Error converting to Poly',
+        conversionUnavailable: 'Conversion not available in this environment',
+        conversionFailed: 'Conversion failed',
+        fastConvertNoFit: 'Fast conversion failed: No successful fit was achieved',
+        fastConvertError: 'Fast conversion error',
+        flipX: 'Error flipping surface around X',
+        flipY: 'Error flipping surface around Y',
+        flipZ: 'Error flipping surface around Z',
+        rotate90CCW: 'Error rotating surface 90° CCW',
+        rotate90CW: 'Error rotating surface 90° CW'
+      }
     },
 
     // Buttons
@@ -469,6 +529,8 @@ export const locales = {
       points: 'точек',
       zernikeUnit: 'Единицы графиков поверхности Цернике',
       zernikeUnitHelp: 'Отображать значения прогиба Цернике в мм или в длинах волн (с использованием опорной длины волны)',
+      zernikeUnitMm: 'Миллиметры (мм)',
+      zernikeUnitWaves: 'Длины волн (λ)',
       fitterEngine: 'Движок аппроксимации',
       fitterEngineJs: 'JavaScript (по умолчанию, Python не нужен)',
       fitterEnginePython: 'Python lmfit (устаревший)',
@@ -484,6 +546,7 @@ export const locales = {
       name: 'Название',
       type: 'Тип',
       color: 'Цвет',
+      parameters: 'Параметры',
       universalParameters: 'Универсальные параметры',
       surfaceSpecificParameters: 'Специфические параметры',
       calculatedMetrics: 'Вычисленные метрики',
@@ -502,6 +565,21 @@ export const locales = {
       rotate90CCW: 'Повернуть 90° ПЧС',
       rotate90CW: 'Повернуть 90° ЧС',
       copyCoefficients: 'Копировать коэффициенты',
+      zernikeCoefficients: 'Коэффициенты Цернике',
+
+      // Всплывающие подсказки для кнопок действий выше
+      tooltips: {
+        invert: 'Отразить поверхность, инвертировав знаки параметров',
+        normalize: 'Нормализовать коэффициенты к новому значению H',
+        convertToUnZ: 'Конвертировать эту поверхность Полином в Универсальное от Z',
+        convertToPoly: 'Конвертировать эту поверхность Универсальное от Z в Полином',
+        flipX: 'Создать новую поверхность с коэффициентами Цернике, отражёнными относительно оси X (y → -y)',
+        flipY: 'Создать новую поверхность с коэффициентами Цернике, отражёнными относительно оси Y (x → -x)',
+        flipZ: 'Создать новую поверхность с коэффициентами Цернике, повёрнутыми на 180° вокруг оси Z (x → -x, y → -y)',
+        rotate90CCW: 'Создать новую поверхность с коэффициентами Цернике, повёрнутыми на 90° против часовой стрелки',
+        rotate90CW: 'Создать новую поверхность с коэффициентами Цернике, повёрнутыми на 90° по часовой стрелке',
+        copyCoefficients: 'Копировать значения Z1-Z37 как текст с разделителями-табуляциями для вставки в Excel'
+      },
 
       // Метрики
       paraxialFNum: 'Параксиальное F/#',
@@ -559,6 +637,11 @@ export const locales = {
       },
 
       // Подписи графиков
+      emptyState: 'Выберите поверхность или создайте новую',
+      heatmap: 'Тепловая карта',
+      offset: 'смещение',
+      xMm: 'X (мм)',
+      yMm: 'Y (мм)',
       radialCoordinate: 'Радиальная координата (мм)',
       sagMm: 'Стрелка прогиба (мм)',
       slopeRad: 'Крутизна (рад)',
@@ -641,6 +724,10 @@ export const locales = {
         normalizationFactorH: 'Фактор нормализации H',
         useHigherOrderCoeffs: 'Использовать коэффициенты высших порядков',
         numberOfCoeffs: 'Количество коэффициентов',
+        autoNormalized: 'Автонормализация',
+        internalNormalizationH: 'Внутренняя нормализация H (необязательно, авто если пусто)',
+        internalNormalizationHPlaceholder: 'Автоматически из диапазона данных',
+        internalNormalizationHHelp: 'Улучшает численную обусловленность. Оставьте пустым для автоматического расчёта.',
         algorithms: {
           leastsq: 'Наименьшие квадраты (Левенберг-Марквардт)',
           least_squares: 'Наименьшие квадраты (Trust Region)',
@@ -722,6 +809,7 @@ export const locales = {
       surfaceType: 'Тип поверхности',
       parameters: 'Параметры',
       detailedAnalysis: 'Детальный анализ',
+      singlePointCalculation: 'Расчёт в одной точке',
       radiusMm: 'Радиус (мм)',
       minHeightMm: 'Мин. высота (мм)',
       maxHeightMm: 'Макс. высота (мм)',
@@ -742,7 +830,8 @@ export const locales = {
         mm: 'мм',
         rad: 'рад',
         deg: '°',
-        perMm: '/мм'
+        perMm: '/мм',
+        waves: 'λ'
       },
 
       // Заголовки таблиц
@@ -801,7 +890,38 @@ export const locales = {
       calculationError: 'Ошибка вычисления значений',
       invalidParameters: 'Неверные параметры',
       operationSuccessful: 'Операция выполнена успешно',
-      operationFailed: 'Операция не удалась'
+      operationFailed: 'Операция не удалась',
+
+      // Сообщения об ошибках. К оканчивающимся двоеточием добавляется
+      // текст исходной ошибки, переданный вызывающим кодом.
+      errors: {
+        unknown: 'Неизвестная ошибка',
+        folderCreate: 'Ошибка создания папки',
+        folderRename: 'Ошибка переименования папки',
+        fileDialogUnavailable: 'Диалог выбора файла недоступен',
+        fileOpen: 'Ошибка открытия файла',
+        zmxParse: 'Ошибка разбора файла ZMX',
+        selectSurfaceForReport: 'Пожалуйста, выберите поверхность из списка для создания отчёта.\n\nЩёлкните по поверхности на левой панели, чтобы выбрать её.',
+        reportExportUnavailable: 'Экспорт отчёта недоступен, проверьте Electron API',
+        pdfExportUnavailable: 'Экспорт PDF недоступен, проверьте Electron API',
+        reportSave: 'Ошибка сохранения отчёта',
+        reportGenerate: 'Ошибка создания отчёта',
+        pdfSave: 'Ошибка сохранения PDF',
+        pdfGenerate: 'Ошибка создания PDF',
+        surfaceInvert: 'Ошибка инвертирования поверхности',
+        surfaceNormalize: 'Ошибка нормализации поверхности',
+        convertToUnZ: 'Ошибка конвертации в Универсальное от Z',
+        convertToPoly: 'Ошибка конвертации в Полином',
+        conversionUnavailable: 'Конвертация недоступна в этой среде',
+        conversionFailed: 'Конвертация не удалась',
+        fastConvertNoFit: 'Быстрая конвертация не удалась: не получено ни одной успешной аппроксимации',
+        fastConvertError: 'Ошибка быстрой конвертации',
+        flipX: 'Ошибка отражения поверхности по X',
+        flipY: 'Ошибка отражения поверхности по Y',
+        flipZ: 'Ошибка отражения поверхности по Z',
+        rotate90CCW: 'Ошибка поворота поверхности на 90° ПЧС',
+        rotate90CW: 'Ошибка поворота поверхности на 90° ЧС'
+      }
     },
 
     // Кнопки

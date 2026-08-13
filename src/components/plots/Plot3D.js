@@ -44,7 +44,7 @@ export const create3DPlot = (plotRef, selectedSurface, activeTab, colorscale, gr
     const unitScale = useWaves ? (1 / wavelengthMm) : 1;
     const unit = activeTab === 'slope'
         ? translations.summary.units.rad
-        : (useWaves ? 'waves' : translations.summary.units.mm);
+        : (useWaves ? (translations.summary.units.waves || 'waves') : translations.summary.units.mm);
 
     // Create coordinate arrays
     const x = [], y = [];
@@ -104,6 +104,49 @@ export const create3DPlot = (plotRef, selectedSurface, activeTab, colorscale, gr
         row.map(val => val !== null ? val - zMin : null)
     );
 
+    const metricLabel = t?.visualization?.tabs?.[activeTab]
+        || activeTab.charAt(0).toUpperCase() + activeTab.slice(1);
+
+    // Tick precision follows the magnitude of the range being shown. A
+    // wavefront in waves spans hundreds, while a sag in mm is often a few
+    // microns; one fixed precision either drops the small case to zero or
+    // prints seven meaningless decimals on the large one.
+    const zDecimals = zRange >= 100 ? 0
+        : zRange >= 1 ? 2
+        : zRange >= 0.01 ? 4
+        : 7;
+
+    // Aspect ratio strategy:
+    // - Non-sag tabs: cube (uniform)
+    // - Zernike sag: fixed thin-slab ratio (0.15) matching interferometer-style
+    //   presentation. The true physical ratio (µm Z vs mm XY) would make the
+    //   surface look like a tall spike; interferometers always compress Z
+    //   visually so wavefront shape reads clearly.
+    // - Other sag: physical ratio clamped to [0.05, 1].
+    const zAspect = (() => {
+        if (activeTab !== 'sag') return 1;
+        if (isZernike) return 0.15;
+        const xyRange = 2 * maxHeight || 1;
+        const ratio = zRange / xyRange;
+        if (!isFinite(ratio) || ratio < 1e-6) return 0.15;
+        return Math.min(Math.max(ratio, 0.05), 1);
+    })();
+
+    // The flattened views leave only a sliver of vertical space, so the default
+    // tick count collides with itself. Scale the count to the visible height.
+    const zTickCount = zAspect <= 0.1 ? 2 : zAspect <= 0.2 ? 3 : 6;
+
+    // Z data is plotted baseline-zeroed, so raw tick values are offsets. Label
+    // both the axis and the colorbar with the true values instead, which keeps
+    // them honest without needing an explanatory title.
+    const zTickVals = [];
+    const zTickText = [];
+    for (let i = 0; i < zTickCount; i++) {
+        const v = zTickCount === 1 ? 0 : (zRange * i) / (zTickCount - 1);
+        zTickVals.push(v);
+        zTickText.push((v + zMin).toFixed(zDecimals));
+    }
+
     const data = [{
         x: x,
         y: y,
@@ -111,6 +154,26 @@ export const create3DPlot = (plotRef, selectedSurface, activeTab, colorscale, gr
         type: 'surface',
         colorscale: resolveColorscale(colorscale),
         showscale: true,
+        // Kept short and anchored below centre so the bar clears the modebar,
+        // which Plotly pins to the top-right corner of the plot area.
+        colorbar: {
+            // Plotly 3 requires the object form; a bare string is ignored.
+            title: { text: unit, font: { size: 11 } },
+            thickness: 12,
+            len: 0.62,
+            x: 1.0,
+            xanchor: 'left',
+            y: 0.44,
+            yanchor: 'middle',
+            tickfont: { size: 10 },
+            bgcolor: 'rgba(0,0,0,0)',
+            borderwidth: 0,
+            outlinewidth: 0,
+            exponentformat: 'none',
+            tickmode: 'array',
+            tickvals: zTickVals,
+            ticktext: zTickText
+        },
         cmin: 0,
         cmax: zRange,
         contours: {
@@ -131,7 +194,7 @@ export const create3DPlot = (plotRef, selectedSurface, activeTab, colorscale, gr
                 eye: { x: 1.5, y: 1.5, z: 1.5 }
             },
             xaxis: {
-                title: 'X (mm)',
+                title: { text: 'x' },
                 range: [-maxHeight, maxHeight],
                 gridcolor: gridColor,
                 zerolinecolor: gridColor,
@@ -139,7 +202,7 @@ export const create3DPlot = (plotRef, selectedSurface, activeTab, colorscale, gr
                 tickformat: '.4f'
             },
             yaxis: {
-                title: 'Y (mm)',
+                title: { text: 'y' },
                 range: [-maxHeight, maxHeight],
                 gridcolor: gridColor,
                 zerolinecolor: gridColor,
@@ -147,42 +210,26 @@ export const create3DPlot = (plotRef, selectedSurface, activeTab, colorscale, gr
                 tickformat: '.4f'
             },
             zaxis: {
-                title: zMin !== 0
-                    ? `${activeTab.charAt(0).toUpperCase() + activeTab.slice(1)} (${unit}, offset ${zMin.toFixed(4)})`
-                    : `${activeTab.charAt(0).toUpperCase() + activeTab.slice(1)} (${unit})`,
+                title: { text: 'z' },
                 range: [0, zRange],
                 gridcolor: gridColor,
                 zerolinecolor: gridColor,
                 exponentformat: 'none',
-                tickformat: '.7f'
+                tickmode: 'array',
+                tickvals: zTickVals,
+                ticktext: zTickText
             },
-            bgcolor: colors.bg,
-            // Aspect ratio strategy:
-            // - Non-sag tabs: cube (uniform)
-            // - Zernike sag: fixed thin-slab ratio (0.15) matching interferometer-style presentation.
-            //   The true physical ratio (µm Z vs mm XY) would make the surface look like a tall spike.
-            //   Interferometers always compress Z visually so wavefront shape reads clearly.
-            // - Other sag: physical ratio clamped to [0.05, 1].
+            bgcolor: 'rgba(0,0,0,0)',
             aspectmode: activeTab === 'sag' ? 'manual' : 'cube',
-            aspectratio: (() => {
-                if (activeTab !== 'sag') return undefined;
-                if (isZernike) {
-                    // Fixed visual thickness regardless of Z range — matches Zygo/Fizeau style
-                    return { x: 1, y: 1, z: 0.15 };
-                }
-                const zRange = (zMax - zMin) || 0;
-                const xyRange = 2 * maxHeight || 1;
-                const ratio = zRange / xyRange;
-                if (!isFinite(ratio) || ratio < 1e-6) {
-                    return { x: 1, y: 1, z: 0.15 };
-                }
-                return { x: 1, y: 1, z: Math.min(Math.max(ratio, 0.05), 1) };
-            })()
+            aspectratio: activeTab === 'sag' ? { x: 1, y: 1, z: zAspect } : undefined
         },
-        paper_bgcolor: colors.panel,
-        plot_bgcolor: colors.panel,
+        paper_bgcolor: 'rgba(0,0,0,0)',
+        plot_bgcolor: 'rgba(0,0,0,0)',
         font: { color: colors.text },
-        margin: { l: 0, r: 0, t: 0, b: 0 }
+        // Right margin reserves room for the colorbar and its tick labels;
+        // with no margin they render hard against the panel edge and can end
+        // up under the scrollbar.
+        margin: { l: 0, r: 80, t: 0, b: 0 }
     };
 
     const config = {

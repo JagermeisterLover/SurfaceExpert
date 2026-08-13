@@ -42,7 +42,7 @@ export const createCrossSection = (plotRef, selectedSurface, activeTab, c = null
     const unitScale = useWaves ? (1 / wavelengthMm) : 1;
     const unit = activeTab === 'slope'
         ? translations.summary.units.rad
-        : (useWaves ? 'waves' : translations.summary.units.mm);
+        : (useWaves ? (translations.summary.units.waves || 'waves') : translations.summary.units.mm);
 
     // Plot from -maxHeight to +maxHeight (diameter) using step
     // Build array of r values, ensuring we always include minHeight and maxHeight
@@ -98,9 +98,22 @@ export const createCrossSection = (plotRef, selectedSurface, activeTab, c = null
 
     const gridColor = getGridColor(colors);
 
+    const metricLabel = t?.visualization?.tabs?.[activeTab]
+        || activeTab.charAt(0).toUpperCase() + activeTab.slice(1);
+
+    // Tick precision follows the magnitude of the range being shown, so that a
+    // wavefront in waves does not print seven meaningless decimals while a sag
+    // of a few microns still resolves.
+    const finite = ySanitized.filter(v => v !== null && Number.isFinite(v));
+    const ySpan = finite.length ? (Math.max(...finite) - Math.min(...finite)) : 0;
+    const yTickFormat = ySpan >= 100 ? '.0f'
+        : ySpan >= 1 ? '.2f'
+        : ySpan >= 0.01 ? '.4f'
+        : '.7f';
+
     const layout = {
         xaxis: {
-            title: 'Radial Distance (mm)',
+            title: { text: t?.visualization?.radialCoordinate || 'Radial Coordinate (mm)' },
             zeroline: true,
             gridcolor: gridColor,
             zerolinecolor: gridColor,
@@ -108,7 +121,7 @@ export const createCrossSection = (plotRef, selectedSurface, activeTab, c = null
             tickformat: '.4f'
         },
         yaxis: {
-            title: `${activeTab.charAt(0).toUpperCase() + activeTab.slice(1)} (${unit})`,
+            title: { text: `${metricLabel} (${unit})` },
             // For sag on non-Zernike: maintain 1:1 aspect with radial distance (physically meaningful)
             // For Zernike with R=0: tiny sag vs mm-scale X — DON'T force 1:1 or irregularities are invisible
             scaleanchor: (activeTab === 'sag' && !isZernike) ? 'x' : undefined,
@@ -116,7 +129,7 @@ export const createCrossSection = (plotRef, selectedSurface, activeTab, c = null
             gridcolor: gridColor,
             zerolinecolor: gridColor,
             exponentformat: 'none',
-            tickformat: '.7f'
+            tickformat: yTickFormat
         },
         paper_bgcolor: colors.panel,
         plot_bgcolor: colors.bg,

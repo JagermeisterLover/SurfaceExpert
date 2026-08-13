@@ -189,7 +189,7 @@ export const SurfacesPanel = ({
                     e.stopPropagation();
                     setInputDialog({
                         title: t.dialogs.folder.newFolder,
-                        defaultValue: 'New Folder',
+                        defaultValue: t.surfaces.newFolder,
                         validate: (name) => {
                             if (!name || !name.trim()) {
                                 return t.dialogs.folder.folderNameEmpty;

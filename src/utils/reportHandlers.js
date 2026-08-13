@@ -6,6 +6,7 @@
 import { calculateSurfaceValues, calculateSurfaceMetrics } from './calculations.js';
 import { generateReportData } from './reportGenerator.js';
 import { parseNumber } from './numberParsing.js';
+import { getLocale } from '../constants/locales.js';
 
 /**
  * Generate plot data arrays for report generation
@@ -86,13 +87,15 @@ export const generateReportPlotData = (surface) => {
  * @returns {Promise<void>}
  */
 export const exportHTMLReport = async (surface, wavelength, colorscale, gridSize3D = 65, gridSize2D = 129, t = null) => {
+    const errors = (t || getLocale()).messages.errors;
+
     if (!surface) {
-        alert('Please select a surface from the list to generate a report.\n\nClick on a surface in the left sidebar to select it.');
+        alert(errors.selectSurfaceForReport);
         return;
     }
 
     if (!window.electronAPI || !window.electronAPI.saveHTMLReport) {
-        alert('Report export not available - please check Electron API');
+        alert(errors.reportExportUnavailable);
         return;
     }
 
@@ -124,10 +127,10 @@ export const exportHTMLReport = async (surface, wavelength, colorscale, gridSize
 
         // Only show error alerts, success opens folder automatically
         if (!result.canceled && !result.success) {
-            alert('Error saving report: ' + (result.error || 'Unknown error'));
+            alert(`${errors.reportSave}: ${result.error || errors.unknown}`);
         }
     } catch (error) {
-        alert('Error generating report: ' + error.message);
+        alert(`${errors.reportGenerate}: ${error.message}`);
         console.error('Report generation error:', error);
     }
 };
@@ -143,13 +146,15 @@ export const exportHTMLReport = async (surface, wavelength, colorscale, gridSize
  * @returns {Promise<void>}
  */
 export const exportPDFReport = async (surface, wavelength, colorscale, gridSize3D = 65, gridSize2D = 129, t = null) => {
+    const errors = (t || getLocale()).messages.errors;
+
     if (!surface) {
-        alert('Please select a surface from the list to generate a report.\n\nClick on a surface in the left sidebar to select it.');
+        alert(errors.selectSurfaceForReport);
         return;
     }
 
     if (!window.electronAPI || !window.electronAPI.generatePDFReport) {
-        alert('PDF export not available - please check Electron API');
+        alert(errors.pdfExportUnavailable);
         return;
     }
 
@@ -181,10 +186,10 @@ export const exportPDFReport = async (surface, wavelength, colorscale, gridSize3
 
         // Only show error alerts, success opens folder automatically
         if (!result.canceled && !result.success) {
-            alert('Error saving PDF: ' + (result.error || 'Unknown error'));
+            alert(`${errors.pdfSave}: ${result.error || errors.unknown}`);
         }
     } catch (error) {
-        alert('Error generating PDF: ' + error.message);
+        alert(`${errors.pdfGenerate}: ${error.message}`);
         console.error('PDF generation error:', error);
     }
 };

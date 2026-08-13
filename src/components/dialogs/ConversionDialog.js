@@ -39,7 +39,7 @@ const ConversionDialog = ({ selectedSurface, folders, selectedFolder, setFolders
 
     const runConversion = async () => {
         if (!window.electronAPI || !window.electronAPI.runConversion) {
-            alert('Conversion not available in this environment');
+            alert(t.messages.errors.conversionUnavailable);
             return;
         }
 
@@ -88,10 +88,10 @@ const ConversionDialog = ({ selectedSurface, folders, selectedFolder, setFolders
                 setShowConvert(false);
                 setShowConvertResults(true);
             } else {
-                alert('Conversion failed: ' + (result.error || 'Unknown error'));
+                alert(`${t.messages.errors.conversionFailed}: ${result.error || t.messages.errors.unknown}`);
             }
         } catch (error) {
-            alert('Conversion error: ' + error.message);
+            alert(`${t.messages.errors.conversionFailed}: ${error.message}`);
         } finally {
             setIsRunning(false);
         }
@@ -198,8 +198,8 @@ const ConversionDialog = ({ selectedSurface, folders, selectedFolder, setFolders
                     h('option', { value: '2' }, t.surfaceTypes['Odd Asphere']),
                     h('option', { value: '3' }, t.surfaceTypes['Opal Un Z']),
                     h('option', { value: '4' }, t.surfaceTypes['Opal Un U']),
-                    h('option', { value: '5' }, 'Poly'),
-                    h('option', { value: '6' }, 'Poly (Auto-Normalized)')
+                    h('option', { value: '5' }, t.surfaceTypes['Poly']),
+                    h('option', { value: '6' }, `${t.surfaceTypes['Poly']} (${t.dialogs.conversion.autoNormalized})`)
                 )
             ),
 
@@ -339,12 +339,12 @@ const ConversionDialog = ({ selectedSurface, folders, selectedFolder, setFolders
                         marginBottom: '8px',
                         color: c.textDim
                     }
-                }, 'Internal Normalization H (optional - auto if empty)'),
+                }, t.dialogs.conversion.internalNormalizationH),
                 h('input', {
                     type: 'text',
                     value: hInternal,
                     onChange: (e) => setHInternal(e.target.value),
-                    placeholder: 'Auto-calculated from data range',
+                    placeholder: t.dialogs.conversion.internalNormalizationHPlaceholder,
                     style: {
                         width: '100%',
                         padding: '8px',
@@ -362,7 +362,7 @@ const ConversionDialog = ({ selectedSurface, folders, selectedFolder, setFolders
                         marginTop: '6px',
                         fontStyle: 'italic'
                     }
-                }, 'Improves numerical conditioning. Leave empty for automatic calculation.')
+                }, t.dialogs.conversion.internalNormalizationHHelp)
             ),
 
             // Higher order coefficients

@@ -346,8 +346,8 @@ export const SettingsModal = ({ colorscale, setColorscale, wavelength, setWavele
                                 cursor: 'pointer'
                             }
                         },
-                            h('option', { value: 'mm' }, 'Millimeters (mm)'),
-                            h('option', { value: 'waves' }, 'Waves (λ)')
+                            h('option', { value: 'mm' }, t.settings.zernikeUnitMm),
+                            h('option', { value: 'waves' }, t.settings.zernikeUnitWaves)
                         ),
                         h('div', {
                             style: {

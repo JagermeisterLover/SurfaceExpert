@@ -3,15 +3,20 @@
 // ============================================
 // Business logic for importing Zemax ZMX files
 
+import { getLocale, getCurrentLocale } from '../constants/locales.js';
+
 /**
  * Handle ZMX file import - open dialog and parse file
  * @param {Function} setZmxSurfaces - State setter for parsed surfaces
  * @param {Function} setShowZMXImport - State setter for import dialog visibility
+ * @param {Object} t - Locale translations object
  * @returns {Promise<void>}
  */
-export const handleZMXImport = async (setZmxSurfaces, setShowZMXImport) => {
+export const handleZMXImport = async (setZmxSurfaces, setShowZMXImport, t = null) => {
+    const errors = (t || getLocale(getCurrentLocale())).messages.errors;
+
     if (!window.electronAPI || !window.electronAPI.openZMXDialog) {
-        alert('File dialog not available');
+        alert(errors.fileDialogUnavailable);
         return;
     }
 
@@ -19,7 +24,7 @@ export const handleZMXImport = async (setZmxSurfaces, setShowZMXImport) => {
 
     if (result.canceled) {
         if (result.error) {
-            alert('Error opening file: ' + result.error);
+            alert(`${errors.fileOpen}: ${result.error}`);
         }
         return;
     }
@@ -29,7 +34,7 @@ export const handleZMXImport = async (setZmxSurfaces, setShowZMXImport) => {
         setZmxSurfaces(parsedSurfaces);
         setShowZMXImport(true);
     } catch (error) {
-        alert('Error parsing ZMX file: ' + error.message);
+        alert(`${errors.zmxParse}: ${error.message}`);
     }
 };
 
