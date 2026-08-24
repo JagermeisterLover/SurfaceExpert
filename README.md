@@ -2,7 +2,7 @@
 
 Desktop application for analyzing and visualizing optical surface characteristics. Built with Electron and React.
 
-![Version](https://img.shields.io/badge/version-3.0.3-blue)
+![Version](https://img.shields.io/badge/version-3.0.4-blue)
 ![License](https://img.shields.io/badge/license-MIT-green)
 
 <img width="1919" height="1023" alt="surfaceexpert" src="https://github.com/user-attachments/assets/dc9274a8-b7ee-4f0c-a657-aee136ecb538" />
@@ -52,7 +52,6 @@ Desktop application for analyzing and visualizing optical surface characteristic
   - Embedded high-resolution plots
   - Complete parameter documentation
   - Summary metrics and data tables
-- **Folder Organization** - Hierarchical organization for managing multiple surfaces
 
 ## Installation
 
@@ -60,7 +59,7 @@ Desktop application for analyzing and visualizing optical surface characteristic
 
 - Node.js (v16 or higher)
 - npm (included with Node.js)
-- Python 3.7+ (for surface fitting feature)
+- Python 3.7+ (for legacy python surface fitter)
 
 ### Install Dependencies
 
@@ -94,11 +93,6 @@ Build installers for your platform:
 ```bash
 npm run build
 ```
-
-Outputs will be in the `dist/` directory:
-- **Windows**: NSIS installer
-- **macOS**: DMG package
-- **Linux**: AppImage
 
 ## User Guide
 
@@ -145,47 +139,14 @@ Access settings via `Ctrl+,` or View → Settings:
 
 ### Surface Fitting
 
-Fit sag data to surface equations (installation of python with lmfit library is required)
+Fit sag data to surface equations
 
-
-
-## Technical Details
-
-### Tech Stack
-
-- **Framework**: Electron 28.3.3
-- **UI Library**: React 18.2.0 (without JSX, using `React.createElement`)
-- **Visualization**: Plotly.js 2.27.0
-- **Architecture**: Multi-process Electron with IPC communication
-- **Language**: Pure JavaScript (ES6 modules, no TypeScript, no transpilation)
-- **Styling**: Inline styles with dark theme color palette
-
-
-
-Manual testing checklist and test files:
-- `test_irregular.html` - Test suite for Irregular surface calculations
-- `test_precision.js` - Precision testing for surface calculations
-- `test_zemax_comparison.js` - Zemax comparison tests
-
-### Contributing
-
-1. Fork the repository
-2. Create a feature branch: `git checkout -b feature/my-feature`
-3. Make your changes and test thoroughly
-4. Commit with descriptive messages
-5. Push to your fork: `git push origin feature/my-feature`
-6. Create a Pull Request
 
 
 ## License
 
 MIT License - See LICENSE file for details
 
-## Support
-
-For bug reports and feature requests, please create an issue on the project repository.
-
-## Acknowledgments
 
 - Built with Electron and React
 - Visualization powered by Plotly.js
