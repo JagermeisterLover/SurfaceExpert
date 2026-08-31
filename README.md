@@ -25,7 +25,7 @@ Desktop application for analyzing and visualizing optical surface characteristic
 - **Sag (z)** - Surface height as a function of radial position
 - **Slope (dz/dr)** - First derivative of sag
 - **Angle** - Slope converted to degrees
-- **Asphericity** - Deviation from best-fit sphere
+- **Asphericity** - Deviation from best-fit sphere (along surface normal)
 - **Aberration of Normals** - useful for null lens design (shows deviation from sphere)
 - **Best Fit Sphere** - Optimal fitting sphere radius
 - **Paraxial F/#** - Paraxial focal ratio
